@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { fmtDate, useL, useLang, useT } from "../i18n";
+import { accent, fmtDate, useL, useLang, useT } from "../i18n";
 import { loadLatest } from "../lib/data";
 
 type T2 = { es: string; en: string };
@@ -84,13 +84,13 @@ export function AboutPage() {
     <main className="page">
       <header className="page-head page-band-head">
         <p className="eyebrow">{t("about.kicker")}</p>
-        <h1>{t("about.title")}</h1>
+        <h1>{accent(t("about.title"))}</h1>
         <p className="standfirst">{t("about.lead")}</p>
       </header>
 
       <section className="section">
         <div className="section-head">
-          <h2>{t("about.caveatsTitle")}</h2>
+          <h2>{accent(t("about.caveatsTitle"))}</h2>
         </div>
         <ol className="caveats">
           {CAVEATS.map((c, i) => (
@@ -101,7 +101,7 @@ export function AboutPage() {
 
       <section className="section">
         <div className="section-head">
-          <h2>{t("about.dataTitle")}</h2>
+          <h2>{accent(t("about.dataTitle"))}</h2>
           {date && <p>{t("home.dataThrough")} {fmtDate(date, lang)}.</p>}
         </div>
         <div className="def-list">
@@ -124,7 +124,7 @@ export function AboutPage() {
 
       <section className="section">
         <div className="section-head">
-          <h2>{t("about.softwareTitle")}</h2>
+          <h2>{accent(t("about.softwareTitle"))}</h2>
         </div>
         <p className="measure muted">
           three.js, React, React Three Fiber, drei, zustand, Vite (MIT). Source Serif 4, Source Sans 3, IBM Plex Mono (SIL Open Font License). Google Earth Engine (noncommercial use). Python: xarray, rasterio, NumPy, SciPy. ReefQuest © 2026, MIT License.

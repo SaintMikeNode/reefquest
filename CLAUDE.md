@@ -45,19 +45,26 @@ Chunks: `index` (top bar, home map, cards; keep it small, ~80 KB gz) → `engine
 ~250 KB gz) → `IslandScene` and each page, loaded with `React.lazy`. Hash routes: `#/`,
 `#/island/roatan`, `#/heat`, `#/learn`, `#/about` (`src/lib/router.ts`).
 
-Design: a calm research-publication look on one dark ocean palette, used everywhere (pages, 3D HUD,
-boat HUD; Tulio rejected light/beige pages: "this is a sea project", "there's gotta be
-consistency"). Tokens and all CSS in `src/styles.css` (`--abyss`, `--deep`, `--ink`, `--text`,
-`--muted`, `--accent`, `--coral`; `--paper` is dark now, so use `--ink` for light fills). Fonts,
-self-hosted via @fontsource: Source Serif 4 (headings), Source Sans 3 (text), IBM Plex Mono (data).
-Charts are numbered figures (`.fig-n` small-caps number + serif title) with source lines and direct
-labels; kickers are small caps; tables stack into label/value rows on phones; **no horizontally
-scrolling boxes** anywhere (check pages at 375 px). Decoration must be real data: the home hero shows
-GEBCO depth contours (`src/ui/Bathymetry.tsx`, `public/data/region.json`). Heat colors follow NOAA's
-alert scale (`src/lib/alert.ts`); surveyed seafloor uses the turbo ramp (0–30 m).
+Design (third direction, from a reference Tulio chose: the FlowOS Framer template; he wants the
+site to stop looking AI-made). One confident ocean blue (`--brand`), a painted nature scene in a
+rounded white-bordered "window" for the home hero, headlines that pair bold Inter with an italic
+Instrument Serif accent (mark the accent words with `*…*` in the i18n string and render with
+`accent()`), pill buttons (`.btn.primary` blue, `.btn.light` white), hairline guides with nodes,
+and white data cards (`.card`) sitting on the artwork that show real data (today's alert per
+island, the 42-year heat strip). Data sections and the 3D views stay on deep blue (`--deep`,
+`--abyss`) so figures keep contrast; figures are rounded cards (`.figure`, `--card` radius); inner
+pages open with a blue title band (`.page-band-head`). History: beige/light pages were rejected
+("this is a sea project"), and everything must stay consistent across pages and HUDs.
+The hero artwork is original and procedural: `scripts/hero_art.py` paints it (sky, island,
+waterline, reef) into `public/img/hero-reef.webp` (+ `-1200`); rerun it to change the scene, never
+swap in third-party art. Tokens and all CSS in `src/styles.css`. Fonts, self-hosted via @fontsource:
+Inter (text, headlines), Instrument Serif (italic accents, big numerals), IBM Plex Mono (data).
+Tables stack into label/value rows on phones; **no horizontally scrolling boxes** anywhere (check
+pages at 375 px). Heat colors follow NOAA's alert scale (`src/lib/alert.ts`); surveyed seafloor
+uses the turbo ramp (0–30 m).
 3D HUD = an atlas plate, not a dashboard: the title plate (kicker, serif name, coordinates, and the
-way back right under the name), type on a scrim, frosted `.panel`s only for content (`html.lite`
-drops the blur), layer rows with inline legends, cartographic pin labels (no boxes), heading tape
+way back as a white pill right under the name), type on a scrim, frosted rounded `.panel`s only
+for content (`html.lite` drops the blur), pill buttons, layer rows with inline legends, cartographic pin labels (no boxes), heading tape
 in the boat.
 Severity must be visible, not just labeled: the sea overlay is nearly clear below 4 °C-weeks and
 takes over from Alert 1–2 (slow pulse from Alert 2); coral areas whiten on the island and corals

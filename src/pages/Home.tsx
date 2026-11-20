@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
-import { fmtDate, fmtNum, useLang, useT } from "../i18n";
+import { accent, fmtDate, fmtNum, useLang, useT } from "../i18n";
+import { levelFor, rampCSS } from "../lib/alert";
 import { loadLatest, type Latest } from "../lib/data";
 import { ISLAND_ORDER as ORDER, SCENE_ISLANDS as AVAILABLE } from "../lib/islands";
 import { href } from "../lib/router";
 import { AlertChip } from "../ui/AlertChip";
 import { ArchipelagoMap } from "../ui/ArchipelagoMap";
-import { HeroRelief } from "../ui/Bathymetry";
 import { HeatKey } from "../ui/HeatKey";
 import { HeatStripes } from "../ui/HeatStripes";
 import { IconArrow } from "../ui/Icons";
@@ -20,55 +20,102 @@ export function Home() {
     loadLatest().then(setLatest).catch(() => {});
   }, []);
   const date = latest ? fmtDate(latest.date, lang, { day: "numeric", month: "long", year: "numeric" }) : "…";
+  const [isl, setIsl] = useState("roatan");
 
-  let rec = { name: "", year: 0, v: 0 };
-  if (latest)
-    for (const isl of Object.values(latest.islands))
-      isl.year_max_dhw.forEach((v, i) => {
-        if (v > rec.v) rec = { name: isl.name, year: latest.years[i], v };
-      });
 
   return (
     <>
-      <section className="hero-band">
-        <HeroRelief />
-        <p className="relief-credit">{t("home.reliefCredit")}</p>
-        <div className="inner split">
-          <div>
-            <p className="eyebrow kicker-page">{t("home.kicker")}</p>
-            <h1>{t("home.title")}</h1>
-            <p className="standfirst">{t("home.sub")}</p>
+      <section className="hero-wrap">
+        <div className="hero-frame">
+          <picture>
+            <source media="(max-width: 700px)" srcSet="/img/hero-reef-1200.webp" />
+            <img className="hero-art" src="/img/hero-reef.webp" alt="" width={2400} height={1500} decoding="async" fetchPriority="high" />
+          </picture>
+          <div className="hero-guides" aria-hidden="true" />
+          <div className="hero-content">
+            {latest && (
+              <p className="hero-badge">
+                <Laurel />
+                {t("home.badge").replace("{a}", String(latest.years[0])).replace("{b}", String(latest.years[latest.years.length - 1]))}
+                <Laurel flip />
+              </p>
+            )}
+            <h1>{accent(t("home.title"))}</h1>
+            <p className="hero-sub">{t("home.sub")}</p>
             <div className="hero-actions">
               {HAS_WEBGL && (
                 <a className="btn primary" href={href.island("roatan")}>
-                  {t("home.ctaRoatan")} <IconArrow />
+                  {t("home.ctaRoatan")}
                 </a>
               )}
-              <a className="btn" href={href.heat}>
-                {t("nav.heat")}
+              <a className="btn light" href={href.heat}>
+                {t("nav.heat")} <IconArrow />
               </a>
             </div>
           </div>
+
           {latest && (
-            <dl className="summary">
-              <div>
-                <dt>{t("home.sumDate")}</dt>
-                <dd className="num">{date}</dd>
+            <div className="hero-cards">
+              <aside className="card alert-card">
+                <div className="card-top">
+                  <b>{t("home.cardAlert")}</b>
+                  <span className="date-chip num">{fmtDate(latest.date, lang)}</span>
+                </div>
+                <ul>
+                  {ORDER.map((id) => {
+                    const s = latest.islands[id];
+                    if (!s) return null;
+                    const lv = levelFor(s.dhw);
+                    return (
+                      <li key={id} className={`lv-${lv.key}`} style={{ "--c": lv.color } as React.CSSProperties}>
+                        <span className="who">{s.name}</span>
+                        <span className="what num">
+                          {t(`alert.${lv.key}`)} · {fmtNum(s.dhw, lang)} {t("unit.dhw")}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+                <a className="more" href={href.heat}>
+                  {t("home.cardMore")} <IconArrow />
+                </a>
+              </aside>
+
+              <div className="card strip-card">
+                <div className="strip-top">
+                  <b>{t("home.panelTitle")}</b>
+                  <div className="seg" role="group" aria-label={t("table.island")}>
+                    {ORDER.filter((id) => latest.islands[id]).map((id) => (
+                      <button key={id} aria-pressed={id === isl} onClick={() => setIsl(id)}>
+                        {latest.islands[id].name}
+                      </button>
+                    ))}
+                  </div>
+                  {AVAILABLE.has(isl) && HAS_WEBGL && (
+                    <a className="btn primary small" href={href.island(isl)}>
+                      {t("home.open3d")} <IconArrow />
+                    </a>
+                  )}
+                </div>
+                <div className="strip" role="img" aria-label={`${latest.islands[isl].name}: ${t("home.panelTitle")}`}>
+                  {latest.islands[isl].year_max_dhw.map((v, i) => (
+                    <i key={i} style={{ background: rampCSS(v) }} title={`${latest.years[i]}: ${fmtNum(v, lang)} ${t("unit.dhw")}`} />
+                  ))}
+                </div>
+                <div className="strip-axis num">
+                  {latest.years.filter((y, i) => i === 0 || y % 10 === 0 || i === latest.years.length - 1).map((y) => (
+                    <span key={y} style={{ left: `${((latest.years.indexOf(y) + 0.5) / latest.years.length) * 100}%` }}>
+                      {y}
+                    </span>
+                  ))}
+                </div>
+                <p className="strip-note">
+                  {t("home.panelHint").replace("{a}", String(latest.years[0])).replace("{b}", String(latest.years[latest.years.length - 1]))}
+                </p>
               </div>
-              <div>
-                <dt>{t("home.sumRecord")}</dt>
-                <dd className="num">
-                  {rec.year} · {rec.name} · {fmtNum(rec.v, lang)} {t("unit.dhw")}
-                </dd>
-              </div>
-              <div>
-                <dt>{t("home.sumSpan")}</dt>
-                <dd className="num">
-                  {latest.years[0]}–{latest.years[latest.years.length - 1]}
-                </dd>
-              </div>
-            </dl>
+            </div>
           )}
+          <span className="art-credit">{t("home.artCredit")}</span>
         </div>
       </section>
     <main className="page">
@@ -95,7 +142,7 @@ export function Home() {
 
       <section className="section">
         <div className="section-head">
-          <h2>{t("home.cardsTitle")}</h2>
+          <h2>{accent(t("home.cardsTitle"))}</h2>
           <p>{t("home.cardsLead")}</p>
         </div>
         <table className="data-table">
@@ -182,3 +229,15 @@ export function Home() {
 }
 
 /** Decorative bathymetric contour lines for the title band (deterministic, no data implied). */
+
+/** A small laurel sprig for the hero badge (drawn, not an icon font). */
+function Laurel({ flip }: { flip?: boolean }) {
+  return (
+    <svg viewBox="0 0 16 28" width="14" height="24" aria-hidden="true" style={flip ? { transform: "scaleX(-1)" } : undefined}>
+      <path d="M12 26C6 22 3.5 15 5 3" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+      {[5, 10, 15, 20].map((y, i) => (
+        <ellipse key={y} cx={i < 2 ? 3.4 : 4.6 + i} cy={y} rx="2.6" ry="1.5" fill="currentColor" transform={`rotate(${-50 + i * 14} ${i < 2 ? 3.4 : 4.6 + i} ${y})`} />
+      ))}
+    </svg>
+  );
+}

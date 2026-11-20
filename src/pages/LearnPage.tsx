@@ -1,6 +1,6 @@
 import type { ReactElement } from "react";
 import { LESSONS } from "../content/learn";
-import { useL, useT } from "../i18n";
+import { accent, useL, useT } from "../i18n";
 import { BleachingFigure, DhwFigure } from "../ui/LessonFigures";
 
 const FIGURES: Record<string, () => ReactElement> = { bleaching: BleachingFigure, dhw: DhwFigure };
@@ -12,7 +12,7 @@ export function LearnPage() {
     <main className="page">
       <header className="page-head page-band-head">
         <p className="eyebrow">{t("learn.kicker")}</p>
-        <h1>{t("learn.title")}</h1>
+        <h1>{accent(t("learn.title"))}</h1>
         <p className="standfirst">{t("learn.lead")}</p>
       </header>
       <div className="article">

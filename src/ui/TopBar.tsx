@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useT } from "../i18n";
 import { href, type Route } from "../lib/router";
 import { LangToggle } from "./LangToggle";
+import { HAS_WEBGL } from "../webgl";
 import { Logo } from "./Logo";
 
 export function TopBar({ route }: { route: Route }) {
@@ -13,17 +14,14 @@ export function TopBar({ route }: { route: Route }) {
     [href.learn, t("nav.learn"), route.page === "learn"],
     [href.about, t("nav.about"), route.page === "about"],
   ];
+  // On the home page the bar sits inside the illustrated hero frame.
   return (
-    <header className="site-header">
+    <header className={route.page === "home" ? "site-header on-hero" : "site-header"}>
       <div className="inner">
         <a className="wordmark" href={href.home}>
-          <Logo color="#ffffff" accent="#5fd0d6" />
+          <Logo color="#ffffff" accent="#bfe0ff" />
           <b>ReefQuest</b>
-          <span>{t("app.tagline")}</span>
         </a>
-        <button className="menu-toggle" aria-expanded={open} onClick={() => setOpen(!open)}>
-          {t("nav.menu")}
-        </button>
         <nav className={open ? "site-nav open" : "site-nav"} onClick={() => setOpen(false)}>
           {links.map(([h, label, on]) => (
             <a key={h} href={h} aria-current={on ? "page" : undefined}>
@@ -31,7 +29,17 @@ export function TopBar({ route }: { route: Route }) {
             </a>
           ))}
         </nav>
-        <LangToggle />
+        <div className="header-end">
+          <LangToggle />
+          {HAS_WEBGL && (
+            <a className="btn light cta" href={href.island("roatan")}>
+              {t("nav.cta")}
+            </a>
+          )}
+          <button className="menu-toggle" aria-expanded={open} onClick={() => setOpen(!open)}>
+            {t("nav.menu")}
+          </button>
+        </div>
       </div>
     </header>
   );

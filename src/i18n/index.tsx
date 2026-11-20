@@ -66,3 +66,16 @@ export function rich(s: string) {
   const m = /^<b>(.*?)<\/b>\s*(.*)$/s.exec(s);
   return m ? [<b key="b">{m[1]}</b>, " ", m[2]] : [s];
 }
+
+/** Renders the *marked* words of a headline in the italic display serif (the accent of the type system). */
+export function accent(s: string) {
+  return s.split("*").map((part, i) =>
+    i % 2 ? (
+      <em key={i} className="it">
+        {part}
+      </em>
+    ) : (
+      part
+    ),
+  );
+}

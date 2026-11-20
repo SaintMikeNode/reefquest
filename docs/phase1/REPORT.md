@@ -162,6 +162,25 @@ Elena** and **East end · Pelican Point**. All use the Atlas's satellite bathyme
 reef on the east end) and cost 120–150 KB each, loaded only when entered. The boat now starts at
 the reef spot closest to the chosen place anywhere in the area (one north-shore center is on land).
 
+## New visual direction (FlowOS reference)
+
+Tulio pointed to the FlowOS Framer template as the style to follow, to stop the site looking
+AI-made. What was taken from it, translated to ReefQuest:
+
+- one confident ocean blue as the brand color, framing the page;
+- a painted scene in a rounded, white-bordered window: an original over/under-water view of a Bay
+  Island and its reef, painted by our own script (`scripts/hero_art.py`), no borrowed artwork;
+- headlines that pair a bold sans line with an italic serif line;
+- pill buttons, thin guide lines with nodes, and white data cards on the artwork showing real
+  data (today's alert per island, 42 years of peak heat with an island switch).
+
+Data sections and the 3D views stay on deep blue; figures became rounded cards, inner pages open
+with a blue title band, and the 3D HUD picked up the pills and rounder panels.
+
+![Home hero](style-home-hero.jpg)
+
+![Data cards on the artwork](style-home-cards.jpg)
+
 ## Phone performance pass
 
 The 3D views were far too heavy for phones: 1.5 million triangles per frame on the island and

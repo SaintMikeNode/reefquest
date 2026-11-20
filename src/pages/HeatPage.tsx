@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { fmtDate, fmtNum, useLang, useT } from "../i18n";
+import { accent, fmtDate, fmtNum, useLang, useT } from "../i18n";
 import { LEVELS } from "../lib/alert";
 import { dayDiff, loadHeatIndex, loadLatest, loadSeries, type HeatIndex, type IslandSeries, type Latest } from "../lib/data";
 import { AlertChip } from "../ui/AlertChip";
@@ -62,7 +62,7 @@ export function HeatPage() {
     <main className="page">
       <header className="page-head page-band-head">
         <p className="eyebrow">{t("heat.kicker")}</p>
-        <h1>{t("heat.title")}</h1>
+        <h1>{accent(t("heat.title"))}</h1>
         <p className="standfirst">{t("heat.lead")}</p>
       </header>
 
@@ -112,7 +112,7 @@ export function HeatPage() {
 
       <section className="section">
         <div className="section-head">
-          <h2>{t("heat.recordTitle")}</h2>
+          <h2>{accent(t("heat.recordTitle"))}</h2>
           <p>{t("heat.recordLead")}</p>
         </div>
         <table className="data-table">
@@ -173,7 +173,7 @@ export function HeatPage() {
 
       <section className="section">
         <div className="section-head">
-          <h2>{t("heat.scaleTitle")}</h2>
+          <h2>{accent(t("heat.scaleTitle"))}</h2>
           <p>{t("heat.scaleLead")}</p>
         </div>
         <table className="data-table">
