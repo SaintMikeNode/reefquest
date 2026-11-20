@@ -31,9 +31,10 @@ export const WATER_GLSL = /* glsl */ `
       return mix(c, uRqFog, 1.0 - exp(-pow(dist / uRqVis, 1.6)));
     }
     // From above: light travels through the water along the line of sight (longer at low angles).
-    float path = depth / max(normalize(cameraPosition - w).y, 0.08) * (11.0 / 12.0);
-    vec3 water = mix(vec3(0.10, 0.72, 0.74), vec3(0.02, 0.30, 0.48), smoothstep(2.0, 30.0, path));
-    return mix(c, water, 1.0 - exp(-path / 11.0));
+    // Caribbean water is very clear: ~16 m e-folding along the path.
+    float path = depth / max(normalize(cameraPosition - w).y, 0.08);
+    vec3 water = mix(vec3(0.10, 0.72, 0.74), vec3(0.02, 0.30, 0.48), smoothstep(3.0, 36.0, path));
+    return mix(c, water, 1.0 - exp(-path / 16.0));
   }`;
 
 /** Tint a standard material by the water column (same light loss as the seafloor shader). */

@@ -133,20 +133,31 @@ function Scene({ zone, start }: { zone: Zone; start: { lon: number; lat: number 
     snow.update(camera, t, gl.getPixelRatio(), under);
   });
 
-  // Start on the site, or the nearest water at least 6 m deep (zone centers can be inland).
+  // Start near the site in 4.5–14 m of water with reef (coral or hard bottom) close by, so the first
+  // view is the reef; fall back to the nearest water at least 6 m deep (zone centers can be inland).
   const startXZ = useMemo(() => {
     const p = lonLatToXZ(zone, start.lon, start.lat);
-    if (heightAtXZ(zone, p.x, p.z) < -6) return p;
-    let best = p, bestD = Infinity;
+    let best: { x: number; z: number } | null = null, bestD = Infinity;
+    let deep = p, deepD = Infinity;
     for (let j = 0; j < zone.h; j += 2)
       for (let i = 0; i < zone.w; i += 2) {
-        if (zone.heights[j * zone.w + i] >= -6) continue;
+        const h = zone.heights[j * zone.w + i];
+        if (h >= -4.5) continue;
         const x = (i / (zone.w - 1) - 0.5) * zone.sizeX, z = (j / (zone.h - 1) - 0.5) * zone.sizeZ;
         const d = (x - p.x) ** 2 + (z - p.z) ** 2;
-        if (d < bestD) (bestD = d), (best = { x, z });
+        if (h < -6 && d < deepD) (deepD = d), (deep = { x, z });
+        if (h < -14 || d > 1500 * 1500 || d >= bestD) continue;
+        let reef = 0;
+        for (const [ox, oz] of [[0, 0], [25, 0], [-25, 0], [0, 25], [0, -25]]) {
+          const b = habitatAtXZ(zone, x + ox, z + oz).benthic;
+          if (b === 15 || b === 13) reef++;
+        }
+        if (reef >= 3) (bestD = d), (best = { x, z });
       }
-    const dx = best.x - p.x, dz = best.z - p.z, l = Math.hypot(dx, dz) || 1;
-    return { x: best.x + (dx / l) * 50, z: best.z + (dz / l) * 50 };
+    if (best) return best;
+    if (heightAtXZ(zone, p.x, p.z) < -6) return p;
+    const dx = deep.x - p.x, dz = deep.z - p.z, l = Math.hypot(dx, dz) || 1;
+    return { x: deep.x + (dx / l) * 50, z: deep.z + (dz / l) * 50 };
   }, [zone, start]);
 
   return (

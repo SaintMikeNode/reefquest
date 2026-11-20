@@ -127,6 +127,10 @@ color comes from the data; numbers in a mono face, labels in small caps, titles 
   sponges, turtle grass. They are placed by the Atlas habitat and depth (elkhorn on the shallow
   crest, sponges deeper), dense around the boat. Plus reef fish: blue tangs, snappers, sergeant
   majors, grunts, wrasses, parrotfish.
+- **The boat starts over living reef** (4.5–14 m deep, coral or hard bottom around it), not bare sand.
+
+![Boat](redesign-boat.jpg)
+
 - **Underwater.** "Underwater" (or U) takes the camera down to the reef under the boat: red light
   lost with depth, visibility fog, the sky seen through Snell's window, light shafts, drifting
   particles, the hull overhead. A **field guide** lists the species around you, most common first,
