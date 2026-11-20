@@ -85,7 +85,7 @@ pages at 375 px). Heat colors follow NOAA's alert scale (`src/lib/alert.ts`); su
 uses the turbo ramp (0–30 m).
 3D HUD = an atlas plate, not a dashboard: the title plate (kicker, serif name, coordinates, and the
 way back as a white pill right under the name), type on a scrim, frosted rounded `.panel`s only
-for content (`html.lite` drops the blur), pill buttons, layer rows with inline legends, cartographic pin labels (no boxes), heading tape
+for content (`html.lite` drops the blur; slim rounded scrollbars with no arrow buttons, kept off the content), pill buttons, layer rows with inline legends, cartographic pin labels (no boxes), heading tape
 in the boat.
 Severity must be visible, not just labeled: the sea overlay is nearly clear below 4 °C-weeks and
 takes over from Alert 1–2 (slow pulse from Alert 2); coral areas whiten on the island and corals
@@ -129,7 +129,7 @@ place name gives NOAA's alert wording. All of it follows the selected date and i
   that arrives during or right after a right-drag (browser mouse gestures) is undone via `navGuard`
   in `router.ts`; the cursor readout panel is click-through so it doesn't flicker; a press whose release never
   arrives is finished with a synthetic pointerup on the next button-less move or window blur, so
-  the camera can't get stuck; a lost WebGL context rebuilds the Canvas via `glKey`), `SiteCard.tsx`, `Timeline.tsx` (year chips, DHW chart, scrubber,
+  the camera can't get stuck; a lost WebGL context rebuilds the Canvas via `glKey`), `SiteCard.tsx` (its action, "Explore by boat", is a compact tinted chip (`.card-chip`, not a solid button: the title stays the loudest) right after the place name (16 px semibold), the two wrapping together on narrow cards, the close button pinned to the corner, 18 px before the title; on computers the card stops above the data credits line), `Timeline.tsx` (year chips, DHW chart, scrubber,
   playback), `sceneStore.ts`.
 - `src/boat/`: the research-boat mode (lazy chunk, ~21 KB gz). `zone.ts` (detailed zone tiles: 10 m
   relief, 5 m habitat, meters as scene units, depths beyond 60 m compressed), `boatMaterials.ts`

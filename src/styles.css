@@ -347,10 +347,29 @@ ol.caveats li { margin: 0 0 12px; padding-left: 4px; }
 .notes { font-size: 12px; line-height: 1.45; color: var(--hud-faint); }
 
 /* Site / story card */
-.site-card { top: 72px; right: 18px; width: min(392px, calc(100% - 36px)); padding: 18px 20px 16px; max-height: calc(100% - 72px - var(--tb, 160px) - 14px); overflow-y: auto; overflow-x: hidden; background: var(--glass-solid); }
+/* Stops above the data credits line (it sits just over the timeline and can wrap to two lines). */
+.site-card { top: 72px; right: 18px; width: min(392px, calc(100% - 36px)); padding: 18px 20px 16px; max-height: calc(100% - 72px - var(--tb, 160px) - 50px); overflow-y: auto; overflow-x: hidden; background: var(--glass-solid); }
 .site-card h2 { color: var(--white); font-size: 24px; line-height: 1.12; margin: 6px 0 12px; letter-spacing: -0.03em; }
 .site-card p { color: #d5dee6; line-height: 1.6; font-size: 15px; margin: 0 0 10px; }
-.site-card .card-head { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+/* Card header: the place name (a readable 16 px, the card's subject) with its action chip right after
+   it, and the close button pinned to the corner. Name and chip wrap together on narrow cards. A clear
+   gap separates this row from the title, so the chip doesn't crowd it. */
+.site-card .card-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: start; margin-bottom: 18px; }
+.site-card .card-place { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; min-height: 30px; }
+.site-card .place-name { font-size: 16px; font-weight: 600; letter-spacing: -0.01em; color: #e6eef6; line-height: 1.25; }
+.site-card .place-depth { font-weight: 450; color: var(--hud-muted); }
+.site-card .card-actions { display: flex; gap: 6px; }
+.site-card .close-btn { width: 30px; height: 30px; justify-content: center; align-items: center; padding: 0; border-radius: 999px; margin-right: -6px; }
+.site-card .close-btn:hover { background: rgba(255, 255, 255, 0.08); }
+.site-card .card-head + h2 { margin-top: 0; }
+.card-chip { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px 0 11px; border-radius: 999px;
+  border: 1px solid rgba(127, 181, 255, 0.38); background: rgba(10, 102, 240, 0.16); color: #d6e7ff;
+  font: 600 12.5px/1 var(--sans); letter-spacing: 0.005em; white-space: nowrap; cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s; }
+.card-chip svg { width: 15px; height: 15px; flex: none; }
+.card-chip svg:last-child { width: 13px; height: 13px; opacity: 0.8; transition: transform 0.15s; }
+.card-chip:hover, .card-chip:focus-visible { background: rgba(10, 102, 240, 0.42); border-color: rgba(160, 200, 255, 0.7); color: var(--white); }
+.card-chip:hover svg:last-child { transform: translateX(2px); opacity: 1; }
 .site-card .sources { color: var(--hud-muted); border-top: 1px solid var(--hair); padding-top: 10px; }
 .site-card .sources a { color: var(--hud-muted); }
 .close-btn { background: none; border: 0; color: var(--hud-muted); padding: 4px; display: inline-flex; }
@@ -850,4 +869,17 @@ html.lite .window, html.lite .hero-cards .card, html.lite .sea-bg .figure { -web
 @media (min-width: 901px) and (max-height: 940px) {
   .hero-content { padding-top: clamp(84px, 11vh, 132px); }
   .hero-cards { padding-top: clamp(16px, 2.6vh, 48px); }
+}
+/* Scrollbars in panels: the layers list scrolls in an area that reaches the panel's edge, so the bar
+   sits in the margin instead of against the checkboxes; and Chromium/Safari get a slim rounded thumb
+   with no arrow buttons (Firefox keeps its own thin bar from scrollbar-width). */
+.hud-left > .acc-body { margin-right: -13px; padding-right: 13px; }
+@supports selector(::-webkit-scrollbar) {
+  .panel, .panel * { scrollbar-width: auto; scrollbar-color: auto; }
+  .panel::-webkit-scrollbar, .panel ::-webkit-scrollbar { width: 11px; height: 11px; }
+  .panel::-webkit-scrollbar-track, .panel ::-webkit-scrollbar-track { background: transparent; }
+  .panel::-webkit-scrollbar-thumb, .panel ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border: 4px solid transparent; border-radius: 999px; background-clip: padding-box; }
+  .panel::-webkit-scrollbar-thumb:hover, .panel ::-webkit-scrollbar-thumb:hover { background-color: rgba(255, 255, 255, 0.38); }
+  .panel::-webkit-scrollbar-button, .panel ::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
+  .panel::-webkit-scrollbar-corner, .panel ::-webkit-scrollbar-corner { background: transparent; }
 }

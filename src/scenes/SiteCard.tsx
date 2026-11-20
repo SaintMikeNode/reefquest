@@ -14,17 +14,21 @@ export function SiteCard({ site, onClose, actions }: { site: Site; onClose: () =
   return (
     <aside className="hud site-card panel" aria-live="polite">
       <div className="card-head">
-        <span className="hud-label">
-          {site.name}
-          {site.depth_m ? ` · ${site.depth_m} m` : ""}
-        </span>
+        {/* The place name with its action (e.g. "Explore by boat") right after it; they wrap
+            together when the name is long, and the close button stays in the corner. */}
+        <div className="card-place">
+          <span className="place-name">
+            {site.name}
+            {site.depth_m ? <span className="place-depth"> · {site.depth_m} m</span> : null}
+          </span>
+          {actions && <div className="card-actions">{actions}</div>}
+        </div>
         <button className="close-btn" onClick={onClose} aria-label={t("scene.close")}>
           <IconClose />
         </button>
       </div>
       {site.title && <h2>{L(site.title)}</h2>}
       {site.body && L(site.body).map((p, i) => <p key={i}>{p}</p>)}
-      {actions && <div style={{ display: "flex", gap: 8, flexWrap: "wrap", margin: "6px 0 12px" }}>{actions}</div>}
       <p className="hud-faint num" style={{ fontSize: 12.5, margin: "0 0 8px" }}>
         {fmtLat(site.lat, lang)}, {fmtLon(site.lon, lang)}
         {site.approx ? ` · ${t("scene.approx")}` : ""}

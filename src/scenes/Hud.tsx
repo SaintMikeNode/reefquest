@@ -200,8 +200,8 @@ export function Hud({ td, index }: { td: TerrainData; index: HeatIndex }) {
           onClose={() => setSite(null)}
           actions={
             siteZone && (
-              <button className="hbtn primary" onClick={() => setBoat({ zone: siteZone.id, lon: site.lon, lat: site.lat })}>
-                <IconShip /> {t("boat.explore")}
+              <button className="card-chip" onClick={() => setBoat({ zone: siteZone.id, lon: site.lon, lat: site.lat })}>
+                <IconShip /> {t("boat.explore")} <IconArrow />
               </button>
             )
           }
