@@ -167,9 +167,11 @@ low-end Android phone.
 
 Live at https://reefquest.todosenlaweb.com: Worker `reefquest` with that custom domain, static
 assets via `cloudflare.config.ts` (SPA fallback). Code is on GitHub at `saintmikenode/reefquest`
-(private, `main`). First deployed manually on 2026-11-20 (Tulio asked to try it on his phone).
-**Workers Builds is not connected yet, so pushing does not deploy.** To deploy by hand, only when
-Tulio says to: `npm run build` (it strips the `._*` files macOS writes on this drive), then
-`npx cf deploy --prebuilt`. Connecting Workers Builds (see the workspace CLAUDE.md) would make every
-push to `main` deploy; do that only when Tulio asks. Never push or deploy unless Tulio says so in
-that moment.
+(private, `main`). **Workers Builds is connected (since 2026-11-20): pushing to `main` deploys**
+(trigger "Deploy main": `npx tsc && npx cf build`, then `npx cf deploy --prebuilt`). A push to any
+other branch only uploads a preview version with the branch name as its alias (trigger "Deploy
+non-production branches"); production is unchanged. Check builds with `npx cf builds list
+--external-script-id <worker tag>` (tag from `npx cf workers scripts search --name reefquest`).
+Manual fallback, only if a build is broken or Tulio asks: `npm run build` (it strips the `._*` files
+macOS writes on this drive), then `npx cf deploy --prebuilt`.
+Never push (and so never deploy) unless Tulio says so in that moment.
