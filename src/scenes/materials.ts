@@ -35,6 +35,38 @@ const benthicLUT = (() => {
   return t;
 })();
 
+/** Fog / background color shared by the island materials; deepens toward a dark wine in severe heat. */
+export const SCENE_FOG = new THREE.Color("#020d16");
+export const FOG_CALM = new THREE.Color("#020d16");
+export const FOG_SEVERE = new THREE.Color("#1d0718");
+
+export type HeatGrid = { lat0: number; lon0: number; cell: number; cols: number; rows: number };
+
+/** GLSL: heat intensity (0 at 0 DHW → 1 at 12+ DHW) of the NOAA 5 km cell under a uv (v = 0 north). */
+const HEAT_GLSL = /* glsl */ `
+  uniform sampler2D uHeat;
+  uniform float uShowHeat;
+  uniform vec3 uLon;
+  uniform vec3 uLat;
+  uniform vec4 uGrid;
+  uniform vec2 uGridSize;
+  vec4 heatCell(vec2 uv, out vec2 cr) {
+    float lon = dot(uLon, vec3(uv, 1.0));
+    float lat = dot(uLat, vec3(uv, 1.0));
+    cr = vec2((lon - uGrid.y) / uGrid.z + 0.5, (uGrid.x - lat) / uGrid.z + 0.5);
+    return texture2D(uHeat, vec2(cr.x / uGridSize.x, cr.y / uGridSize.y));
+  }
+`;
+
+const heatUniforms = (heatTex: THREE.Texture, geo: number[][], grid: HeatGrid) => ({
+  uHeat: { value: heatTex },
+  uShowHeat: { value: 1 },
+  uLon: { value: new THREE.Vector3(...geo[0]) },
+  uLat: { value: new THREE.Vector3(...geo[1]) },
+  uGrid: { value: new THREE.Vector4(grid.lat0, grid.lon0, grid.cell, 0) },
+  uGridSize: { value: new THREE.Vector2(grid.cols, grid.rows) },
+});
+
 const FOG = /* glsl */ `
   uniform vec3 uFogColor;
   uniform float uFogDensity;
@@ -44,15 +76,16 @@ const FOG = /* glsl */ `
   }
 `;
 
-export function terrainMaterial(habitatTex: THREE.Texture) {
+export function terrainMaterial(habitatTex: THREE.Texture, heatTex: THREE.Texture, geo: number[][], grid: HeatGrid) {
   return new THREE.ShaderMaterial({
     uniforms: {
+      ...heatUniforms(heatTex, geo, grid),
       uHabitat: { value: habitatTex },
       uBenthic: { value: benthicLUT },
       uShowHabitat: { value: 1 },
       uShowContours: { value: 1 },
       uTime: { value: 0 },
-      uFogColor: { value: new THREE.Color("#020d16") },
+      uFogColor: { value: SCENE_FOG },
       uFogDensity: { value: 0.0011 },
       uLight: { value: new THREE.Vector3(-0.5, 0.75, -0.45).normalize() },
     },
@@ -81,6 +114,7 @@ export function terrainMaterial(habitatTex: THREE.Texture) {
       uniform float uShowContours;
       uniform float uTime;
       uniform vec3 uLight;
+      ${HEAT_GLSL}
       varying float vH;
       varying vec2 vUv;
       varying vec3 vNormal;
@@ -156,6 +190,15 @@ export function terrainMaterial(habitatTex: THREE.Texture) {
           } else if (benthic > 0.5 && d < 30.0) {
             // Natural view: the bottom through clear water (more water color with depth).
             vec3 nb = naturalBottom(benthic, vWorld.xz);
+            // Bleaching: with the heat layer on, coral areas whiten as heat passes NOAA's thresholds
+            // (patchy from ~4 °C-weeks, most of the reef by ~10). Illustrative, driven by the 5 km cell.
+            if (uShowHeat > 0.5 && benthic > 14.5 && benthic < 15.5) {
+              vec2 cr;
+              float k = heatCell(vUv, cr).a;
+              float patchy = vn(vWorld.xz * 9.0) * 0.6 + vn(vWorld.xz * 27.0) * 0.4;
+              float bleach = smoothstep(0.28 + patchy * 0.25, 0.62 + patchy * 0.25, k);
+              nb = mix(nb, vec3(0.98, 0.97, 0.93), bleach * 0.92);
+            }
             base = mix(nb, base, 1.0 - exp(-d / 7.5));
           }
           col = base * (0.45 + 0.75 * lambert);
@@ -180,19 +223,14 @@ export function terrainMaterial(habitatTex: THREE.Texture) {
 }
 
 /** Sea surface with the NOAA 5 km heat-stress cells. */
-export function waterMaterial(heatTex: THREE.Texture, geo: number[][], grid: { lat0: number; lon0: number; cell: number; cols: number; rows: number }) {
+export function waterMaterial(heatTex: THREE.Texture, geo: number[][], grid: HeatGrid) {
   return new THREE.ShaderMaterial({
     transparent: true,
     depthWrite: false,
     uniforms: {
-      uHeat: { value: heatTex },
-      uShowHeat: { value: 1 },
-      uLon: { value: new THREE.Vector3(...geo[0]) },
-      uLat: { value: new THREE.Vector3(...geo[1]) },
-      uGrid: { value: new THREE.Vector4(grid.lat0, grid.lon0, grid.cell, 0) },
-      uGridSize: { value: new THREE.Vector2(grid.cols, grid.rows) },
+      ...heatUniforms(heatTex, geo, grid),
       uTime: { value: 0 },
-      uFogColor: { value: new THREE.Color("#020d16") },
+      uFogColor: { value: SCENE_FOG },
       uFogDensity: { value: 0.0011 },
     },
     vertexShader: /* glsl */ `
@@ -209,42 +247,36 @@ export function waterMaterial(heatTex: THREE.Texture, geo: number[][], grid: { l
       }
     `,
     fragmentShader: /* glsl */ `
-      uniform sampler2D uHeat;
-      uniform float uShowHeat;
-      uniform vec3 uLon;
-      uniform vec3 uLat;
-      uniform vec4 uGrid;
-      uniform vec2 uGridSize;
       uniform float uTime;
+      ${HEAT_GLSL}
       varying vec2 vUv;
       varying float vDist;
       varying vec3 vWorld;
       ${FOG}
       void main() {
         // uv (v = 0 north) → lon/lat via the pipeline's affine fit → NOAA grid cell.
-        vec2 uv = vec2(vUv.x, 1.0 - vUv.y);
-        float lon = dot(uLon, vec3(uv, 1.0));
-        float lat = dot(uLat, vec3(uv, 1.0));
-        float col = (lon - uGrid.y) / uGrid.z + 0.5;
-        float row = (uGrid.x - lat) / uGrid.z + 0.5;
-        vec4 cell = texture2D(uHeat, vec2(col / uGridSize.x, row / uGridSize.y));
+        vec2 cr;
+        vec4 cell = heatCell(vec2(vUv.x, 1.0 - vUv.y), cr);
         vec3 c = vec3(0.04, 0.24, 0.36);
-        float a = 0.10;
+        float a = 0.08;
         if (uShowHeat > 0.5 && cell.a > 0.0) {
-          // cell.a = heat intensity (0 at 0 DHW → 1 at 12+ DHW).
-          // Cell edges as a hairline (about 1 px at any zoom), like a graticule, not a neon grid.
-          vec2 cr = vec2(col, row);
+          // Severity drives everything: calm years leave the sea almost clear; from Alert 1 (4 °C-weeks)
+          // the sea takes the alert color, and from Alert 2 (8) it dominates and pulses slowly.
+          float k = cell.a;
+          float warn = smoothstep(0.0, 0.33, k);
+          float alert = smoothstep(0.3, 1.0, k);
+          c = mix(c, cell.rgb, 0.35 + 0.6 * max(warn * 0.5, alert));
+          a = 0.02 + 0.1 * warn + 0.52 * alert;
+          a *= 1.0 + 0.14 * smoothstep(0.62, 1.0, k) * sin(uTime * 1.4 + (cr.x + cr.y) * 0.8);
+          // Cell edges as a hairline (about 1 px at any zoom), stronger as heat rises.
           vec2 f = fract(cr);
           vec2 edge = min(f, 1.0 - f) / max(fwidth(cr), vec2(1e-4));
           float border = 1.0 - smoothstep(0.4, 1.4, min(edge.x, edge.y));
-          float k = cell.a;
-          c = mix(c, cell.rgb, 0.30 + 0.45 * k);
-          a = 0.05 + 0.2 * k;
-          c = mix(c, cell.rgb * 1.15 + 0.05, border * 0.6);
-          a = max(a, border * (0.22 + 0.35 * k));
+          c = mix(c, cell.rgb * 1.2 + 0.05, border * (0.3 + 0.5 * alert));
+          a = max(a, border * (0.08 + 0.5 * alert));
+        } else {
+          a += 0.03 * sin(vWorld.x * 0.08 + vWorld.z * 0.05 + uTime * 0.6);
         }
-        // Faint moving sheen.
-        a += 0.03 * sin(vWorld.x * 0.08 + vWorld.z * 0.05 + uTime * 0.6);
         c = applyFog(c, vDist);
         float fade = 1.0 - smoothstep(600.0, 1100.0, vDist);
         gl_FragColor = vec4(c, a * fade);

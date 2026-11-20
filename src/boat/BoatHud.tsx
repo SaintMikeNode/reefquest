@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { REEF_LIFE, REEF_LIFE_NOTE, REEF_LIFE_SOURCES } from "../content/reefLife";
 import { SITES } from "../content/sites";
-import { fmtNum, useL, useLang, useT } from "../i18n";
+import { fmtDate, fmtNum, useL, useLang, useT } from "../i18n";
+import { HeatStatus } from "../scenes/Hud";
+import { BLEACH } from "./corals";
 import type { HeatIndex } from "../lib/data";
 import { dhwAt } from "../scenes/heatLookup";
 import { labelRef } from "../scenes/labels";
@@ -45,6 +47,15 @@ export function BoatHud({ index, zoneName, islandName }: { index: HeatIndex; zon
   const prevSamples = useRef(samples.length);
 
   const dhw = tele ? dhwAt(index, tele.lon, tele.lat, day) : null;
+  const year = useScene((s) => s.year);
+  const yi = index.years.find((y) => y.year === year);
+  const dateISO = yi ? new Date(Date.parse(yi.first + "T12:00:00Z") + Math.min(day, yi.days - 1) * 864e5).toISOString().slice(0, 10) : null;
+  // Corals whiten with the heat of this 5 km cell on the selected date (from ~4 °C-weeks; most by ~10).
+  const bleach = dhw === null ? 0 : Math.min(1, Math.max(0, (dhw - 3.5) / 6.5));
+  useEffect(() => {
+    BLEACH.value = bleach * bleach * (3 - 2 * bleach);
+  }, [bleach]);
+  useEffect(() => () => void (BLEACH.value = 0), []);
   const sampled = useMemo(() => new Set(samples.map((s) => s.benthic).filter((c) => c > 0)), [samples]);
   const done = present.length > 0 && present.every((c) => sampled.has(c));
   const casting = cast.phase !== "idle";
@@ -133,6 +144,7 @@ export function BoatHud({ index, zoneName, islandName }: { index: HeatIndex; zon
         <div className="kicker">{t("boat.kicker")}</div>
         <h1>{zoneName}</h1>
         <div className="coords">{tele ? `${fmtLat(tele.lat, lang)} · ${fmtLon(tele.lon, lang)}` : "\u00a0"}</div>
+        <HeatStatus dhw={dhw} prefix={dateISO ? fmtDate(dateISO, lang) : undefined} />
         <button className="back-btn" onClick={() => setBoat(null)}>
           <IconBack /> {t("boat.backTo").replace("{island}", islandName)}
         </button>
@@ -272,7 +284,7 @@ export function BoatHud({ index, zoneName, islandName }: { index: HeatIndex; zon
 
       <div className="hud boat-bottom">
         {under ? (
-          <FieldGuide />
+          <FieldGuide bleachNote={bleach > 0.05 && dhw !== null && dateISO ? t("boat.bleachNote").replace("{date}", fmtDate(dateISO, lang)).replace("{dhw}", fmtNum(dhw, lang)) : null} />
         ) : (
         <div className="panel logbook-panel">
           <button className="fold-head" aria-expanded={logOpen} onClick={() => setLogOpen(!logOpen)}>
@@ -375,7 +387,7 @@ function HeadingTape({ deg }: { deg: number }) {
 }
 
 /** Underwater: the species of the (illustrative) reef around the boat, with how to recognize them. */
-function FieldGuide() {
+function FieldGuide({ bleachNote }: { bleachNote: string | null }) {
   const t = useT();
   const L = useL();
   const nearby = useBoat((s) => s.nearby);
@@ -391,6 +403,7 @@ function FieldGuide() {
       </button>
       {open && (
         <>
+          {bleachNote && <p className="bleach-note" style={{ marginTop: 8 }}>{bleachNote}</p>}
           {nearby.length > 0 && (
             <ul>
               {nearby.slice(0, 7).map((sp) => {

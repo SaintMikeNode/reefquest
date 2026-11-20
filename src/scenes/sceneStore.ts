@@ -18,6 +18,8 @@ interface SceneState {
   readout: Readout | null;
   flyTo: { x: number; z: number; dist: number; key: number; home?: boolean } | null;
   boat: { zone: string; lon: number; lat: number } | null;
+  /** Mean degree heating weeks over the 5 km cells of this scene, on the selected day. */
+  areaDhw: number | null;
   setBoat: (b: SceneState["boat"]) => void;
   toggle: (k: keyof SceneState["layers"]) => void;
   setYear: (y: number, day?: number) => void;
@@ -37,6 +39,7 @@ export const useScene = create<SceneState>((set) => ({
   readout: null,
   flyTo: null,
   boat: null,
+  areaDhw: null,
   setBoat: (boat) => set({ boat, site: null, readout: null, playing: false }),
   toggle: (k) => set((s) => ({ layers: { ...s.layers, [k]: !s.layers[k] } })),
   setYear: (year, day = 0) => set({ year, day }),

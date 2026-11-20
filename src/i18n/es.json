@@ -195,5 +195,6 @@
   "boat.fieldGuide": "Guía de campo",
   "boat.aroundYou": "Cerca de ti",
   "boat.noReef": "Fondo sin arrecife aquí",
-  "home.reliefCredit": "Relieve del fondo: curvas de profundidad de GEBCO 2023, de 20 a 3000 m."
+  "home.reliefCredit": "Relieve del fondo: curvas de profundidad de GEBCO 2023, de 20 a 3000 m.",
+  "boat.bleachNote": "Los corales se ven blanqueados porque el {date} esta zona había acumulado {dhw} °C-semana de calor. Es una ilustración según los umbrales de NOAA, no una observación del sitio."
 }

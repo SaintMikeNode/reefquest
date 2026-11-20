@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { loadZoneIndex, zoneName, type ZoneIndexEntry } from "../boat/zone";
 import { SITES } from "../content/sites";
 import { fmtNum, rich, useL, useLang, useT } from "../i18n";
-import { rampCSS } from "../lib/alert";
+import { levelFor, rampCSS } from "../lib/alert";
 import type { HeatIndex } from "../lib/data";
 import { href } from "../lib/router";
 import { AlertChip } from "../ui/AlertChip";
@@ -39,6 +39,7 @@ export function Hud({ td, index }: { td: TerrainData; index: HeatIndex }) {
   const setSite = useScene((s) => s.setSite);
   const fly = useScene((s) => s.fly);
   const setBoat = useScene((s) => s.setBoat);
+  const areaDhw = useScene((s) => s.areaDhw);
   const [showLayers, setShowLayers] = useState(false);
   const [open, setOpen] = useState<SectionId>("layers");
   const [zones, setZones] = useState<ZoneIndexEntry[]>([]);
@@ -122,6 +123,7 @@ export function Hud({ td, index }: { td: TerrainData; index: HeatIndex }) {
         <div className="coords">
           {fmtLat(here.lat, lang)} · {fmtLon(here.lon, lang)}
         </div>
+        {layers.heat && <HeatStatus dhw={areaDhw} />}
         <a className="back-btn" href={href.home}>
           <IconBack /> {t("scene.back")}
         </a>
@@ -262,6 +264,25 @@ export function Hud({ td, index }: { td: TerrainData; index: HeatIndex }) {
         <Timeline index={index} island={td.meta.island} />
       </div>
     </>
+  );
+}
+
+/** The alert level in NOAA's words, colored by severity (calm years read calm, bad years read alarming). */
+export function HeatStatus({ dhw, prefix }: { dhw: number | null; prefix?: string }) {
+  const t = useT();
+  const lang = useLang((s) => s.lang);
+  if (dhw === null) return null;
+  const lv = levelFor(dhw);
+  const severe = lv.min >= 4;
+  return (
+    <div className={severe ? "heat-status severe" : "heat-status"} style={{ "--c": lv.color } as React.CSSProperties} role="status">
+      <i />
+      <span>
+        {prefix && <span className="pre">{prefix} · </span>}
+        <b>{t(`alert.${lv.key}`)}</b> · {fmtNum(dhw, lang)} {t("unit.dhw")}
+        <span className="desc">{t(`alert.${lv.key}.desc`)}</span>
+      </span>
+    </div>
   );
 }
 

@@ -15,6 +15,7 @@ import { echo } from "./echo";
 import { CAP, PALETTE, placeAround, reefCells, SIZE, SPECIES, speciesGeometries, speciesMaterial, type Placement, type Species } from "./corals";
 import { underwater, WATER, waterColorAt } from "./props";
 import { LightShafts, MarineSnow } from "./underwaterFx";
+import { SCENE_FOG } from "../scenes/materials";
 import { COV_CELL, makeCoverage, resetCoverage, saveCoverage, SonarFan, stamp, type Coverage } from "./sonar";
 import { floorY, habitatAtXZ, hash, heightAtXZ, loadZone, lonLatToXZ, xzToLonLat, zoneGeometry, type Zone } from "./zone";
 
@@ -109,7 +110,7 @@ function Scene({ zone, start }: { zone: Zone; start: { lon: number; lat: number 
     cam.updateProjectionMatrix();
     scene.background = SKY_HORIZON.clone();
     return () => {
-      scene.background = new THREE.Color("#020d16");
+      scene.background = SCENE_FOG.clone(); // back to the island scene's mood color
     };
   }, [camera, scene]);
 

@@ -59,6 +59,11 @@ alert scale (`src/lib/alert.ts`); surveyed seafloor uses the turbo ramp (0–30 
 way back right under the name), type on a scrim, frosted `.panel`s only for content (`html.lite`
 drops the blur), layer rows with inline legends, cartographic pin labels (no boxes), heading tape
 in the boat.
+Severity must be visible, not just labeled: the sea overlay is nearly clear below 4 °C-weeks and
+takes over from Alert 1–2 (slow pulse from Alert 2); coral areas whiten on the island and corals
+bleach underwater by species (`BLEACH` in `corals.ts`) from ~4 to ~10 °C-weeks; the fog/background
+shifts toward dark wine with the area's mean heat (`SCENE_FOG`); a `HeatStatus` line under the
+place name gives NOAA's alert wording. All of it follows the selected date and is labeled illustrative.
 
 ## Layout
 

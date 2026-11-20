@@ -11,7 +11,7 @@ import { LITE, REDUCED_MOTION } from "../lib/device";
 import { BoatHud } from "../boat/BoatHud";
 import { zoneName, type ZoneIndexEntry } from "../boat/zone";
 import { Hud } from "./Hud";
-import { terrainMaterial, waterMaterial } from "./materials";
+import { FOG_CALM, FOG_SEVERE, SCENE_FOG, terrainMaterial, waterMaterial } from "./materials";
 import { clearLabels, LabelProjector, labelRef, setLabelAnchor } from "./labels";
 import { CANOPY_GREENS, canopyGeometry, h01, PALM_GREENS, palmGeometry, vegetationMaterial } from "./nature";
 import { heatRef, useScene } from "./sceneStore";
@@ -96,19 +96,33 @@ function World({ td, index }: { td: TerrainData; index: HeatIndex }) {
   const invalidate = useThree((s) => s.invalidate);
 
   const geometry = useMemo(() => buildGeometry(td, LITE ? 2 : 1), [td]);
-  const terrainMat = useMemo(() => terrainMaterial(td.habitatTex), [td]);
+  const scene = useThree((s) => s.scene);
 
-  // Heat cells texture (cols × rows), refilled for the selected day.
+  // Heat cells texture (cols × rows), refilled for the selected day. Shared by the sea (heat
+  // overlay) and the seafloor (reefs whiten as heat passes the bleaching thresholds).
   const heat = useMemo(() => {
     const tex = new THREE.DataTexture(new Uint8Array(index.cols * index.rows * 4), index.cols, index.rows, THREE.RGBAFormat);
     tex.magFilter = tex.minFilter = THREE.NearestFilter;
     tex.flipY = false;
     return tex;
   }, [index]);
-  const waterMat = useMemo(
-    () => waterMaterial(heat, td.meta.geo.uv_to_lonlat, { lat0: index.lat[0], lon0: index.lon[0], cell: index.cell_deg, cols: index.cols, rows: index.rows }),
-    [heat, td, index],
-  );
+  const gridInfo = useMemo(() => ({ lat0: index.lat[0], lon0: index.lon[0], cell: index.cell_deg, cols: index.cols, rows: index.rows }), [index]);
+  const terrainMat = useMemo(() => terrainMaterial(td.habitatTex, heat, td.meta.geo.uv_to_lonlat, gridInfo), [td, heat, gridInfo]);
+  const waterMat = useMemo(() => waterMaterial(heat, td.meta.geo.uv_to_lonlat, gridInfo), [heat, td, gridInfo]);
+  // The 5 km cells inside this scene (for the area's mean heat → mood and status line).
+  const areaCells = useMemo(() => {
+    const [lo, la] = td.meta.geo.uv_to_lonlat;
+    const ll = (u: number, v: number) => [lo[0] * u + lo[1] * v + lo[2], la[0] * u + la[1] * v + la[2]];
+    const pts = [ll(0, 0), ll(1, 0), ll(0, 1), ll(1, 1)];
+    const lons = pts.map((p) => p[0]), lats = pts.map((p) => p[1]);
+    const out: number[] = [];
+    for (let r = 0; r < index.rows; r++)
+      for (let c = 0; c < index.cols; c++) {
+        const lat = index.lat[0] - r * index.cell_deg, lon = index.lon[0] + c * index.cell_deg;
+        if (lon >= Math.min(...lons) && lon <= Math.max(...lons) && lat >= Math.min(...lats) && lat <= Math.max(...lats)) out.push(r * index.cols + c);
+      }
+    return out;
+  }, [td, index]);
   const gridRef = useRef<Uint8Array | null>(null);
 
   useEffect(() => {
@@ -141,6 +155,17 @@ function World({ td, index }: { td: TerrainData; index: HeatIndex }) {
       data[i * 4 + 3] = Math.min(255, Math.round((v / 120) * 255));
     }
     heat.needsUpdate = true;
+    // Mood: the scene's fog and background deepen toward a dark wine as the area's heat rises.
+    let sum = 0, cnt = 0;
+    for (const i of areaCells) {
+      const v = g[off + i];
+      if (v !== 255) (sum += v / 10), cnt++;
+    }
+    const mean = cnt ? sum / cnt : null;
+    useScene.setState({ areaDhw: mean });
+    const mood = mean === null ? 0 : Math.min(1, Math.max(0, (mean - 3) / 9));
+    SCENE_FOG.lerpColors(FOG_CALM, FOG_SEVERE, mood * mood * (3 - 2 * mood));
+    if (scene.background instanceof THREE.Color) scene.background.copy(SCENE_FOG);
     invalidate();
   }
 
@@ -152,6 +177,7 @@ function World({ td, index }: { td: TerrainData; index: HeatIndex }) {
   useEffect(() => {
     terrainMat.uniforms.uShowHabitat.value = layers.habitat ? 1 : 0;
     terrainMat.uniforms.uShowContours.value = layers.contours ? 1 : 0;
+    terrainMat.uniforms.uShowHeat.value = layers.heat ? 1 : 0;
     waterMat.uniforms.uShowHeat.value = layers.heat ? 1 : 0;
     invalidate();
   }, [layers, terrainMat, waterMat, invalidate]);

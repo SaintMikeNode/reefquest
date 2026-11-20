@@ -331,6 +331,14 @@ const PATTERN: Partial<Record<Species, string>> = {
   vase: `diffuseColor.rgb *= (gl_FrontFacing ? 1.0 : 0.5) * (0.88 + 0.22 * rqN(vLocal * 26.0));`,
 };
 
+/** Bleaching (0..1) of the reef around the boat on the selected date, set from the 5 km heat cell. */
+export const BLEACH = { value: 0 };
+/** How strongly each species shows bleaching: branching and pillar corals first, stony mounds next,
+ *  soft corals less; sponges and seagrass have no algae partners to lose (they don't bleach this way). */
+const BLEACH_SENS: Record<Species, number> = {
+  staghorn: 1, elkhorn: 1, pillar: 1, brain: 0.9, star: 0.85, fan: 0.35, rod: 0.3, barrel: 0, tube: 0, vase: 0, grass: 0,
+};
+
 /** Species that sway in the surge (bend grows with height). */
 const SWAY: Partial<Record<Species, number>> = { fan: 0.07, rod: 0.09, grass: 0.16 };
 
@@ -339,22 +347,30 @@ export function speciesMaterial(sp: Species, time: { value: number }): THREE.Mes
   const m = new THREE.MeshStandardMaterial({ color: "#ffffff", vertexColors: true, roughness: sp === "grass" ? 0.8 : 0.92, metalness: 0, side: twoSided ? THREE.DoubleSide : THREE.FrontSide });
   const pattern = PATTERN[sp] ?? "";
   const sway = SWAY[sp] ?? 0;
+  const sens = BLEACH_SENS[sp];
   m.onBeforeCompile = (sh) => {
     sh.uniforms.uTime = time;
+    sh.uniforms.uBleach = BLEACH;
     sh.vertexShader = sh.vertexShader
-      .replace("#include <common>", "#include <common>\nuniform float uTime;\nvarying vec3 vLocal;")
+      .replace("#include <common>", "#include <common>\nuniform float uTime;\nvarying vec3 vLocal;\nvarying vec3 vInst;")
       .replace(
         "#include <begin_vertex>",
         `#include <begin_vertex>
         vLocal = position;
+        vInst = instanceMatrix[3].xyz;
         ${sway ? `{ float ph = instanceMatrix[3].x * 0.37 + instanceMatrix[3].z * 0.23;
           float b = position.y * position.y;
           transformed.x += sin(uTime * 1.25 + ph) * ${sway.toFixed(3)} * b;
           transformed.z += cos(uTime * 0.9 + ph * 1.3) * ${(sway * 0.6).toFixed(3)} * b; }` : ""}`,
       );
     sh.fragmentShader = sh.fragmentShader
-      .replace("#include <common>", `#include <common>\nvarying vec3 vLocal;\n${NOISE}`)
-      .replace("#include <color_fragment>", `#include <color_fragment>\n${pattern}`)
+      .replace("#include <common>", `#include <common>\nvarying vec3 vLocal;\nvarying vec3 vInst;\nuniform float uBleach;\n${NOISE}`)
+      .replace(
+        "#include <color_fragment>",
+        `#include <color_fragment>\n${pattern}
+        ${sens > 0 ? `{ float b = uBleach * ${sens.toFixed(2)} * (0.7 + 0.3 * rqN(vLocal * 4.0 + vInst * 0.37));
+          diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.97, 0.96, 0.92), clamp(b, 0.0, 1.0)); }` : ""}`,
+      )
       // A little self-light keeps colors alive in the blue-green water (a stylization, like fill light).
       .replace("#include <emissivemap_fragment>", "#include <emissivemap_fragment>\n  totalEmissiveRadiance += diffuseColor.rgb * 0.16;");
   };
