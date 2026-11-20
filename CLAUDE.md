@@ -165,12 +165,11 @@ low-end Android phone.
 
 ## Hosting
 
-Live at https://reefquest.todosenlaweb.com: Worker `reefquest`, static assets only, via
-`cloudflare.config.ts` (SPA fallback, custom domain only, no workers.dev). Code is on GitHub at
-`saintmikenode/reefquest` (private, `main`). **Deployed by Workers Builds on push to `main`**
-("Deploy main": `npx tsc && npx cf build`, then `npx cf deploy --prebuilt`, `NODE_VERSION=24`). **A
-push to any other branch uploads a preview version** ("Deploy non-production branches":
-`npx cf workers versions create --prebuilt --preview-alias "$WORKERS_CI_BRANCH"`) with its own
-preview URL; production doesn't change. Check runs with `npx cf builds list`. **Never push unless
-Tulio says so in that moment.** Manual fallback from this Mac: `npm run build` (strips `._*` files)
-then `npx cf deploy --prebuilt`; plain `cf deploy` here would rebuild and could upload them.
+Live at https://reefquest.todosenlaweb.com: Worker `reefquest` with that custom domain, static
+assets via `cloudflare.config.ts` (SPA fallback). Code is on GitHub at `saintmikenode/reefquest`
+(private, `main`). First deployed manually on 2026-11-20 (Tulio asked to try it on his phone).
+**Workers Builds is not connected yet, so pushing does not deploy.** To deploy by hand, only when
+Tulio says to: `npm run build` (it strips the `._*` files macOS writes on this drive), then
+`npx cf deploy --prebuilt`. Connecting Workers Builds (see the workspace CLAUDE.md) would make every
+push to `main` deploy; do that only when Tulio asks. Never push or deploy unless Tulio says so in
+that moment.
