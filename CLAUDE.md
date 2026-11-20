@@ -105,13 +105,17 @@ in the boat.
 - `src/scenes/labels.tsx`: screen-space labels (one projector + plain DOM), used instead of drei
   `Html` (which threw removeChild errors on unmount with React 19).
 - `public/data/`: pipeline outputs (committed): `islands.json/.geojson`, `region.json` (GEBCO
-  contours + mainland coast), `heat/` (index, latest,
-  per-island daily series, `grid/<year>.bin`), `roatan/` (terrain.png, habitat.png, meta.json).
+  contours + mainland coast), `heat/` (index, latest, per-island daily series, `grid/<year>.bin`;
+  all 42 NOAA years, 1985 → 2026-11-18), and one folder per island (`roatan/`, `utila/`,
+  `guanaja/`, `cayos-cochinos/`: terrain.png, habitat.png, meta.json, `zones/` for boat tiles).
+  To refresh heat: `crw_download.py --all` (skips years already downloaded; PacIOOS is slow, ~3–6 min
+  a year) → `heat_products.py` → restart the dev server.
 - `pipeline/`: Python data scripts (see `pipeline/README.md`). Python env is `~/.venvs/reefquest`
   (internal disk; the exFAT drive breaks installs), managed with `uv`. Raw downloads go to
   `data/raw/` (git-ignored). Heat data comes from the PacIOOS ERDDAP (`dhw_5km`; CoastWatch
   redirects there). Earth Engine project: `reefquest`.
-- `docs/`: the handoff/spec and phase reports (`docs/phase0/REPORT.md`).
+- `docs/`: the handoff/spec and phase reports (`docs/phase0/REPORT.md`, `docs/phase1/REPORT.md`
+  with the boat, the two redesign passes and screenshots).
 
 ## Gotchas
 
@@ -121,11 +125,16 @@ in the boat.
 - The scene renders on demand: call `invalidate()` after anything that changes what's on screen.
 - The browser pane in the desktop app can throttle requestAnimationFrame, so 3D screenshots there
   may be black; check in a visible browser window.
+- Hot reload of shader or reef modules can leave instanced meshes empty (refs survive, new meshes
+  don't); reload the page before judging a 3D change.
+- Content must match the data: the full record shows 2024 hotter than 2023 around Roatán, Utila
+  and Cayos Cochinos (2023 for Guanaja). Re-check lesson and story wording when heat data changes.
 
 ## Hosting
 
-Planned: Worker `reefquest`, custom domain `reefquest.todosenlaweb.com`, repo
-`saintmikenode/reefquest`, static assets via `cloudflare.config.ts` (SPA fallback). **Not deployed:
-the Worker doesn't exist yet and Workers Builds isn't connected.** Follow the workspace CLAUDE.md
+Planned: Worker `reefquest`, custom domain `reefquest.todosenlaweb.com`, static assets via
+`cloudflare.config.ts` (SPA fallback). Code is on GitHub at `saintmikenode/reefquest` (private,
+`main`). **Not deployed: the Worker doesn't exist yet and Workers Builds isn't connected, so pushing
+doesn't deploy yet.** Follow the workspace CLAUDE.md
 for the first deploy and connecting the build trigger, and only when Tulio says to deploy. Never push
 unless Tulio says so in that moment; once Workers Builds is connected, pushing to `main` deploys.
