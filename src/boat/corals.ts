@@ -118,8 +118,11 @@ function profileRadius(profile: [number, number][], y: number) {
 
 // ---------- Species shapes (about 1 m across, base at y = 0) ----------
 
-function brain() {
-  const g = new THREE.IcosahedronGeometry(0.5, 2);
+// Each builder takes `lo`: a simplified shape (about a quarter of the triangles) for distant colonies
+// and for phones.
+
+function brain(lo: boolean) {
+  const g = new THREE.IcosahedronGeometry(0.5, lo ? 1 : 2);
   const p = g.attributes.position as THREE.BufferAttribute;
   for (let i = 0; i < p.count; i++) {
     const x = p.getX(i), y = p.getY(i), z = p.getZ(i);
@@ -129,16 +132,16 @@ function brain() {
   return shade(clean(g), (_x, y) => 0.62 + 0.7 * Math.max(0, y));
 }
 
-function star() {
+function star(lo: boolean) {
   const parts: THREE.BufferGeometry[] = [];
   const lobes = [
     [0, 0, 0, 0.52],
     [0.42, 0, 0.1, 0.36],
     [-0.3, 0, 0.32, 0.4],
     [-0.1, 0.05, -0.4, 0.34],
-  ];
+  ].slice(0, lo ? 3 : 4);
   for (const [x, y, z, r] of lobes) {
-    const s = new THREE.IcosahedronGeometry(r, 1);
+    const s = new THREE.IcosahedronGeometry(r, lo ? 0 : 1);
     s.scale(1, 0.82, 1);
     s.translate(x, y + r * 0.55, z);
     parts.push(s);
@@ -146,17 +149,19 @@ function star() {
   return shade(merge(parts), (_x, y) => 0.58 + 0.55 * Math.min(1, y / 0.8));
 }
 
-function elkhorn() {
+function elkhorn(lo: boolean) {
   const parts: THREE.BufferGeometry[] = [];
   const base = new THREE.Vector3(0, 0, 0);
-  parts.push(limb(base, new THREE.Vector3(0, 1, 0), 0.32, 0.17, 0.13, 6, 0.5, 0.7));
+  const seg = lo ? 4 : 6;
+  parts.push(limb(base, new THREE.Vector3(0, 1, 0), 0.32, 0.17, 0.13, seg, 0.5, 0.7));
   const top = new THREE.Vector3(0, 0.3, 0);
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < (lo ? 4 : 5); i++) {
     const ang = i * 1.26 + hash(i * 7) * 0.5;
     const tilt = 0.75 + hash(i * 3) * 0.45; // from vertical: broad, spreading paddles
     const dir = new THREE.Vector3(Math.sin(tilt) * Math.cos(ang), Math.cos(tilt), Math.sin(tilt) * Math.sin(ang));
     const len = 0.6 + hash(i * 11) * 0.35;
-    parts.push(limb(top, dir, len, 0.13, 0.06, 6, 0.7, 1.25, 2.6));
+    parts.push(limb(top, dir, len, 0.13, 0.06, seg, 0.7, 1.25, 2.6));
+    if (lo) continue;
     // A fork near the end, angled up and out.
     const mid = top.clone().addScaledVector(dir, len * 0.62);
     const d2 = dir.clone().applyAxisAngle(UP, 0.55 * (i % 2 ? 1 : -1)).add(new THREE.Vector3(0, 0.25, 0)).normalize();
@@ -165,11 +170,11 @@ function elkhorn() {
   return merge(parts);
 }
 
-function staghorn() {
+function staghorn(lo: boolean) {
   const parts: THREE.BufferGeometry[] = [];
   const grow = (a: THREE.Vector3, dir: THREE.Vector3, len: number, r: number, depth: number, s: number) => {
     const tip = depth === 0;
-    parts.push(limb(a, dir, len, r, r * (tip ? 0.55 : 0.75), 5, 0.62 + (2 - depth) * 0.18, tip ? 1.45 : 0.62 + (3 - depth) * 0.18));
+    parts.push(limb(a, dir, len, r, r * (tip ? 0.55 : 0.75), lo ? 3 : 5, 0.62 + (2 - depth) * 0.18, tip ? 1.45 : 0.62 + (3 - depth) * 0.18));
     if (depth === 0) return;
     const end = a.clone().addScaledVector(dir, len);
     const n = depth === 2 ? 3 : 2;
@@ -182,12 +187,12 @@ function staghorn() {
   };
   for (let i = 0; i < 2; i++) {
     const ang = i * 3.3 + 0.4;
-    grow(new THREE.Vector3(Math.cos(ang) * 0.08, 0, Math.sin(ang) * 0.08), new THREE.Vector3(Math.cos(ang) * 0.35, 1, Math.sin(ang) * 0.35).normalize(), 0.34, 0.075, 2, i + 1);
+    grow(new THREE.Vector3(Math.cos(ang) * 0.08, 0, Math.sin(ang) * 0.08), new THREE.Vector3(Math.cos(ang) * 0.35, 1, Math.sin(ang) * 0.35).normalize(), lo ? 0.45 : 0.34, 0.075, lo ? 1 : 2, i + 1);
   }
   return merge(parts);
 }
 
-function pillar() {
+function pillar(lo: boolean) {
   const parts: THREE.BufferGeometry[] = [];
   const cols = [
     [0, 0, 0.19, 1.7],
@@ -195,11 +200,11 @@ function pillar() {
     [-0.28, 0.22, 0.16, 1.4],
     [0.05, -0.36, 0.14, 0.9],
     [-0.3, -0.25, 0.13, 0.7],
-  ];
+  ].slice(0, lo ? 3 : 5);
   for (const [x, z, r, h] of cols) {
-    const c = new THREE.CylinderGeometry(r * 0.92, r, h, 9, 4, true);
+    const c = new THREE.CylinderGeometry(r * 0.92, r, h, lo ? 6 : 9, lo ? 1 : 4, true);
     c.translate(0, h / 2, 0);
-    const cap = new THREE.SphereGeometry(r * 0.92, 9, 4, 0, Math.PI * 2, 0, Math.PI / 2);
+    const cap = new THREE.SphereGeometry(r * 0.92, lo ? 6 : 9, lo ? 2 : 4, 0, Math.PI * 2, 0, Math.PI / 2);
     cap.translate(0, h, 0);
     for (const part of [c, cap]) {
       // Gently wavy columns (displaced before normals are computed, so they stay smooth).
@@ -215,23 +220,27 @@ function pillar() {
   return shade(merge(parts), (_x, y) => 0.6 + 0.35 * Math.min(1, y / 1.7));
 }
 
-function fan() {
+function fan(lo: boolean) {
   // A flat blade (lattice cut out in the shader) on a short stalk, facing the current.
-  const blade = new THREE.PlaneGeometry(1.4, 1.15, 7, 6);
+  const blade = lo ? new THREE.PlaneGeometry(1.4, 1.15, 2, 3) : new THREE.PlaneGeometry(1.4, 1.15, 7, 6);
   blade.translate(0, 0.72, 0);
-  const stalk = new THREE.CylinderGeometry(0.025, 0.04, 0.2, 4);
+  const stalk = new THREE.CylinderGeometry(0.025, 0.04, 0.2, lo ? 3 : 4, 1, lo);
   stalk.translate(0, 0.1, 0);
   return shade(merge([blade, stalk]), (_x, y) => 0.75 + 0.35 * Math.min(1, y / 1.2));
 }
 
-function rod() {
+function rod(lo: boolean) {
   const parts: THREE.BufferGeometry[] = [];
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < (lo ? 4 : 6); i++) {
     const ang = i * 1.05 + hash(i * 5) * 0.4;
     const lean = 0.12 + hash(i * 9) * 0.32;
     const dir = new THREE.Vector3(Math.sin(lean) * Math.cos(ang), Math.cos(lean), Math.sin(lean) * Math.sin(ang));
     const len = 0.5 + hash(i * 13) * 0.35;
     const a = new THREE.Vector3(Math.cos(ang) * 0.05, 0, Math.sin(ang) * 0.05);
+    if (lo) {
+      parts.push(limb(a, dir, len * 1.5, 0.04, 0.02, 3, 0.6, 1.25));
+      continue;
+    }
     parts.push(limb(a, dir, len, 0.035, 0.028, 4, 0.6, 0.95));
     const end = a.clone().addScaledVector(dir, len);
     for (const s of [-1, 1]) {
@@ -242,34 +251,38 @@ function rod() {
   return merge(parts);
 }
 
-function barrel() {
+function barrel(lo: boolean) {
+  if (lo) return lathe([[0.3, 0], [0.52, 0.55], [0.6, 1.02], [0.47, 0.95], [0.24, 0.3], [0.02, 0.22]], 8);
   const prof: [number, number][] = [
     [0.3, 0], [0.42, 0.18], [0.52, 0.55], [0.58, 0.92], [0.6, 1.02], [0.52, 1.05], [0.47, 0.95], [0.4, 0.6], [0.24, 0.3], [0.02, 0.22],
   ];
   return lathe(prof, 14, 14, 0.06);
 }
 
-function tube() {
+function tube(lo: boolean) {
   const parts: THREE.BufferGeometry[] = [];
   const tubes = [
     [0, 0, 1.0], [0.2, 0.06, 0.75], [-0.14, 0.17, 0.85], [0.04, -0.2, 0.6],
-  ];
+  ].slice(0, lo ? 3 : 4);
   for (const [x, z, h] of tubes) {
-    const t = lathe([[0.085, 0], [0.105, h], [0.08, h * 1.005], [0.06, h * 0.55], [0.02, h * 0.12]], 8);
+    const t = lo
+      ? lathe([[0.085, 0], [0.105, h], [0.07, h * 0.98], [0.02, h * 0.4]], 5)
+      : lathe([[0.085, 0], [0.105, h], [0.08, h * 1.005], [0.06, h * 0.55], [0.02, h * 0.12]], 8);
     t.translate(x, 0, z);
     parts.push(t);
   }
   return mergeGeometries(parts)!;
 }
 
-function vase() {
+function vase(lo: boolean) {
+  if (lo) return lathe([[0.07, 0], [0.27, 0.55], [0.42, 0.82], [0.24, 0.56], [0.02, 0.2]], 7);
   return lathe([[0.07, 0], [0.13, 0.22], [0.27, 0.55], [0.4, 0.78], [0.42, 0.82], [0.37, 0.8], [0.24, 0.56], [0.1, 0.28], [0.02, 0.2]], 12, 6, 0.08);
 }
 
-function grass() {
+function grass(lo: boolean) {
   const parts: THREE.BufferGeometry[] = [];
-  for (let b = 0; b < 9; b++) {
-    const g = new THREE.PlaneGeometry(0.06, 1, 1, 4);
+  for (let b = 0; b < (lo ? 5 : 9); b++) {
+    const g = new THREE.PlaneGeometry(lo ? 0.09 : 0.06, 1, 1, lo ? 2 : 4);
     const p = g.attributes.position as THREE.BufferAttribute;
     for (let i = 0; i < p.count; i++) {
       const y = p.getY(i) + 0.5;
@@ -283,8 +296,11 @@ function grass() {
   return shade(merge(parts), (_x, y) => 0.5 + 0.7 * Math.min(1, y / 1.1));
 }
 
-export function speciesGeometries(): Record<Species, THREE.BufferGeometry> {
-  return { brain: brain(), star: star(), elkhorn: elkhorn(), staghorn: staghorn(), pillar: pillar(), fan: fan(), rod: rod(), barrel: barrel(), tube: tube(), vase: vase(), grass: grass() };
+/** Shapes per species; `lo` = simplified. Vertices shared between triangles are indexed (less vertex work). */
+export function speciesGeometries(lo = false): Record<Species, THREE.BufferGeometry> {
+  const g = { brain: brain(lo), star: star(lo), elkhorn: elkhorn(lo), staghorn: staghorn(lo), pillar: pillar(lo), fan: fan(lo), rod: rod(lo), barrel: barrel(lo), tube: tube(lo), vase: vase(lo), grass: grass(lo) };
+  for (const sp of SPECIES) g[sp] = mergeVertices(g[sp], 1e-4);
+  return g;
 }
 
 // ---------- Materials ----------
@@ -342,9 +358,11 @@ const BLEACH_SENS: Record<Species, number> = {
 /** Species that sway in the surge (bend grows with height). */
 const SWAY: Partial<Record<Species, number>> = { fan: 0.07, rod: 0.09, grass: 0.16 };
 
-export function speciesMaterial(sp: Species, time: { value: number }): THREE.MeshStandardMaterial {
+export function speciesMaterial(sp: Species, time: { value: number }): THREE.MeshLambertMaterial {
   const twoSided = sp === "fan" || sp === "grass" || sp === "barrel" || sp === "tube" || sp === "vase";
-  const m = new THREE.MeshStandardMaterial({ color: "#ffffff", vertexColors: true, roughness: sp === "grass" ? 0.8 : 0.92, metalness: 0, side: twoSided ? THREE.DoubleSide : THREE.FrontSide });
+  // Lambert (diffuse only): these surfaces are matte, and it costs far less per pixel than a
+  // physically based material.
+  const m = new THREE.MeshLambertMaterial({ color: "#ffffff", vertexColors: true, side: twoSided ? THREE.DoubleSide : THREE.FrontSide });
   const pattern = PATTERN[sp] ?? "";
   const sway = SWAY[sp] ?? 0;
   const sens = BLEACH_SENS[sp];
@@ -380,47 +398,76 @@ export function speciesMaterial(sp: Species, time: { value: number }): THREE.Mes
 
 // ---------- Placement ----------
 
-/** Reef cells: flat array of x, seafloor height, z, seed, habitat class (stride 5). */
-export function reefCells(z: { sizeX: number; sizeZ: number; habW: number; habH: number; habitat: ArrayLike<number>; w: number; h: number; heights: ArrayLike<number> }): Float32Array {
-  const out: number[] = [];
+/** Reef cells (x, seafloor height, z, seed, habitat class; stride 5), grouped in BUCKET-meter squares
+ *  so a placement only visits the cells near the boat. */
+export interface ReefCells {
+  data: Float32Array;
+  start: Uint32Array; // first cell of each bucket (and one past the end)
+  nx: number;
+  nz: number;
+  sizeX: number;
+  sizeZ: number;
+}
+const BUCKET = 50;
+
+export function reefCells(z: { sizeX: number; sizeZ: number; habW: number; habH: number; habitat: ArrayLike<number>; w: number; h: number; heights: ArrayLike<number> }): ReefCells {
+  const nx = Math.ceil(z.sizeX / BUCKET), nz = Math.ceil(z.sizeZ / BUCKET);
   const cell = z.sizeX / z.habW;
+  const bucketOf = (x: number, zz: number) => Math.min(nz - 1, Math.floor((zz + z.sizeZ / 2) / BUCKET)) * nx + Math.min(nx - 1, Math.floor((x + z.sizeX / 2) / BUCKET));
+  const use = (i: number, j: number): number => {
+    const cls = z.habitat[(j * z.habW + i) * 4];
+    if (cls < 12 || cls > 18 || cls === 16 || cls === 17) return NaN;
+    const hi = Math.min(z.w - 1, Math.floor(((i + 0.5) / z.habW) * z.w));
+    const hj = Math.min(z.h - 1, Math.floor(((j + 0.5) / z.habH) * z.h));
+    const h = z.heights[hj * z.w + hi];
+    return h > -0.7 || h < -30 ? NaN : h;
+  };
+  // Two passes: count per bucket, then fill each bucket's slice.
+  const start = new Uint32Array(nx * nz + 1);
+  for (let j = 0; j < z.habH; j++)
+    for (let i = 0; i < z.habW; i++) if (!Number.isNaN(use(i, j))) start[bucketOf((i + 0.5) * cell - z.sizeX / 2, (j + 0.5) * cell - z.sizeZ / 2) + 1]++;
+  for (let b = 0; b < nx * nz; b++) start[b + 1] += start[b];
+  const fill = start.slice(0, nx * nz);
+  const data = new Float32Array(start[nx * nz] * 5);
   for (let j = 0; j < z.habH; j++)
     for (let i = 0; i < z.habW; i++) {
-      const k = j * z.habW + i;
-      const cls = z.habitat[k * 4];
-      if (cls < 12 || cls > 18 || cls === 16 || cls === 17) continue;
-      const hi = Math.min(z.w - 1, Math.floor(((i + 0.5) / z.habW) * z.w));
-      const hj = Math.min(z.h - 1, Math.floor(((j + 0.5) / z.habH) * z.h));
-      const h = z.heights[hj * z.w + hi];
-      if (h > -0.7 || h < -30) continue;
-      out.push((i + 0.5) * cell - z.sizeX / 2, h, (j + 0.5) * cell - z.sizeZ / 2, hash(k), cls);
+      const h = use(i, j);
+      if (Number.isNaN(h)) continue;
+      const x = (i + 0.5) * cell - z.sizeX / 2, zz = (j + 0.5) * cell - z.sizeZ / 2;
+      const k = fill[bucketOf(x, zz)]++ * 5;
+      data[k] = x;
+      data[k + 1] = h;
+      data[k + 2] = zz;
+      data[k + 3] = hash(j * z.habW + i);
+      data[k + 4] = z.habitat[(j * z.habW + i) * 4];
     }
-  return new Float32Array(out);
+  return { data, start, nx, nz, sizeX: z.sizeX, sizeZ: z.sizeZ };
 }
 
+// Species mix by habitat and depth: [species, cumulative share]. Illustrative ecology: elkhorn on
+// shallow reef crests, staghorn and star/brain corals on the fore reef, sponges and gorgonians
+// deeper and on hard bottom.
 type Mix = [Species, number][];
-// Species mix by habitat and depth (weights). Illustrative ecology: elkhorn on shallow reef crests,
-// staghorn and star/brain corals on the fore reef, sponges and gorgonians deeper and on hard bottom.
-function mixFor(cls: number, depth: number): Mix {
-  if (cls === 15) {
-    if (depth < 4) return [["elkhorn", 26], ["brain", 18], ["star", 12], ["fan", 16], ["rod", 14], ["tube", 5], ["pillar", 2]];
-    if (depth < 12) return [["staghorn", 16], ["brain", 16], ["star", 22], ["pillar", 4], ["fan", 12], ["rod", 13], ["barrel", 5], ["tube", 7], ["vase", 5]];
-    return [["star", 24], ["brain", 10], ["staghorn", 3], ["fan", 14], ["rod", 14], ["barrel", 14], ["tube", 11], ["vase", 10]];
-  }
-  if (cls === 13) return [["fan", 24], ["rod", 30], ["tube", 14], ["brain", 8], ["star", 10], ["barrel", 8], ["vase", 6]];
-  if (cls === 14) return [["grass", 100]];
-  if (cls === 12) return [["rod", 40], ["tube", 25], ["star", 15], ["fan", 20]];
-  return [["grass", 60], ["rod", 40]]; // microalgal mats: sparse
-}
-
-function pick(mix: Mix, r: number): Species {
-  const total = mix.reduce((s, [, w]) => s + w, 0);
+const mix = (m: [Species, number][]): Mix => {
+  const total = m.reduce((s, [, w]) => s + w, 0);
   let acc = 0;
-  for (const [sp, w] of mix) {
-    acc += w / total;
-    if (r < acc) return sp;
-  }
-  return mix[mix.length - 1][0];
+  return m.map(([sp, w]) => [sp, (acc += w / total)]);
+};
+const MIX = {
+  crest: mix([["elkhorn", 26], ["brain", 18], ["star", 12], ["fan", 16], ["rod", 14], ["tube", 5], ["pillar", 2]]),
+  fore: mix([["staghorn", 16], ["brain", 16], ["star", 22], ["pillar", 4], ["fan", 12], ["rod", 13], ["barrel", 5], ["tube", 7], ["vase", 5]]),
+  deep: mix([["star", 24], ["brain", 10], ["staghorn", 3], ["fan", 14], ["rod", 14], ["barrel", 14], ["tube", 11], ["vase", 10]]),
+  rock: mix([["fan", 24], ["rod", 30], ["tube", 14], ["brain", 8], ["star", 10], ["barrel", 8], ["vase", 6]]),
+  grass: mix([["grass", 100]]),
+  rubble: mix([["rod", 40], ["tube", 25], ["star", 15], ["fan", 20]]),
+  mats: mix([["grass", 60], ["rod", 40]]),
+};
+const mixFor = (cls: number, depth: number): Mix =>
+  cls === 15 ? (depth < 4 ? MIX.crest : depth < 12 ? MIX.fore : MIX.deep) : cls === 13 ? MIX.rock : cls === 14 ? MIX.grass : cls === 12 ? MIX.rubble : MIX.mats;
+
+function pickSpecies(m: Mix, r: number): Species {
+  for (let i = 0; i < m.length; i++) if (r < m[i][1]) return m[i][0];
+  return m[m.length - 1][0];
 }
 
 /** How many props a cell gets at distance `d` from the focus (dense near, sparse far). */
@@ -432,29 +479,36 @@ function countFor(cls: number, d: number, dense: number, seed: number): number {
   return Math.floor(n) + (seed < n - Math.floor(n) ? 1 : 0);
 }
 
-export interface Placement {
-  d2: number;
-  sp: Species;
-  x: number;
-  h: number;
-  z: number;
-  seed: number;
-}
+const order: { b: number; d: number }[] = [];
 
-/** Props around (fx, fz): many per 5 m reef cell within `dense` m, then thinning out to `radius`. */
-export function placeAround(cells: Float32Array, fx: number, fz: number, radius: number, dense: number, visit: (p: Placement) => void) {
+/**
+ * Props around (fx, fz): many per 5 m reef cell within `dense` m, then thinning out to `radius`.
+ * Buckets are visited nearest first, so a caller that stops accepting a species at its budget keeps
+ * the colonies closest to the boat. No objects are allocated per prop.
+ */
+export function placeAround(c: ReefCells, fx: number, fz: number, radius: number, dense: number, visit: (sp: Species, x: number, z: number, seed: number, d2: number) => void) {
   const r2 = radius * radius;
-  for (let i = 0; i < cells.length; i += 5) {
-    const dx = cells[i] - fx, dz = cells[i + 2] - fz;
-    const d2 = dx * dx + dz * dz;
-    if (d2 > r2) continue;
-    const seed = cells[i + 3], cls = cells[i + 4], h = cells[i + 1];
-    const n = countFor(cls, Math.sqrt(d2), dense, seed);
-    const mix = mixFor(cls, -h);
-    for (let k = 0; k < n; k++) {
-      const s = hash(seed * 7919 + k * 31.7);
-      const sp = pick(mix, hash(s * 3571 + 0.37));
-      visit({ d2, sp, x: cells[i] + (hash(s * 101) - 0.5) * 4.6, h, z: cells[i + 2] + (hash(s * 211) - 0.5) * 4.6, seed: s });
+  const i0 = Math.max(0, Math.floor((fx - radius + c.sizeX / 2) / BUCKET)), i1 = Math.min(c.nx - 1, Math.floor((fx + radius + c.sizeX / 2) / BUCKET));
+  const j0 = Math.max(0, Math.floor((fz - radius + c.sizeZ / 2) / BUCKET)), j1 = Math.min(c.nz - 1, Math.floor((fz + radius + c.sizeZ / 2) / BUCKET));
+  order.length = 0;
+  for (let j = j0; j <= j1; j++)
+    for (let i = i0; i <= i1; i++) {
+      const b = j * c.nx + i;
+      if (c.start[b + 1] > c.start[b]) order.push({ b, d: Math.hypot((i + 0.5) * BUCKET - c.sizeX / 2 - fx, (j + 0.5) * BUCKET - c.sizeZ / 2 - fz) });
     }
-  }
+  order.sort((p, q) => p.d - q.d);
+  const cells = c.data;
+  for (const { b } of order)
+    for (let i = c.start[b] * 5, end = c.start[b + 1] * 5; i < end; i += 5) {
+      const dx = cells[i] - fx, dz = cells[i + 2] - fz;
+      const d2 = dx * dx + dz * dz;
+      if (d2 > r2) continue;
+      const seed = cells[i + 3], cls = cells[i + 4];
+      const n = countFor(cls, Math.sqrt(d2), dense, seed);
+      const m = mixFor(cls, -cells[i + 1]);
+      for (let k = 0; k < n; k++) {
+        const s = hash(seed * 7919 + k * 31.7);
+        visit(pickSpecies(m, hash(s * 3571 + 0.37)), cells[i] + (hash(s * 101) - 0.5) * 4.6, cells[i + 2] + (hash(s * 211) - 0.5) * 4.6, s, d2);
+      }
+    }
 }

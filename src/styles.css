@@ -269,6 +269,7 @@ ol.caveats li { margin: 0 0 12px; padding-left: 4px; }
 .hbtn { display: inline-flex; align-items: center; gap: 7px; background: var(--glass); border: 1px solid var(--hair-2); color: var(--hud-text); border-radius: 4px; padding: 7px 11px; font-size: 14px; line-height: 1.1; text-decoration: none;
   -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
 .lite .hbtn { -webkit-backdrop-filter: none; backdrop-filter: none; background: var(--glass-solid); }
+.lite .back-btn { -webkit-backdrop-filter: none; backdrop-filter: none; background: rgba(4, 16, 29, 0.74); }
 .hbtn:hover { border-color: rgba(255, 255, 255, 0.45); color: var(--white); }
 .hbtn.primary { background: var(--ink); color: #04101d; border-color: var(--ink); font-weight: 650; }
 .hbtn.primary:hover { background: var(--white); color: #04101d; }

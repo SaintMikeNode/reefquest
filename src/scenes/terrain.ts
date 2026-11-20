@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { B, blocksOf, gridNormals, lodIndices } from "../lib/gridLod";
 import type { SceneMeta } from "../lib/data";
 
 // Scene units: 1 unit = 100 m horizontally. Vertical: relief ×4; depths beyond 40 m are compressed
@@ -118,41 +119,64 @@ export function uvToLonLat(td: TerrainData, u: number, v: number) {
 }
 
 /** Grid mesh with displaced heights. `stride` skips heightmap samples (2 = quarter the vertices). */
-export function buildGeometry(td: TerrainData, stride: number): THREE.BufferGeometry {
-  const nx = Math.floor((td.w - 1) / stride) + 1;
-  const nz = Math.floor((td.h - 1) / stride) + 1;
-  const pos = new Float32Array(nx * nz * 3);
-  const uv = new Float32Array(nx * nz * 2);
-  const hm = new Float32Array(nx * nz);
-  for (let j = 0; j < nz; j++) {
-    for (let i = 0; i < nx; i++) {
-      const k = j * nx + i;
-      const u = (i * stride) / (td.w - 1);
-      const v = (j * stride) / (td.h - 1);
-      const h = td.heights[j * stride * td.w + i * stride];
+/**
+ * Terrain mesh with level of detail: land and the reef shelf (shallower than 45 m, plus a margin)
+ * use cells of `fine` grid steps; deep open water, most of the scene, uses 4-step cells.
+ * Only the vertices actually used are uploaded.
+ */
+export function buildGeometry(td: TerrainData, fine: 1 | 2): THREE.BufferGeometry {
+  const { w, h } = td;
+  const bw = blocksOf(w), bh = blocksOf(h);
+  const shallow = new Uint8Array(bw * bh);
+  for (let bj = 0; bj < bh; bj++)
+    for (let bi = 0; bi < bw; bi++) {
+      const x1 = Math.min(bi * B + B, w - 1), y1 = Math.min(bj * B + B, h - 1);
+      scan: for (let y = bj * B; y <= y1; y++)
+        for (let x = bi * B; x <= x1; x++)
+          if (td.heights[y * w + x] > -45) {
+            shallow[bj * bw + bi] = 1;
+            break scan;
+          }
+    }
+  const level = (bi: number, bj: number) => {
+    for (let dj = -1; dj <= 1; dj++)
+      for (let di = -1; di <= 1; di++) {
+        const x = bi + di, y = bj + dj;
+        if (x >= 0 && y >= 0 && x < bw && y < bh && shallow[y * bw + x]) return fine;
+      }
+    return B;
+  };
+  const { index, count } = lodIndices(w, h, level);
+  const normals = gridNormals(w, h, (k) => displayY(td.heights[k]), td.sizeX / (w - 1), td.sizeZ / (h - 1), fine);
+
+  // Compact: keep only referenced vertices.
+  const map = new Int32Array(w * h).fill(-1);
+  let n = 0;
+  for (let i = 0; i < count; i++) {
+    const v = index[i];
+    if (map[v] < 0) map[v] = n++;
+    index[i] = map[v];
+  }
+  const pos = new Float32Array(n * 3), uv = new Float32Array(n * 2), hm = new Float32Array(n), nor = new Float32Array(n * 3);
+  for (let j = 0; j < h; j++)
+    for (let i = 0; i < w; i++) {
+      const src = j * w + i, k = map[src];
+      if (k < 0) continue;
+      const u = i / (w - 1), v = j / (h - 1), ht = td.heights[src];
       pos[k * 3] = (u - 0.5) * td.sizeX;
-      pos[k * 3 + 1] = displayY(h);
+      pos[k * 3 + 1] = displayY(ht);
       pos[k * 3 + 2] = (v - 0.5) * td.sizeZ;
       uv[k * 2] = u;
       uv[k * 2 + 1] = v;
-      hm[k] = h;
+      hm[k] = ht;
+      nor.set(normals.subarray(src * 3, src * 3 + 3), k * 3);
     }
-  }
-  const idx = new Uint32Array((nx - 1) * (nz - 1) * 6);
-  let p = 0;
-  for (let j = 0; j < nz - 1; j++) {
-    for (let i = 0; i < nx - 1; i++) {
-      const a = j * nx + i, b = a + 1, c = a + nx, d = c + 1;
-      idx[p++] = a; idx[p++] = c; idx[p++] = b;
-      idx[p++] = b; idx[p++] = c; idx[p++] = d;
-    }
-  }
   const g = new THREE.BufferGeometry();
   g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
   g.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
   g.setAttribute("aH", new THREE.BufferAttribute(hm, 1));
-  g.setIndex(new THREE.BufferAttribute(idx, 1));
-  g.computeVertexNormals();
+  g.setAttribute("normal", new THREE.BufferAttribute(nor, 3));
+  g.setIndex(new THREE.BufferAttribute(n > 65535 ? index.slice(0, count) : Uint16Array.from(index.subarray(0, count)), 1));
   g.computeBoundingSphere();
   return g;
 }

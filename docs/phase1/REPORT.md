@@ -162,6 +162,30 @@ Elena** and **East end · Pelican Point**. All use the Atlas's satellite bathyme
 reef on the east end) and cost 120–150 KB each, loaded only when entered. The boat now starts at
 the reef spot closest to the chosen place anywhere in the area (one north-shore center is on land).
 
+## Phone performance pass
+
+The 3D views were far too heavy for phones: 1.5 million triangles per frame on the island and
+2.2 million in the boat, with most Android phones (8 cores, 6 GB+) getting full desktop quality.
+
+| View | Before | Desktop now | Phone now | Low-end phone now |
+| --- | --- | --- | --- | --- |
+| Island | 1,470k | 474k | 157k | 132k |
+| Boat | 2,250k | 916k | 269k | 174k |
+| Underwater | 2,250k | 333k | 142k | 86k |
+
+- **Three quality tiers** (low-end phone, phone/tablet, desktop) instead of one "lite" switch;
+  iPhones are no longer forced to the lowest tier.
+- **Resolution adapts to the device**: if frames stay slow the 3D resolution steps down (the
+  HUD stays sharp); tested by simulating slow frames (1.0 → 0.72).
+- **Detail where you look**: open deep water uses a sixteenth of the triangles; the boat's
+  seafloor is detailed only near the boat; underwater only what the water lets you see is drawn.
+- **Reef and trees**: simplified shapes at a distance and on phones, cheaper materials, and reef
+  placement that no longer stalls when the boat moves.
+- **Phones also get**: no blur behind panels, 60 fps cap on 90/120 Hz screens (cooler, longer
+  battery), island redrawn only when something changes.
+- Looks the same on desktop. **Not yet tested on a real phone**: these are measured triangle
+  counts and a simulated slow device, not field results.
+
 ## Size and performance
 
 | What | Download (compressed) |
@@ -170,8 +194,8 @@ the reef spot closest to the chosen place anywhere in the area (one north-shore 
 | Opening Roatán in 3D (3D engine + terrain + habitat + heat data) | ~1.3 MB more |
 | Each extra year on the timeline | ~30 KB |
 
-Well under the 5 MB budget. Phones with ≤ 6 cores or ≤ 4 GB memory get "lite" mode (quarter
-of the mesh vertices, no caustic animation, lower resolution); add `?lite` to any URL to try it.
+Well under the 5 MB budget. Phones get lighter 3D automatically (see "Phone performance pass");
+add `?lite` or `?phone` to any URL to try those modes on a computer.
 The scene only redraws when something changes, which saves battery.
 
 ## Facts checked overnight (with sources in the app)

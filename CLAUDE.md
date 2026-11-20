@@ -68,8 +68,9 @@ place name gives NOAA's alert wording. All of it follows the selected date and i
 ## Layout
 
 - `src/lib/`: `islands.ts` (which islands have a 3D scene), `data.ts` (loaders for `/data/*`, cached), `alert.ts` (CRW alert levels from DHW and
-  the color ramp), `router.ts`, `device.ts` (`LITE` mode for weak phones: half-resolution mesh, DPR 1,
-  no animated caustics; force with `?lite`).
+  the color ramp), `router.ts`, `device.ts` (quality tiers: 0 lite = low-end phones/old PCs, 1 phone = other
+  phones and tablets, 2 full = desktops; `pick(lite, phone, full)` chooses budgets; force a tier with
+  `?lite`, `?phone`, `?full`), `gridLod.ts` (level-of-detail triangle indices for heightfields).
 - `src/i18n/`: `es.json`, `en.json`, `useT()` / `useL()` (picks `{es, en}` pairs) / `useLang`
   (localStorage `rq-lang`; first visit is Spanish unless the browser prefers English).
 - `src/content/`: long-form bilingual content with sources: `sites.ts` (dive-site pins and their
@@ -126,6 +127,27 @@ place name gives NOAA's alert wording. All of it follows the selected date and i
 - `docs/`: the handoff/spec and phase reports (`docs/phase0/REPORT.md`, `docs/phase1/REPORT.md`
   with the boat, the two redesign passes and screenshots).
 
+## Performance (phones first)
+
+Budgets measured with `window.__rqGl.info.render` (dev only), Roatán / West End, triangles per frame:
+
+| View | Before | Full | Phone | Lite |
+| --- | --- | --- | --- | --- |
+| Island | 1,470k | 474k | 157k | 132k |
+| Boat | 2,250k | 916k | 269k | 174k |
+| Underwater | 2,250k | 333k | 142k | 86k |
+
+How: island terrain uses 4-step cells over deep water and fine cells on land and the shelf
+(`buildGeometry`); the boat seafloor is full detail only near the boat (`ZoneLod`, index buffer
+rebuilt every 50 m) and underwater nothing beyond ~170 m is drawn; corals have detailed and simplified
+meshes (`speciesGeometries(lo)`), placed nearest-first from a 50 m bucket grid with no per-prop
+allocations, and underwater only within visibility; vegetation and reef use Lambert materials;
+phones get 2-octave noise, no backdrop blur, no MSAA, HUD telemetry at 6 Hz, and redraw the island
+only on change. `AdaptiveQuality` lowers canvas resolution when frames stay above ~29 ms (and never
+climbs back to a level that failed); `FrameCap` holds the boat at 60 fps on 90/120 Hz phones.
+Keep new 3D features inside these budgets and check all three tiers. Not yet verified on a real
+low-end Android phone.
+
 ## Gotchas
 
 - The Cloudflare Vite plugin's dev server only serves `public/` files that existed when it started:
@@ -134,6 +156,8 @@ place name gives NOAA's alert wording. All of it follows the selected date and i
 - The scene renders on demand: call `invalidate()` after anything that changes what's on screen.
 - The browser pane in the desktop app can throttle requestAnimationFrame, so 3D screenshots there
   may be black; check in a visible browser window.
+- React StrictMode runs `useMemo` twice in dev: an object that mutates a shared geometry in its
+  constructor (as `ZoneLod` once did) ends up detached. Give such objects their own geometry.
 - Hot reload of shader or reef modules can leave instanced meshes empty (refs survive, new meshes
   don't); reload the page before judging a 3D change.
 - Content must match the data: the full record shows 2024 hotter than 2023 around Roatán, Utila
@@ -141,9 +165,12 @@ place name gives NOAA's alert wording. All of it follows the selected date and i
 
 ## Hosting
 
-Planned: Worker `reefquest`, custom domain `reefquest.todosenlaweb.com`, static assets via
-`cloudflare.config.ts` (SPA fallback). Code is on GitHub at `saintmikenode/reefquest` (private,
-`main`). **Not deployed: the Worker doesn't exist yet and Workers Builds isn't connected, so pushing
-doesn't deploy yet.** Follow the workspace CLAUDE.md
-for the first deploy and connecting the build trigger, and only when Tulio says to deploy. Never push
-unless Tulio says so in that moment; once Workers Builds is connected, pushing to `main` deploys.
+Live at https://reefquest.todosenlaweb.com: Worker `reefquest`, static assets only, via
+`cloudflare.config.ts` (SPA fallback, custom domain only, no workers.dev). Code is on GitHub at
+`saintmikenode/reefquest` (private, `main`). **Deployed by Workers Builds on push to `main`**
+("Deploy main": `npx tsc && npx cf build`, then `npx cf deploy --prebuilt`, `NODE_VERSION=24`). **A
+push to any other branch uploads a preview version** ("Deploy non-production branches":
+`npx cf workers versions create --prebuilt --preview-alias "$WORKERS_CI_BRANCH"`) with its own
+preview URL; production doesn't change. Check runs with `npx cf builds list`. **Never push unless
+Tulio says so in that moment.** Manual fallback from this Mac: `npm run build` (strips `._*` files)
+then `npx cf deploy --prebuilt`; plain `cf deploy` here would rebuild and could upload them.

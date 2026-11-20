@@ -14,18 +14,21 @@ function bend(g: THREE.BufferGeometry, amount: number) {
   return g;
 }
 
-/** Coconut palm, ~1 unit tall: leaning trunk and a crown of drooping fronds. */
-export function palmGeometry(): THREE.BufferGeometry {
-  const trunk = new THREE.CylinderGeometry(0.025, 0.04, 1, 5, 4);
+/** Coconut palm, ~1 unit tall: leaning trunk and a crown of drooping fronds.
+ *  `detail` 2 = 106 triangles (close views), 0 = 32 (phones and distant views). */
+export function palmGeometry(detail: 0 | 1 | 2 = 2): THREE.BufferGeometry {
+  const low = detail < 2;
+  const trunk = new THREE.CylinderGeometry(0.025, 0.04, 1, low ? 3 : 5, low ? 2 : 4, low);
   trunk.translate(0, 0.5, 0);
   bend(trunk, 0.18);
   const parts: THREE.BufferGeometry[] = [trunk];
   const top = new THREE.Vector3(0.18, 1, 0);
-  for (let k = 0; k < 7; k++) {
+  const fronds = low ? 5 : 7;
+  for (let k = 0; k < fronds; k++) {
     // Each frond: a thin triangle strip that droops.
     const f = new THREE.BufferGeometry();
     const pts: number[] = [];
-    const segs = 4;
+    const segs = low ? 2 : 4;
     for (let s = 0; s <= segs; s++) {
       const t = s / segs;
       const w = 0.09 * Math.sin(Math.PI * Math.min(1, t * 1.15));
@@ -40,7 +43,7 @@ export function palmGeometry(): THREE.BufferGeometry {
     f.setAttribute("position", new THREE.Float32BufferAttribute(pts, 3));
     f.setIndex(idx);
     f.computeVertexNormals();
-    f.rotateY((k / 7) * Math.PI * 2 + 0.3);
+    f.rotateY((k / fronds) * Math.PI * 2 + 0.3);
     f.translate(top.x, top.y, top.z);
     parts.push(f);
   }
@@ -56,17 +59,21 @@ export function palmGeometry(): THREE.BufferGeometry {
   return mergeGeometries(parts.map((g) => clean(g.toNonIndexed())))!;
 }
 
-/** Broadleaf tree / canopy clump, ~1 unit tall. */
-export function canopyGeometry(): THREE.BufferGeometry {
+/** Broadleaf tree / canopy clump, ~1 unit tall.
+ *  `detail` 2 = trunk + 3 blobs (80 triangles), 1 = open trunk + 2 blobs (46), 0 = one blob (20). */
+export function canopyGeometry(detail: 0 | 1 | 2 = 2): THREE.BufferGeometry {
   const parts: THREE.BufferGeometry[] = [];
-  const trunk = new THREE.CylinderGeometry(0.04, 0.06, 0.4, 5).toNonIndexed();
+  const trunk = (detail === 2 ? new THREE.CylinderGeometry(0.04, 0.06, 0.4, 5) : new THREE.CylinderGeometry(0.04, 0.06, 0.4, 3, 1, true)).toNonIndexed();
   trunk.translate(0, 0.2, 0);
-  parts.push(trunk);
-  const blobs: [number, number, number, number][] = [
-    [0, 0.62, 0, 0.36],
-    [0.2, 0.52, 0.08, 0.24],
-    [-0.18, 0.55, -0.1, 0.26],
-  ];
+  if (detail > 0) parts.push(trunk);
+  const blobs: [number, number, number, number][] =
+    detail === 0
+      ? [[0, 0.42, 0, 0.44]]
+      : [
+          [0, 0.62, 0, 0.36],
+          [0.2, 0.52, 0.08, 0.24],
+          [-0.18, 0.55, -0.1, 0.26],
+        ].slice(0, detail + 1) as [number, number, number, number][];
   for (const [x, y, z, r] of blobs) {
     const b = new THREE.IcosahedronGeometry(r, 0).toNonIndexed();
     b.scale(1, 0.85, 1);
@@ -74,7 +81,7 @@ export function canopyGeometry(): THREE.BufferGeometry {
     parts.push(b);
   }
   for (const [i, g] of parts.entries()) {
-    const c = new THREE.Color(i === 0 ? "#6b5136" : "#ffffff");
+    const c = new THREE.Color(i === 0 && detail > 0 ? "#6b5136" : "#ffffff"); // part 0 is the trunk when there is one
     const n = g.attributes.position.count;
     const col = new Float32Array(n * 3);
     for (let v = 0; v < n; v++) col.set([c.r, c.g, c.b], v * 3);
@@ -94,8 +101,9 @@ export const CANOPY_GREENS = ["#2f5d2c", "#3a6b30", "#466f2e", "#2b5534", "#5579
 export const PALM_GREENS = ["#3f7d3a", "#4b8a3c", "#5a8f3a"];
 
 /** Vegetation material: flat-shaded, vertex colors × instance colors, optional gentle sway. */
-export function vegetationMaterial(time?: { value: number }, sway = 0) {
-  const m = new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.95, side: THREE.DoubleSide });
+export function vegetationMaterial(time?: { value: number }, sway = 0, doubleSide = true) {
+  // Lambert (diffuse only): much cheaper per pixel than a physically based material, same look here.
+  const m = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true, side: doubleSide ? THREE.DoubleSide : THREE.FrontSide });
   if (time && sway > 0) {
     m.onBeforeCompile = (sh) => {
       sh.uniforms.uTime = time;

@@ -151,7 +151,7 @@ export function BoatHud({ index, zoneName, islandName }: { index: HeatIndex; zon
       </header>
 
       <div className="hud heading-tape" aria-hidden="true">
-        <HeadingTape deg={deg} />
+        {!SMALL && <HeadingTape deg={deg} />}
         <div className="read">
           <span>
             <b>{Math.round(deg).toString().padStart(3, "0")}°</b>

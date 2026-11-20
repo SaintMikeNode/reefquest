@@ -7,7 +7,8 @@ import { SITES } from "../content/sites";
 import { useLang, useT } from "../i18n";
 import { rampTable } from "../lib/alert";
 import { loadHeatIndex, loadLatest, loadSceneMeta, loadYearGrid, type HeatIndex } from "../lib/data";
-import { LITE, REDUCED_MOTION } from "../lib/device";
+import { MOBILE, pick, REDUCED_MOTION } from "../lib/device";
+import { AdaptiveQuality, DPR, FrameCap } from "./AdaptiveQuality";
 import { BoatHud } from "../boat/BoatHud";
 import { zoneName, type ZoneIndexEntry } from "../boat/zone";
 import { Hud } from "./Hud";
@@ -69,12 +70,17 @@ export default function IslandScene({ island }: { island: string }) {
   return (
     <div className="scene-root">
       <Canvas
-        dpr={LITE ? 1 : [1, 1.75]}
-        gl={{ antialias: !LITE, powerPreference: "high-performance" }}
+        dpr={DPR.start}
+        gl={{ antialias: !MOBILE, powerPreference: "high-performance" }}
         camera={{ position: homeCamera(td), fov: 42, near: 0.5, far: 4000 }}
-        frameloop={boat ? "always" : "demand"}
+        frameloop={boat && !MOBILE ? "always" : "demand"}
+        onCreated={(st) => {
+          if (import.meta.env.DEV) Object.assign(window, { __rqGl: st.gl, __rqScene: st.scene }); // dev: renderer.info for perf checks
+        }}
       >
         <color attach="background" args={["#020d16"]} />
+        <AdaptiveQuality />
+        {boat && MOBILE && <FrameCap fps={60} />}
         {boat ? (
           <Suspense fallback={null}>
             <BoatWorld key={boat.zone + boat.lon} island={island} zoneId={boat.zone} start={boat} />
@@ -95,7 +101,7 @@ function World({ td, index }: { td: TerrainData; index: HeatIndex }) {
   const day = useScene((s) => s.day);
   const invalidate = useThree((s) => s.invalidate);
 
-  const geometry = useMemo(() => buildGeometry(td, LITE ? 2 : 1), [td]);
+  const geometry = useMemo(() => buildGeometry(td, MOBILE ? 2 : 1), [td]);
   const scene = useThree((s) => s.scene);
 
   // Heat cells texture (cols × rows), refilled for the selected day. Shared by the sea (heat
@@ -184,7 +190,7 @@ function World({ td, index }: { td: TerrainData; index: HeatIndex }) {
 
   // Gentle animation (caustics, sheen) at ~30 fps unless lite / reduced motion.
   useEffect(() => {
-    if (LITE || REDUCED_MOTION) return;
+    if (MOBILE || REDUCED_MOTION) return; // phones redraw only when something changes (battery, heat)
     let raf = 0;
     let last = 0;
     const loop = (now: number) => {
@@ -412,7 +418,7 @@ function IslandVegetation({ td }: { td: TerrainData }) {
   const { scene } = useThree();
   const meshes = useMemo(() => {
     const canopy: number[] = [], palms: number[] = [];
-    const step = LITE ? 3 : 2;
+    const step = pick(4, 3, 2);
     for (let j = 0; j < td.h; j += step)
       for (let i = 0; i < td.w; i += step) {
         const k = j * td.w + i;
@@ -424,9 +430,9 @@ function IslandVegetation({ td }: { td: TerrainData }) {
         if (h < 9 && r < 0.55) palms.push(x, displayY(h), z, h01(k + 3));
         else if (h >= 4 && r < 0.85) canopy.push(x, displayY(h), z, h01(k + 4));
       }
-    const make = (arr: number[], geo: THREE.BufferGeometry, greens: string[], size: [number, number], tall: number) => {
+    const make = (arr: number[], geo: THREE.BufferGeometry, greens: string[], size: [number, number], tall: number, doubleSide: boolean) => {
       const n = arr.length / 4;
-      const im = new THREE.InstancedMesh(geo, vegetationMaterial(), n);
+      const im = new THREE.InstancedMesh(geo, vegetationMaterial(undefined, 0, doubleSide), n);
       const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), p = new THREE.Vector3(), s = new THREE.Vector3(), c = new THREE.Color();
       const up = new THREE.Vector3(0, 1, 0);
       for (let i = 0; i < n; i++) {
@@ -442,7 +448,12 @@ function IslandVegetation({ td }: { td: TerrainData }) {
       im.instanceMatrix.needsUpdate = true;
       return im;
     };
-    return [make(canopy, canopyGeometry(), CANOPY_GREENS, [0.32, 0.55], 1.5), make(palms, palmGeometry(), PALM_GREENS, [0.35, 0.5], 1.8)];
+    // Fewer, simpler and slightly larger trees on phones: the same green cover for a tenth of the triangles.
+    const grow = step / 2;
+    return [
+      make(canopy, canopyGeometry(pick(0, 0, 1)), CANOPY_GREENS, [0.32 * grow, 0.55 * grow], 1.5, false),
+      make(palms, palmGeometry(pick(0, 0, 1)), PALM_GREENS, [0.35 * grow, 0.5 * grow], 1.8, true),
+    ];
   }, [td]);
 
   // Standard materials need lights and fog (the terrain shader does its own).

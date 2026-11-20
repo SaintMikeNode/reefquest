@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { B, blocksOf, gridNormals, lodIndices } from "../lib/gridLod";
 
 // Detailed zone tiles for the research boat (made by pipeline/zone_tiles.py). Scene units here are
 // real meters. Vertical scale is 1:1 down to 60 m; deeper water is compressed (you can't see it
@@ -129,40 +130,80 @@ export function xzToLonLat(z: Zone, x: number, zz: number) {
 }
 
 /** Seafloor/land mesh in meters. */
-export function zoneGeometry(z: Zone, stride: number): THREE.BufferGeometry {
-  const nx = Math.floor((z.w - 1) / stride) + 1;
-  const nz = Math.floor((z.h - 1) / stride) + 1;
-  const pos = new Float32Array(nx * nz * 3);
-  const uv = new Float32Array(nx * nz * 2);
-  const hm = new Float32Array(nx * nz);
-  for (let j = 0; j < nz; j++)
-    for (let i = 0; i < nx; i++) {
-      const k = j * nx + i;
-      const u = (i * stride) / (z.w - 1), v = (j * stride) / (z.h - 1);
-      const h = z.heights[j * stride * z.w + i * stride];
+/** Seafloor/land vertices at full resolution (10 m). Triangles come from ZoneLod, which draws full
+ *  detail near the boat and coarser cells with distance. */
+export function zoneGeometry(z: Zone): THREE.BufferGeometry {
+  const { w, h } = z;
+  const pos = new Float32Array(w * h * 3);
+  const uv = new Float32Array(w * h * 2);
+  const hm = new Float32Array(w * h);
+  for (let j = 0; j < h; j++)
+    for (let i = 0; i < w; i++) {
+      const k = j * w + i;
+      const u = i / (w - 1), v = j / (h - 1);
+      const ht = z.heights[k];
       pos[k * 3] = (u - 0.5) * z.sizeX;
-      pos[k * 3 + 1] = floorY(h);
+      pos[k * 3 + 1] = floorY(ht);
       pos[k * 3 + 2] = (v - 0.5) * z.sizeZ;
       uv[k * 2] = u;
       uv[k * 2 + 1] = v;
-      hm[k] = h;
-    }
-  const idx = new Uint32Array((nx - 1) * (nz - 1) * 6);
-  let p = 0;
-  for (let j = 0; j < nz - 1; j++)
-    for (let i = 0; i < nx - 1; i++) {
-      const a = j * nx + i, b = a + 1, c = a + nx, d = c + 1;
-      idx[p++] = a; idx[p++] = c; idx[p++] = b;
-      idx[p++] = b; idx[p++] = c; idx[p++] = d;
+      hm[k] = ht;
     }
   const g = new THREE.BufferGeometry();
   g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
   g.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
   g.setAttribute("aH", new THREE.BufferAttribute(hm, 1));
-  g.setIndex(new THREE.BufferAttribute(idx, 1));
-  g.computeVertexNormals();
+  g.setAttribute("normal", new THREE.BufferAttribute(gridNormals(w, h, (k) => floorY(z.heights[k]), z.sizeX / (w - 1), z.sizeZ / (h - 1)), 3));
   g.computeBoundingSphere();
   return g;
+}
+
+/**
+ * Distance-based level of detail for the zone mesh: 10 m cells within `r1` of the boat, 20 m to
+ * `r2`, 40 m beyond. Underwater, where visibility is tens of meters, nothing beyond `rUnder` is
+ * drawn at all. Only the index buffer changes; call update() as the boat moves.
+ */
+export class ZoneLod {
+  /** The mesh geometry (owned by this object: one geometry per ZoneLod). */
+  readonly geo: THREE.BufferGeometry;
+  private index: THREE.BufferAttribute;
+  private last = { x: 1e9, z: 1e9, under: false };
+  constructor(private z: Zone, private r1: number, private r2: number, private rUnder = 170) {
+    const geo = (this.geo = zoneGeometry(z));
+    // Upper bound for the index size: the fine disc, the middle ring, and coarse cells everywhere.
+    const blocks = blocksOf(z.w) * blocksOf(z.h);
+    const cell = z.sizeX / (z.w - 1), blockArea = (B * cell) ** 2;
+    const fine = (Math.PI * (r1 + 60) ** 2) / blockArea, mid = (Math.PI * (r2 + 60) ** 2) / blockArea;
+    const cap = Math.ceil((Math.min(fine, blocks) * 16 + Math.min(mid, blocks) * 4 + blocks) * 6 * 1.15);
+    this.index = new THREE.BufferAttribute(new Uint32Array(cap), 1);
+    this.index.setUsage(THREE.DynamicDrawUsage);
+    geo.setIndex(this.index);
+    geo.setDrawRange(0, 0);
+  }
+  update(x: number, zz: number, under: boolean) {
+    const l = this.last;
+    if (under === l.under && Math.hypot(x - l.x, zz - l.z) < 50) return;
+    this.last = { x, z: zz, under };
+    const { z, r1, r2, rUnder } = this;
+    const bx = (B * z.sizeX) / (z.w - 1), bz = (B * z.sizeZ) / (z.h - 1);
+    const level = (bi: number, bj: number) => {
+      const d = Math.hypot((bi + 0.5) * bx - z.sizeX / 2 - x, (bj + 0.5) * bz - z.sizeZ / 2 - zz);
+      if (under) return d < rUnder * 0.6 ? 1 : d < rUnder ? 2 : 0;
+      return d < r1 ? 1 : d < r2 ? 2 : B;
+    };
+    const { index, count } = lodIndices(z.w, z.h, level, this.index.array as Uint32Array);
+    if (index !== this.index.array) {
+      // Larger than estimated (should not happen): swap in a bigger buffer.
+      this.index = new THREE.BufferAttribute(index, 1);
+      this.index.setUsage(THREE.DynamicDrawUsage);
+      this.geo.setIndex(this.index);
+    } else {
+      this.index.clearUpdateRanges();
+      this.index.addUpdateRange(0, count);
+      this.index.needsUpdate = true;
+    }
+    this.geo.setDrawRange(0, count);
+  }
 }
 
 /** Deterministic pseudo-random in [0,1) from an integer (for stable prop placement). */

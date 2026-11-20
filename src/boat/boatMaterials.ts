@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { MOBILE } from "../lib/device";
 import { WATER, WATER_GLSL } from "./props";
 
 export const SUN = new THREE.Vector3(-0.45, 0.8, -0.35).normalize();
@@ -15,7 +16,8 @@ const NOISE = /* glsl */ `
   }
   float fbm(vec2 p) {
     float s = 0.0, a = 0.5;
-    for (int i = 0; i < 4; i++) { s += a * vnoise(p); p *= 2.03; a *= 0.5; }
+    // Fewer octaves on phones: half the noise lookups per pixel, a slightly smoother texture.
+    for (int i = 0; i < ${MOBILE ? 2 : 4}; i++) { s += a * vnoise(p); p *= 2.03; a *= 0.5; }
     return s;
   }
 `;
@@ -100,8 +102,14 @@ export function seafloorMaterial(habitat: THREE.DataTexture, lite: boolean, cove
       }
       void main() {
         vec2 p = vW.xz;
-        // Domain-warp the 5 m class lookup so habitat edges look organic instead of square.
-        vec2 warp = (vec2(fbm(p * 0.08), fbm(p * 0.08 + 17.3)) - 0.5) * 9.0;
+        // Underwater, anything this far is pure water color: skip all the work.
+        if (uRqUnder > 0.5 && vDist > uRqVis * 3.2) {
+          gl_FragColor = vec4(uRqFog, 1.0);
+          return;
+        }
+        // Domain-warp the 5 m class lookup so habitat edges look organic instead of square
+        // (only where the 5 m cells are big enough on screen to notice).
+        vec2 warp = vDist < 280.0 ? (vec2(fbm(p * 0.08), fbm(p * 0.08 + 17.3)) - 0.5) * 9.0 : vec2(0.0);
         vec2 uv = vUv + warp / (uTexSize * 5.0); // habitat pixels are 5 m
         float cls = floor(texture2D(uHabitat, uv).r * 255.0 + 0.5);
         // Fine detail fades with distance (it would alias into stripes); the class color remains.
@@ -245,8 +253,10 @@ export function seaMaterial(depthTex: THREE.Texture | null, size: [number, numbe
         }
         // Foam in very shallow water (breaking on reef crests and beaches): broken streaks, not sheets.
         float f = (1.0 - smoothstep(0.15, 0.7, depth)) * step(0.02, depth);
-        float streak = fbm(vec2(p.x * 0.9 + t * 0.5, p.y * 0.35 - t * 0.3)) * 0.6 + fbm(p * 1.7 - t * 0.2) * 0.4;
-        f *= smoothstep(0.52, 0.72, streak);
+        if (f > 0.0) { // the foam noise is only needed along the shallow fringe
+          float streak = fbm(vec2(p.x * 0.9 + t * 0.5, p.y * 0.35 - t * 0.3)) * 0.6 + fbm(p * 1.7 - t * 0.2) * 0.4;
+          f *= smoothstep(0.52, 0.72, streak);
+        }
         col = mix(col, vec3(0.93, 0.97, 0.98), f * 0.7);
         a = max(a, f * 0.65);
         col += vec3(1.0, 0.95, 0.85) * spec;
