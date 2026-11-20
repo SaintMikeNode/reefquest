@@ -31,5 +31,49 @@
    4000,
    4000
   ]
+ },
+ {
+  "id": "big-bight",
+  "name": "North shore · Big Bight",
+  "name_es": "Costa norte · Big Bight",
+  "lat": 16.3813,
+  "lon": -86.4543,
+  "size_m": [
+   4500,
+   4500
+  ]
+ },
+ {
+  "id": "diamond-rock",
+  "name": "North shore · Diamond Rock",
+  "name_es": "Costa norte · Diamond Rock",
+  "lat": 16.4183,
+  "lon": -86.3259,
+  "size_m": [
+   4500,
+   4500
+  ]
+ },
+ {
+  "id": "santa-elena",
+  "name": "East end · Santa Elena",
+  "name_es": "Extremo este · Santa Elena",
+  "lat": 16.4277,
+  "lon": -86.1762,
+  "size_m": [
+   4500,
+   4500
+  ]
+ },
+ {
+  "id": "pelican-point",
+  "name": "East end · Pelican Point",
+  "name_es": "Extremo este · Pelican Point",
+  "lat": 16.426,
+  "lon": -86.1142,
+  "size_m": [
+   4500,
+   4500
+  ]
  }
 ]

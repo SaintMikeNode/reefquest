@@ -134,7 +134,7 @@ function Scene({ zone, start }: { zone: Zone; start: { lon: number; lat: number 
     snow.update(camera, t, gl.getPixelRatio(), under);
   });
 
-  // Start near the site in 4.5–14 m of water with reef (coral or hard bottom) close by, so the first
+  // Start as close to the site as possible in 4.5–14 m of water with reef (coral or hard bottom) close by, so the first
   // view is the reef; fall back to the nearest water at least 6 m deep (zone centers can be inland).
   const startXZ = useMemo(() => {
     const p = lonLatToXZ(zone, start.lon, start.lat);
@@ -147,7 +147,7 @@ function Scene({ zone, start }: { zone: Zone; start: { lon: number; lat: number 
         const x = (i / (zone.w - 1) - 0.5) * zone.sizeX, z = (j / (zone.h - 1) - 0.5) * zone.sizeZ;
         const d = (x - p.x) ** 2 + (z - p.z) ** 2;
         if (h < -6 && d < deepD) (deepD = d), (deep = { x, z });
-        if (h < -14 || d > 1500 * 1500 || d >= bestD) continue;
+        if (h < -14 || d >= bestD) continue; // anywhere in the zone, nearest to the site wins
         let reef = 0;
         for (const [ox, oz] of [[0, 0], [25, 0], [-25, 0], [0, 25], [0, -25]]) {
           const b = habitatAtXZ(zone, x + ox, z + oz).benthic;

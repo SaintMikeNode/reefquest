@@ -106,7 +106,11 @@ place name gives NOAA's alert wording. All of it follows the selected date and i
   nearby species when underwater; on phones the panels start folded). Dev only:
   `window.__rqBoat.current.x/z` moves the boat, `window.__boat` is the store.
   Entered from a story card ("Explore by boat") or the zone list in the layers panel; zones are
-  listed in `pipeline/zones.json` and built by `pipeline/zone_tiles.py`.
+  listed in `pipeline/zones.json` and built by `pipeline/zone_tiles.py` (each ~80–350 KB, loaded
+  only when entered). Roatán has 7 (West End, Cordelia, Mary's Place hand-picked around stories; Big
+  Bight, Diamond Rock, Santa Elena, Pelican Point picked as the most coral-rich 4 km windows, named
+  after the nearest OSM place), Utila 1, Guanaja 2. The boat starts at the reef spot (4.5–14 m, coral
+  or hard bottom around) nearest the site, anywhere in the zone.
 - `src/scenes/labels.tsx`: screen-space labels (one projector + plain DOM), used instead of drei
   `Html` (which threw removeChild errors on unmount with React 19).
 - `public/data/`: pipeline outputs (committed): `islands.json/.geojson`, `region.json` (GEBCO

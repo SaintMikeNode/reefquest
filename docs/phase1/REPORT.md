@@ -152,6 +152,16 @@ color comes from the data; numbers in a mono face, labels in small caps, titles 
 - **Performance.** Desktop Chrome: ~124 fps above the water, ~149 underwater with the dense reef.
   Lite devices get 30% of the reef budget, no blur behind panels, and fewer fish and light shafts.
 
+## More of Roatán by boat
+
+The boat areas were hand-picked around the stories, so all three were on the west half of
+Roatán. Four more now cover the north shore and the east end, picked automatically as the 4 km
+windows with the most mapped coral outside the existing areas, and named after the nearest
+OpenStreetMap place: **North shore · Big Bight**, **North shore · Diamond Rock**, **East end · Santa
+Elena** and **East end · Pelican Point**. All use the Atlas's satellite bathymetry (52–60% mapped
+reef on the east end) and cost 120–150 KB each, loaded only when entered. The boat now starts at
+the reef spot closest to the chosen place anywhere in the area (one north-shore center is on land).
+
 ## Size and performance
 
 | What | Download (compressed) |
