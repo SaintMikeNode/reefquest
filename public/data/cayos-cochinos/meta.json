@@ -1,0 +1,62 @@
+{
+  "island": "cayos-cochinos",
+  "name": "Cayos Cochinos",
+  "crs": "EPSG:32616",
+  "cell_m": 40.0,
+  "size_m": [
+    21480.0,
+    22160.0
+  ],
+  "terrain": {
+    "file": "terrain.png",
+    "width": 537,
+    "height": 554,
+    "decode": "h = (R*256 + G) / 10 - 3000",
+    "min_m": -164.0,
+    "max_m": 135.8
+  },
+  "habitat": {
+    "file": "habitat.png",
+    "width": 1074,
+    "height": 1109,
+    "channels": {
+      "r": "benthic",
+      "g": "geomorphic",
+      "b": "reef_mask"
+    }
+  },
+  "bathymetry_source": "nominal-by-zone",
+  "geo": {
+    "lonlat_to_uv": [
+      [
+        4.982380032778889,
+        -0.012352317207237954,
+        431.6724102005883
+      ],
+      [
+        -0.011584080723122165,
+        -4.991768239623963,
+        79.11713499817263
+      ]
+    ],
+    "uv_to_lonlat": [
+      [
+        0.20070611582453943,
+        -0.000496655309439496,
+        -86.60000774522624
+      ],
+      [
+        -0.00046576550835281084,
+        -0.20032865733174643,
+        16.05048804801668
+      ]
+    ],
+    "fit_error_m": 5.6
+  },
+  "bounds_lonlat": {
+    "south": 15.85,
+    "north": 16.05,
+    "west": -86.6,
+    "east": -86.4
+  }
+}

@@ -46,3 +46,17 @@ export function useT() {
   const lang = useLang((s) => s.lang);
   return (key: StringKey) => STRINGS[lang][key];
 }
+
+/** Picks the right language from a { es, en } pair (long-form content lives in src/content/). */
+export function useL() {
+  const lang = useLang((s) => s.lang);
+  return <T,>(pair: { es: T; en: T }) => pair[lang];
+}
+
+export function fmtNum(n: number, lang: Lang, digits = 1) {
+  return n.toLocaleString(lang === "es" ? "es-HN" : "en-US", { minimumFractionDigits: digits, maximumFractionDigits: digits });
+}
+
+export function fmtDate(iso: string, lang: Lang, opts: Intl.DateTimeFormatOptions = { day: "numeric", month: "short", year: "numeric" }) {
+  return new Date(iso + "T12:00:00Z").toLocaleDateString(lang === "es" ? "es-HN" : "en-US", { ...opts, timeZone: "UTC" });
+}

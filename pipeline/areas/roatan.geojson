@@ -1,0 +1,39 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "ReefQuest Roatán",
+    "id": "roatan"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       -86.7,
+       16.2
+      ],
+      [
+       -86.05,
+       16.2
+      ],
+      [
+       -86.05,
+       16.5
+      ],
+      [
+       -86.7,
+       16.5
+      ],
+      [
+       -86.7,
+       16.2
+      ]
+     ]
+    ]
+   }
+  }
+ ]
+}

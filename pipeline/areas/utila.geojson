@@ -1,0 +1,39 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "ReefQuest Utila",
+    "id": "utila"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       -87.1,
+       15.95
+      ],
+      [
+       -86.8,
+       15.95
+      ],
+      [
+       -86.8,
+       16.2
+      ],
+      [
+       -87.1,
+       16.2
+      ],
+      [
+       -87.1,
+       15.95
+      ]
+     ]
+    ]
+   }
+  }
+ ]
+}

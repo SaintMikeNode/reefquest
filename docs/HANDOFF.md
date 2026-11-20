@@ -10,7 +10,11 @@ working conventions. Decisions made since the brief are listed first.
 - **Front-end stack:** Vite + TypeScript + **React + React Three Fiber** (three.js underneath), the
   same tools as CopánQuest, chosen by Tulio over plain three.js so code and habits carry over.
   The cost is about 150 KB more JavaScript, which is why the 3D engine and each island scene load lazily.
-- Open questions 2–4 (branding with CopánQuest, Earth Engine account, paid models) are still open.
+- **Earth Engine (open question 3):** Google Cloud project `reefquest` (organization nerdypunk.com),
+  registered November 2026 for noncommercial Earth Engine use as nonprofit "Saint Mike Node",
+  Community tier (150 EECU-hours, no billing account). Noncommercial eligibility expires
+  May 19, 2028 and must be renewed in the Earth Engine configuration page.
+- Open questions 2 and 4 (branding with CopánQuest, paid models) are still open.
 
 ---
 
@@ -177,5 +181,5 @@ Roatán Marine Park, Bay Islands Conservation Association (offices on Roatán, U
 
 1. ~~Project name and domain?~~ ReefQuest, reefquest.todosenlaweb.com.
 2. Should this sit alongside Copan Quest as part of the same series/branding, or stand alone?
-3. Do you have (or want to create) a Google Earth Engine account/project for the Allen Coral Atlas export?
+3. ~~Do you have (or want to create) a Google Earth Engine account/project for the Allen Coral Atlas export?~~ Yes: Cloud project `reefquest`, see Decisions.
 4. Are you willing to buy paid models, or contact the photographer for permission?

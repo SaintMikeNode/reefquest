@@ -2,6 +2,11 @@ numpy
 pandas
 xarray
 netCDF4
-rasterio
 matplotlib
 requests
+shapely
+earthengine-api
+rasterio
+scipy
+pillow
+bottleneck

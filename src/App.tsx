@@ -1,46 +1,63 @@
-import { lazy, Suspense, useState } from "react";
-import { ArchipelagoMenu } from "./ui/ArchipelagoMenu";
-import { LangToggle } from "./ui/LangToggle";
+import { lazy, Suspense } from "react";
 import { useT } from "./i18n";
-import type { IslandId } from "./data/islands";
+import { SCENE_ISLANDS } from "./lib/islands";
+import { useRoute } from "./lib/router";
+import { Home } from "./pages/Home";
+import { Footer, TopBar } from "./ui/TopBar";
 import { HAS_WEBGL } from "./webgl";
 
-// The 3D engine (three + R3F) and each island scene load only when an island is opened, so the
-// first view stays small on phones.
+// The first screen (map + island status) needs no 3D engine. three.js / R3F and each page load
+// only when visited.
 const IslandScene = lazy(() => import("./scenes/IslandScene"));
+const HeatPage = lazy(() => import("./pages/HeatPage").then((m) => ({ default: m.HeatPage })));
+const LearnPage = lazy(() => import("./pages/LearnPage").then((m) => ({ default: m.LearnPage })));
+const AboutPage = lazy(() => import("./pages/AboutPage").then((m) => ({ default: m.AboutPage })));
+
+
+function Loading() {
+  const t = useT();
+  return (
+    <div className="loading-screen">
+      <div className="box">
+        <div className="label">{t("scene.loading")}</div>
+        <div className="bar">
+          <i />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function App() {
+  const route = useRoute();
   const t = useT();
-  const [island, setIsland] = useState<IslandId | null>(null);
 
-  if (island && HAS_WEBGL) {
+  if (route.page === "island" && SCENE_ISLANDS.has(route.id)) {
+    if (!HAS_WEBGL)
+      return (
+        <>
+          <TopBar route={route} />
+          <main className="page">
+            <div className="page-head">
+              <p>{t("scene.noWebgl")}</p>
+            </div>
+          </main>
+        </>
+      );
     return (
-      <Suspense fallback={<div className="loading">{t("scene.loading")}</div>}>
-        <IslandScene island={island} onBack={() => setIsland(null)} />
+      <Suspense fallback={<Loading />}>
+        <IslandScene island={route.id} />
       </Suspense>
     );
   }
 
   return (
-    <div className="page">
-      <header className="top">
-        <div>
-          <h1>ReefQuest</h1>
-          <p className="tagline">{t("app.tagline")}</p>
-        </div>
-        <LangToggle />
-      </header>
-      <main>
-        {!HAS_WEBGL && (
-          <div className="notice">
-            <strong>{t("nowebgl.title")}</strong>
-            <p>{t("nowebgl.body")}</p>
-          </div>
-        )}
-        <p className="prompt">{t("menu.prompt")}</p>
-        <ArchipelagoMenu onOpen={setIsland} />
-      </main>
-      <footer className="foot">{t("footer.credits")}</footer>
-    </div>
+    <>
+      <TopBar route={route} />
+      <Suspense fallback={<Loading />}>
+        {route.page === "heat" ? <HeatPage /> : route.page === "learn" ? <LearnPage /> : route.page === "about" ? <AboutPage /> : <Home />}
+      </Suspense>
+      <Footer />
+    </>
   );
 }

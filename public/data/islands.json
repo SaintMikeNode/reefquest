@@ -1,0 +1,95 @@
+{
+  "bbox": {
+    "south": 15.8,
+    "north": 16.6,
+    "west": -87.1,
+    "east": -85.7
+  },
+  "source": "OpenStreetMap coastlines (ODbL)",
+  "islands": {
+    "utila": {
+      "name": "Utila",
+      "rings": 16,
+      "land_km2": 41.6,
+      "center": {
+        "lat": 16.0977,
+        "lon": -86.932
+      },
+      "land_bounds": {
+        "south": 16.0403,
+        "north": 16.1239,
+        "west": -87.0122,
+        "east": -86.8722
+      },
+      "analysis_box": {
+        "south": 15.95,
+        "north": 16.2,
+        "west": -87.1,
+        "east": -86.8
+      }
+    },
+    "roatan": {
+      "name": "Roatán",
+      "rings": 48,
+      "land_km2": 128.0,
+      "center": {
+        "lat": 16.3696,
+        "lon": -86.4221
+      },
+      "land_bounds": {
+        "south": 16.2668,
+        "north": 16.4474,
+        "west": -86.603,
+        "east": -86.1191
+      },
+      "analysis_box": {
+        "south": 16.2,
+        "north": 16.5,
+        "west": -86.7,
+        "east": -86.05
+      }
+    },
+    "guanaja": {
+      "name": "Guanaja",
+      "rings": 19,
+      "land_km2": 56.1,
+      "center": {
+        "lat": 16.4681,
+        "lon": -85.8843
+      },
+      "land_bounds": {
+        "south": 16.4024,
+        "north": 16.516,
+        "west": -85.9518,
+        "east": -85.8156
+      },
+      "analysis_box": {
+        "south": 16.35,
+        "north": 16.6,
+        "west": -86.05,
+        "east": -85.75
+      }
+    },
+    "cayos-cochinos": {
+      "name": "Cayos Cochinos",
+      "rings": 16,
+      "land_km2": 2.5,
+      "center": {
+        "lat": 15.9678,
+        "lon": -86.4833
+      },
+      "land_bounds": {
+        "south": 15.9283,
+        "north": 15.9819,
+        "west": -86.5266,
+        "east": -86.4603
+      },
+      "analysis_box": {
+        "south": 15.85,
+        "north": 16.05,
+        "west": -86.6,
+        "east": -86.4
+      }
+    }
+  }
+}

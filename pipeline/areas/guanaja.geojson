@@ -1,0 +1,39 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "ReefQuest Guanaja",
+    "id": "guanaja"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       -86.05,
+       16.35
+      ],
+      [
+       -85.75,
+       16.35
+      ],
+      [
+       -85.75,
+       16.6
+      ],
+      [
+       -86.05,
+       16.6
+      ],
+      [
+       -86.05,
+       16.35
+      ]
+     ]
+    ]
+   }
+  }
+ ]
+}
