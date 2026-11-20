@@ -13,7 +13,7 @@
  "cell_deg": 0.05,
  "encoding": "uint8 DHW*10, 255 = no data, day-major, rows north\u2192south",
  "first": "1985-04-01",
- "last": "2023-12-31",
+ "last": "2026-11-18",
  "years": [
   {
    "year": 1985,
@@ -209,6 +209,21 @@
    "year": 2023,
    "first": "2023-01-01",
    "days": 365
+  },
+  {
+   "year": 2024,
+   "first": "2024-01-01",
+   "days": 366
+  },
+  {
+   "year": 2025,
+   "first": "2025-01-01",
+   "days": 365
+  },
+  {
+   "year": 2026,
+   "first": "2026-01-01",
+   "days": 322
   }
  ]
 }

@@ -60,3 +60,9 @@ export function fmtNum(n: number, lang: Lang, digits = 1) {
 export function fmtDate(iso: string, lang: Lang, opts: Intl.DateTimeFormatOptions = { day: "numeric", month: "short", year: "numeric" }) {
   return new Date(iso + "T12:00:00Z").toLocaleDateString(lang === "es" ? "es-HN" : "en-US", { ...opts, timeZone: "UTC" });
 }
+
+/** Renders a UI string that marks its lead-in with <b>…</b> (no other markup is interpreted). */
+export function rich(s: string) {
+  const m = /^<b>(.*?)<\/b>\s*(.*)$/s.exec(s);
+  return m ? [<b key="b">{m[1]}</b>, " ", m[2]] : [s];
+}

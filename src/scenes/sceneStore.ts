@@ -29,7 +29,7 @@ interface SceneState {
 }
 
 export const useScene = create<SceneState>((set) => ({
-  layers: { habitat: true, heat: true, contours: true, sites: true },
+  layers: { habitat: false, heat: true, contours: true, sites: true },
   year: 0,
   day: 0,
   playing: false,

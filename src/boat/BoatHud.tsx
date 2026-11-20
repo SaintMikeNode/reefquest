@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { REEF_LIFE, REEF_LIFE_NOTE, REEF_LIFE_SOURCES } from "../content/reefLife";
 import { SITES } from "../content/sites";
 import { fmtNum, useL, useLang, useT } from "../i18n";
 import type { HeatIndex } from "../lib/data";
@@ -8,14 +9,14 @@ import { BENTHIC, GEOMORPHIC } from "../scenes/materials";
 import { useScene } from "../scenes/sceneStore";
 import { fmtLat, fmtLon, SiteCard } from "../scenes/SiteCard";
 import { AlertChip } from "../ui/AlertChip";
-import { IconBack, IconCast } from "../ui/Icons";
+import { IconBack, IconCast, IconCheck, IconDive, IconSurface } from "../ui/Icons";
 import { LangToggle } from "../ui/LangToggle";
 import { useBoat } from "./boatStore";
 import { Echogram } from "./Echogram";
 
 const TOUCH = typeof matchMedia !== "undefined" && matchMedia("(pointer: coarse)").matches;
 
-export function BoatHud({ index, zoneName }: { index: HeatIndex; zoneName: string }) {
+export function BoatHud({ index, zoneName, islandName }: { index: HeatIndex; zoneName: string; islandName: string }) {
   const t = useT();
   const L = useL();
   const lang = useLang((s) => s.lang);
@@ -32,6 +33,7 @@ export function BoatHud({ index, zoneName }: { index: HeatIndex; zoneName: strin
   const surveyPct = useBoat((s) => s.surveyPct);
   const surveyHa = useBoat((s) => s.surveyHa);
   const cast = useBoat((s) => s.cast);
+  const under = useBoat((s) => s.under);
   const day = useScene((s) => s.day);
   const setBoat = useScene((s) => s.setBoat);
   const [story, setStory] = useState<string | null>(null);
@@ -73,10 +75,11 @@ export function BoatHud({ index, zoneName }: { index: HeatIndex; zoneName: strin
     useBoat.setState({ castReq: Date.now() });
   };
 
-  useEffect(() => () => useBoat.setState({ near: null, tele: null, target: null }), []);
+  useEffect(() => () => useBoat.setState({ near: null, tele: null, target: null, under: false }), []);
 
   useEffect(() => {
     const on = (e: KeyboardEvent) => {
+      if (e.code === "KeyU" && (e.target as HTMLElement)?.tagName !== "INPUT") useBoat.setState((b) => ({ under: !b.under }));
       if (e.code === "Space" && (e.target as HTMLElement)?.tagName !== "BUTTON") {
         e.preventDefault();
         startCast();
@@ -100,7 +103,7 @@ export function BoatHud({ index, zoneName }: { index: HeatIndex; zoneName: strin
 
   return (
     <>
-      <div className="label-layer">
+      <div className="label-layer" style={under ? { display: "none" } : undefined}>
         {buoys.map((id) => {
           const s = SITES.find((x) => x.id === id);
           return s ? (
@@ -123,40 +126,36 @@ export function BoatHud({ index, zoneName }: { index: HeatIndex; zoneName: strin
         </div>
       )}
 
-      <div className="hud hud-top">
-        <div className="group">
-          <button className="hbtn" onClick={() => setBoat(null)}>
-            <IconBack /> <span className="hide-sm">{t("boat.back")}</span>
-          </button>
-          <div className="panel title-block">
-            <div className="hud-label">{t("boat.title")}</div>
-            <h1>{zoneName}</h1>
-          </div>
+      <div className="scrim-top" />
+      <div className="scrim-bottom" />
+
+      <header className="hud plate">
+        <div className="kicker">{t("boat.kicker")}</div>
+        <h1>{zoneName}</h1>
+        <div className="coords">{tele ? `${fmtLat(tele.lat, lang)} · ${fmtLon(tele.lon, lang)}` : "\u00a0"}</div>
+        <button className="back-btn" onClick={() => setBoat(null)}>
+          <IconBack /> {t("boat.backTo").replace("{island}", islandName)}
+        </button>
+      </header>
+
+      <div className="hud heading-tape" aria-hidden="true">
+        <HeadingTape deg={deg} />
+        <div className="read">
+          <span>
+            <b>{Math.round(deg).toString().padStart(3, "0")}°</b>
+          </span>
+          <span>
+            <b>{fmtNum(knots, lang)}</b> {t("boat.knots")}
+          </span>
         </div>
-        <div className="group">
-          <div className="panel instrument" title={t("boat.heading")}>
-            <svg viewBox="-20 -20 40 40" width="38" height="38" aria-hidden="true">
-              <circle r="17" fill="none" stroke="rgba(255,255,255,.3)" />
-              {[0, 90, 180, 270].map((a) => (
-                <line key={a} x1="0" y1="-17" x2="0" y2="-13" stroke="rgba(255,255,255,.55)" transform={`rotate(${a})`} />
-              ))}
-              <text y="-6" textAnchor="middle" fontSize="7" fill="#9fb0c2" fontFamily="var(--sans)">
-                N
-              </text>
-              <g transform={`rotate(${deg})`}>
-                <path d="M0 -12 L3.5 3 L0 0.5 L-3.5 3 Z" fill="#eef2f5" />
-              </g>
-            </svg>
-            <div>
-              <div className="big">{Math.round(deg).toString().padStart(3, "0")}°</div>
-              <div className="hud-label num">
-                {fmtNum(knots, lang)} {t("boat.knots")}
-              </div>
-            </div>
-          </div>
-          <div className="hide-sm">
-            <LangToggle />
-          </div>
+      </div>
+
+      <div className="hud tools">
+        <div className="panel instrument" title={t("boat.heading")}>
+          {Math.round(deg).toString().padStart(3, "0")}° · {fmtNum(knots, lang)} {t("boat.knots")}
+        </div>
+        <div className="hide-sm">
+          <LangToggle />
         </div>
       </div>
 
@@ -186,7 +185,7 @@ export function BoatHud({ index, zoneName }: { index: HeatIndex; zoneName: strin
                 <Echogram />
                 <dl className="readout">
                   <dt>{t("scene.habitat")}</dt>
-                  <dd>{habitatName(tele.benthic, tele.depth)}</dd>
+                  <dd className="txt">{habitatName(tele.benthic, tele.depth)}</dd>
                   {tele.geomorphic > 0 && (
                     <>
                       <dt className="wide">{t("scene.zone")}</dt>
@@ -236,15 +235,21 @@ export function BoatHud({ index, zoneName }: { index: HeatIndex; zoneName: strin
             )}
             <button className="toggle" aria-pressed={sonar} onClick={() => toggle("sonar")}>
               {t("boat.multibeam")}
-              <span className="sw" />
+              <span className="check">
+                <IconCheck />
+              </span>
             </button>
             <button className="toggle" aria-pressed={grid} onClick={() => toggle("grid")}>
               {t("boat.grid")}
-              <span className="sw" />
+              <span className="check">
+                <IconCheck />
+              </span>
             </button>
             <button className="toggle" aria-pressed={mapColors} onClick={() => useBoat.getState().toggleMapColors()}>
               {t("boat.colors")}
-              <span className="sw" />
+              <span className="check">
+                <IconCheck />
+              </span>
             </button>
           </div>
           )}
@@ -266,6 +271,9 @@ export function BoatHud({ index, zoneName }: { index: HeatIndex; zoneName: strin
       {toast && !tele?.aground && <div className="hud toast">{toast}</div>}
 
       <div className="hud boat-bottom">
+        {under ? (
+          <FieldGuide />
+        ) : (
         <div className="panel logbook-panel">
           <button className="fold-head" aria-expanded={logOpen} onClick={() => setLogOpen(!logOpen)}>
             <h4>{t("boat.samples")}</h4>
@@ -306,13 +314,20 @@ export function BoatHud({ index, zoneName }: { index: HeatIndex; zoneName: strin
           </>
           )}
         </div>
-        <div className="controls-hint">{TOUCH ? t("boat.hintTouch") : t("boat.hintKeys")}</div>
+        )}
+        <div className="controls-hint">{under ? "" : TOUCH ? t("boat.hintTouch") : t("boat.hintKeys")}</div>
+        <div className="boat-actions">
+        <button className="hbtn cast-btn" aria-pressed={under} onClick={() => useBoat.setState({ under: !under })}>
+          {under ? <IconSurface /> : <IconDive />}
+          {under ? t("boat.surface") : t("boat.dive")}
+        </button>
         <button className="hbtn primary cast-btn" onClick={startCast} disabled={!tele || tele.depth <= 1 || casting}>
           <IconCast />
           {casting
             ? `${t(cast.phase === "up" ? "boat.castUp" : cast.phase === "hold" ? "boat.castHold" : "boat.castDown")} ${fmtNum(cast.depth, lang)} m`
             : t("boat.cast")}
         </button>
+        </div>
       </div>
     </>
   );
@@ -325,5 +340,88 @@ function Chevron({ open }: { open: boolean }) {
     <svg viewBox="0 0 24 24" className="icon" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6" style={{ transform: open ? "rotate(180deg)" : undefined }}>
       <path d="M6 9l6 6 6-6" />
     </svg>
+  );
+}
+
+/** A compass tape like a ship's heading display: ticks every 5°, labels every 30°, lubber line in the middle. */
+function HeadingTape({ deg }: { deg: number }) {
+  const W = 340, span = 90; // degrees visible across the tape
+  const px = W / span;
+  const ticks = [];
+  const start = Math.floor((deg - span / 2) / 5) * 5;
+  for (let d = start; d <= deg + span / 2; d += 5) {
+    const x = W / 2 + (d - deg) * px;
+    const n = ((d % 360) + 360) % 360;
+    const major = n % 30 === 0;
+    const label = n === 0 ? "N" : n === 90 ? "E" : n === 180 ? "S" : n === 270 ? "W" : major ? String(n) : null;
+    ticks.push(
+      <g key={d} transform={`translate(${x.toFixed(1)} 0)`} opacity={1 - Math.min(1, Math.abs(d - deg) / (span / 2)) * 0.85}>
+        <line y1={major ? 0 : 4} y2={12} stroke="#eef2f5" strokeWidth={major ? 1.2 : 0.8} />
+        {label && (
+          <text y={26} textAnchor="middle" fontSize={label.length === 1 ? 12 : 10} fontFamily="var(--mono)" fill={label === "N" ? "#ff8a6e" : "#c9d6e0"}>
+            {label}
+          </text>
+        )}
+      </g>,
+    );
+  }
+  return (
+    <svg viewBox={`0 0 ${W} 34`} preserveAspectRatio="none">
+      <line x1={0} x2={W} y1={12.5} y2={12.5} stroke="rgba(255,255,255,.25)" />
+      {ticks}
+      <path d={`M${W / 2 - 5} -4 L${W / 2 + 5} -4 L${W / 2} 4 Z`} fill="#6ae3ee" />
+    </svg>
+  );
+}
+
+/** Underwater: the species of the (illustrative) reef around the boat, with how to recognize them. */
+function FieldGuide() {
+  const t = useT();
+  const L = useL();
+  const nearby = useBoat((s) => s.nearby);
+  const [open, setOpen] = useState(!SMALL);
+  return (
+    <aside className="panel logbook-panel field-guide">
+      <button className="fold-head" aria-expanded={open} onClick={() => setOpen(!open)}>
+        <h4>{t("boat.fieldGuide")}</h4>
+        <span className="hud-faint" style={{ fontSize: 12.5, marginLeft: "auto" }}>
+          {nearby.length ? t("boat.aroundYou") : t("boat.noReef")}
+        </span>
+        <Chevron open={open} />
+      </button>
+      {open && (
+        <>
+          {nearby.length > 0 && (
+            <ul>
+              {nearby.slice(0, 7).map((sp) => {
+                const s = REEF_LIFE[sp];
+                return (
+                  <li key={sp}>
+                    <i style={{ background: s.color }} />
+                    <span>
+                      <b style={{ fontWeight: 600 }}>{L(s.name)}</b> <em>{s.sci}</em>
+                      <span className="hud-faint" style={{ display: "block", fontSize: 12.5 }}>
+                        {L(s.look)}
+                      </span>
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+          <p className="notes" style={{ margin: 0 }}>
+            {L(REEF_LIFE_NOTE)}{" "}
+            {REEF_LIFE_SOURCES.map((src, k) => (
+              <span key={src.url}>
+                {k > 0 && "; "}
+                <a href={src.url} target="_blank" rel="noreferrer" style={{ color: "inherit" }}>
+                  {src.label}
+                </a>
+              </span>
+            ))}
+          </p>
+        </>
+      )}
+    </aside>
   );
 }

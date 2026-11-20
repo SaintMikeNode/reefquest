@@ -46,3 +46,15 @@ export const IconCast = (p: SVGProps<SVGSVGElement>) => (
 export const IconBook = (p: SVGProps<SVGSVGElement>) => (
   <svg {...base(p)}><path d="M5 4.5h10a3 3 0 0 1 3 3v12H8a3 3 0 0 1-3-3z" /><path d="M5 16.5a3 3 0 0 1 3-3h10" /></svg>
 );
+export const IconCheck = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base(p)} strokeWidth={2.4}><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+);
+export const IconHelp = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base(p)}><circle cx="12" cy="12" r="8.5" /><path d="M9.6 9.6a2.5 2.5 0 1 1 3.4 2.3c-.7.3-1 .8-1 1.5v.4" /><path d="M12 16.6v.4" /></svg>
+);
+export const IconDive = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base(p)}><path d="M3 7c1.5 1.2 3 1.2 4.5 0s3-1.2 4.5 0 3 1.2 4.5 0 3-1.2 4.5 0" /><path d="M12 11v9M8.5 16.5L12 20l3.5-3.5" /></svg>
+);
+export const IconSurface = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base(p)}><path d="M3 7c1.5 1.2 3 1.2 4.5 0s3-1.2 4.5 0 3 1.2 4.5 0 3-1.2 4.5 0" /><path d="M12 20v-9M8.5 14.5L12 11l3.5 3.5" /></svg>
+);

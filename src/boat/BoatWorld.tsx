@@ -12,7 +12,9 @@ import { abyssMaterial, seafloorMaterial, seaMaterial, skyMaterial, SKY_HORIZON,
 import { makeVessel } from "./boatModel";
 import { useBoat } from "./boatStore";
 import { echo } from "./echo";
-import { buildCandidates, CAPS, grassMaterial, PALETTES, propGeometries, underwater, type Candidates, type PropKind } from "./props";
+import { CAP, PALETTE, placeAround, reefCells, SIZE, SPECIES, speciesGeometries, speciesMaterial, type Placement, type Species } from "./corals";
+import { underwater, WATER, waterColorAt } from "./props";
+import { LightShafts, MarineSnow } from "./underwaterFx";
 import { COV_CELL, makeCoverage, resetCoverage, saveCoverage, SonarFan, stamp, type Coverage } from "./sonar";
 import { floorY, habitatAtXZ, hash, heightAtXZ, loadZone, lonLatToXZ, xzToLonLat, zoneGeometry, type Zone } from "./zone";
 
@@ -26,6 +28,7 @@ const DRAFT = 2.2; // keel depth: shallower water ahead stops the boat
 const BOW = 12.5;
 const STERN = -12;
 const PROP_RADIUS = 380;
+const UP = new THREE.Vector3(0, 1, 0);
 const CAST_SPEED = 2.2; // m/s winch speed
 
 export default function BoatWorld({ island, zoneId, start }: { island: string; zoneId: string; start: { lon: number; lat: number } }) {
@@ -71,6 +74,11 @@ function Scene({ zone, start }: { zone: Zone; start: { lon: number; lat: number 
   const seaMat = useMemo(() => seaMaterial(zone.depthTex, [zone.sizeX, zone.sizeZ]), [zone]);
   const sky = useMemo(() => skyMaterial(), []);
   const abyss = useMemo(() => abyssMaterial(), []);
+  const skyMesh = useRef<THREE.Mesh>(null);
+  const abyssMesh = useRef<THREE.Mesh>(null);
+  const shafts = useMemo(() => new LightShafts(LITE ? 4 : 7), []);
+  const snow = useMemo(() => new MarineSnow(LITE ? 400 : 900), []);
+  const { gl } = useThree();
 
   useEffect(() => {
     floorMat.uniforms.uMapColors.value = mapColors ? 1 : 0;
@@ -111,6 +119,18 @@ function Scene({ zone, start }: { zone: Zone; start: { lon: number; lat: number 
     floorMat.uniforms.uTime.value = t;
     seaMat.uniforms.uTime.value = t;
     sky.uniforms.uTime.value = t;
+    // Underwater when the camera is below the surface: water fog instead of air haze.
+    const under = camera.position.y < -0.05;
+    WATER.uRqUnder.value = under ? 1 : 0;
+    waterColorAt(-camera.position.y, WATER.uRqFog.value);
+    WATER.uRqVis.value = LITE ? 18 : 26;
+    if (skyMesh.current) skyMesh.current.visible = !under;
+    if (abyssMesh.current) abyssMesh.current.visible = !under;
+    (scene.background as THREE.Color).copy(under ? WATER.uRqFog.value : SKY_HORIZON);
+    const tele = useBoat.getState().tele;
+    const fx = tele?.x ?? 0, fz = tele?.z ?? 0;
+    shafts.update(camera, fx, fz, floorY(heightAtXZ(zone, fx, fz)), t, under);
+    snow.update(camera, t, gl.getPixelRatio(), under);
   });
 
   // Start on the site, or the nearest water at least 6 m deep (zone centers can be inland).
@@ -131,19 +151,21 @@ function Scene({ zone, start }: { zone: Zone; start: { lon: number; lat: number 
 
   return (
     <>
-      <mesh material={sky} renderOrder={-1}>
+      <mesh ref={skyMesh} material={sky} renderOrder={-1}>
         <sphereGeometry args={[9000, 32, 16]} />
       </mesh>
-      <hemisphereLight args={["#d6efff", "#3d5a4a", 1.05]} />
+      <hemisphereLight args={["#d6efff", "#7d8270", 1.05]} />
       <directionalLight position={SUN.clone().multiplyScalar(100)} intensity={1.7} color="#fff3dc" />
       <mesh geometry={floorGeo} material={floorMat} />
-      <mesh rotation-x={-Math.PI / 2} position-y={-70} material={abyss}>
+      <mesh ref={abyssMesh} rotation-x={-Math.PI / 2} position-y={-70} material={abyss}>
         <planeGeometry args={[30000, 30000, 1, 1]} />
       </mesh>
       <mesh rotation-x={-Math.PI / 2} material={seaMat} renderOrder={3}>
         <planeGeometry args={[30000, 30000, 1, 1]} />
       </mesh>
       <Reef zone={zone} time={time.current} />
+      <primitive object={shafts.group} />
+      <primitive object={snow.points} />
       <Fish zone={zone} />
       <Vegetation zone={zone} time={time.current} />
       <Buoys zone={zone} />
@@ -157,7 +179,8 @@ function Boat({ zone, start, coverage }: { zone: Zone; start: { x: number; z: nu
   const { camera, gl } = useThree();
   const vessel = useMemo(() => makeVessel(), []);
   const controls = useRef<OrbitControlsImpl>(null);
-  const st = useRef({ x: start.x, z: start.z, a: Math.PI, v: 0, aground: false, lastTele: 0, sx: start.x, sz: start.z, lastTex: 0 });
+  const st = useRef({ x: start.x, z: start.z, a: Math.PI, v: 0, aground: false, lastTele: 0, sx: start.x, sz: start.z, lastTex: 0, under: false });
+  const diving = useBoat((b) => b.under);
   const cast = useRef({ phase: "idle" as "idle" | "down" | "hold" | "up", L: 0, target: 0, t: 0, req: useBoat.getState().castReq });
   const wake = useMemo(() => new Wake(), []);
   const fan = useMemo(() => new SonarFan(), []);
@@ -172,6 +195,11 @@ function Boat({ zone, start, coverage }: { zone: Zone; start: { x: number; z: nu
     controls.current?.target.set(s.x, 3, s.z);
     controls.current?.update();
   }, [camera]);
+
+  // Dev only: move the boat from the console (window.__rqBoat.current.x = …) and inspect the zone.
+  useEffect(() => {
+    if (import.meta.env.DEV) Object.assign(window, { __rqBoat: st, __rqZone: zone });
+  }, [zone]);
 
   // Keyboard.
   useEffect(() => {
@@ -308,27 +336,50 @@ function Boat({ zone, start, coverage }: { zone: Zone; start: { x: number; z: nu
     }
     fp.needsUpdate = true;
 
+    foam.visible = wake.mesh.visible = !store.under; // surface effects: seen from below they read as slabs
     foam.position.set(s.x, 0.05, s.z);
     foam.rotation.y = s.a;
     (foam.material as THREE.ShaderMaterial).uniforms.uSpeed.value = Math.abs(s.v) / V_MAX;
     (foam.material as THREE.ShaderMaterial).uniforms.uTime.value = t;
 
-    // ---- Chase camera.
+    // ---- Chase camera: above the water, or diving close to the reef under the boat.
     const ctl = controls.current;
     if (ctl) {
+      const diving = store.under;
+      const bottom = floorY(heightAtXZ(zone, s.x, s.z));
+      if (diving !== s.under) {
+        s.under = diving;
+        if (diving) {
+          ctl.target.set(s.x, Math.min(-1.5, bottom + 1.6), s.z);
+          camera.position.set(s.x - dirx * 11 + dirz * 7, ctl.target.y + 2.2, s.z - dirz * 11 - dirx * 7);
+        } else {
+          ctl.target.set(s.x, 3, s.z);
+          camera.position.set(s.x - dirx * 62 + 18, 30, s.z - dirz * 62);
+        }
+      }
       const ddx = s.x - ctl.target.x, ddz = s.z - ctl.target.z;
       ctl.target.x += ddx;
       ctl.target.z += ddz;
       camera.position.x += ddx;
       camera.position.z += ddz;
+      if (diving) {
+        // Follow the seafloor smoothly, and keep the camera in the water column.
+        const dy = (Math.min(-1.5, bottom + 1.6) - ctl.target.y) * Math.min(1, dt * 2);
+        ctl.target.y += dy;
+        camera.position.y += dy;
+      }
       ctl.update();
+      if (diving) {
+        const floorCam = floorY(heightAtXZ(zone, camera.position.x, camera.position.z));
+        camera.position.y = Math.min(-0.5, Math.max(floorCam + 0.7, camera.position.y));
+      }
     }
 
     wake.push(s.x - dirx * 12, s.z - dirz * 12, Math.abs(s.v), dt);
 
     // ---- Multibeam survey.
     const sonarOn = store.sonar;
-    fan.update(zone, s.x, s.z, s.a, depthHere, t, sonarOn);
+    fan.update(zone, s.x, s.z, s.a, depthHere, t, sonarOn && !store.under);
     if (sonarOn && Math.hypot(s.x - s.sx, s.z - s.sz) > 4) {
       s.sx = s.x;
       s.sz = s.z;
@@ -382,9 +433,9 @@ function Boat({ zone, start, coverage }: { zone: Zone; start: { x: number; z: nu
         enableDamping
         dampingFactor={0.1}
         enablePan={false}
-        minDistance={22}
-        maxDistance={520}
-        maxPolarAngle={Math.PI * 0.47}
+        minDistance={diving ? 2.5 : 22}
+        maxDistance={diving ? 38 : 520}
+        maxPolarAngle={diving ? Math.PI * 0.94 : Math.PI * 0.47}
       />
     </>
   );
@@ -484,67 +535,63 @@ class Wake {
 
 /** Instanced reef life within PROP_RADIUS of the boat, refreshed as it moves. */
 function Reef({ zone, time }: { zone: Zone; time: { value: number } }) {
-  const cand = useMemo<Candidates>(() => buildCandidates(zone), [zone]);
-  const geos = useMemo(() => propGeometries(), []);
-  const mats = useMemo(
-    () => ({
-      boulder: underwater(new THREE.MeshStandardMaterial({ color: "#ffffff", roughness: 0.95, flatShading: true })),
-      branch: underwater(new THREE.MeshStandardMaterial({ color: "#ffffff", roughness: 0.8, flatShading: true })),
-      sponge: underwater(new THREE.MeshStandardMaterial({ color: "#ffffff", roughness: 0.9, flatShading: true })),
-      grass: underwater(grassMaterial(time)),
-    }),
-    [time],
-  );
-  const kinds: PropKind[] = ["boulder", "branch", "sponge", "grass"];
+  const cells = useMemo(() => reefCells(zone), [zone]);
+  const geos = useMemo(() => speciesGeometries(), []);
   const meshes = useMemo(() => {
-    const m: Record<string, THREE.InstancedMesh> = {};
-    for (const k of kinds) {
-      const cap = Math.round(CAPS[k] * (LITE ? 0.35 : 1));
-      const im = new THREE.InstancedMesh(geos[k], mats[k], cap);
+    const m = {} as Record<Species, THREE.InstancedMesh>;
+    for (const sp of SPECIES) {
+      const cap = Math.round(CAP[sp] * (LITE ? 0.3 : 1));
+      const im = new THREE.InstancedMesh(geos[sp], underwater(speciesMaterial(sp, time)), cap);
       im.count = 0;
       im.frustumCulled = false;
-      m[k] = im;
+      m[sp] = im;
     }
     return m;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [geos, mats]);
-  const last = useRef({ x: 1e9, z: 1e9 });
+  }, [geos, time]);
+  const last = useRef({ x: 1e9, z: 1e9, under: false });
+  useEffect(() => {
+    last.current = { x: 1e9, z: 1e9, under: false }; // new (empty) meshes: place again
+  }, [meshes]);
 
   useFrame(() => {
-    const tele = useBoat.getState().tele;
+    const st = useBoat.getState();
+    const tele = st.tele;
     if (!tele) return;
-    if (Math.hypot(tele.x - last.current.x, tele.z - last.current.z) < 60) return;
-    last.current = { x: tele.x, z: tele.z };
-    const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), s = new THREE.Vector3(), p = new THREE.Vector3(), col = new THREE.Color();
-    const up = new THREE.Vector3(0, 1, 0);
-    for (const k of kinds) {
-      const arr = cand[k];
-      const im = meshes[k];
+    const moved = Math.hypot(tele.x - last.current.x, tele.z - last.current.z);
+    if (moved < (st.under ? 18 : 40) && st.under === last.current.under) return;
+    last.current = { x: tele.x, z: tele.z, under: st.under };
+    const dense = LITE ? 45 : 75;
+    const lists = {} as Record<Species, Placement[]>;
+    for (const sp of SPECIES) lists[sp] = [];
+    placeAround(cells, tele.x, tele.z, PROP_RADIUS, dense, (p) => lists[p.sp].push(p));
+    // What grows within 40 m, most common first (for the field guide).
+    const near = SPECIES.map((sp) => [sp, lists[sp].filter((p) => p.d2 < 1600).length] as const).filter(([, n]) => n > 0);
+    useBoat.setState({ nearby: near.sort((a, b) => b[1] - a[1]).map(([sp]) => sp) });
+    const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), sc = new THREE.Vector3(), pos = new THREE.Vector3(), col = new THREE.Color();
+    const tilt = new THREE.Quaternion(), axis = new THREE.Vector3();
+    for (const sp of SPECIES) {
+      const im = meshes[sp];
       const cap = im.instanceMatrix.count;
-      const r2 = PROP_RADIUS * PROP_RADIUS;
-      let inRange = 0;
-      for (let i = 0; i < arr.length; i += 4) {
-        const dx = arr[i] - tele.x, dz = arr[i + 2] - tele.z;
-        if (dx * dx + dz * dz < r2) inRange++;
-      }
-      const keep = Math.min(1, cap / Math.max(inRange, 1));
-      let n = 0;
-      const pal = PALETTES[k];
-      for (let i = 0; i < arr.length && n < cap; i += 4) {
-        const dx = arr[i] - tele.x, dz = arr[i + 2] - tele.z;
-        if (dx * dx + dz * dz >= r2) continue;
-        const seed = arr[i + 3];
-        if ((seed * 9973) % 1 > keep) continue;
-        const size = k === "boulder" ? 0.6 + seed * 1.8 : k === "branch" ? 0.7 + seed * 1.2 : k === "sponge" ? 0.6 + seed * 0.9 : 0.6 + seed * 0.5;
-        p.set(arr[i], floorY(arr[i + 1]) - (k === "boulder" ? size * 0.12 : 0), arr[i + 2]);
-        q.setFromAxisAngle(up, seed * 40);
-        s.set(size, size * (k === "grass" ? 0.8 + seed * 0.6 : 1), size);
-        m4.compose(p, q, s);
+      let list = lists[sp];
+      // Over budget: keep the nearest ones (the reef around the boat stays dense).
+      if (list.length > cap) list = list.sort((a, b) => a.d2 - b.d2).slice(0, cap);
+      const pal = PALETTE[sp];
+      const [s0, s1] = SIZE[sp];
+      list.forEach((p, n) => {
+        const size = s0 + hash(p.seed * 17.3) * s1;
+        const y = floorY(heightAtXZ(zone, p.x, p.z));
+        pos.set(p.x, y - (sp === "brain" || sp === "star" ? size * 0.08 : 0.02), p.z);
+        q.setFromAxisAngle(UP, p.seed * 40);
+        // Fans face across the current with a slight lean; everything else stands with a small tilt.
+        axis.set(hash(p.seed * 3.1) - 0.5, 0, hash(p.seed * 5.7) - 0.5).normalize();
+        tilt.setFromAxisAngle(axis, (hash(p.seed * 9.1) - 0.5) * (sp === "grass" ? 0.5 : 0.22));
+        q.premultiply(tilt);
+        sc.set(size, size * (0.85 + hash(p.seed * 23.9) * 0.3), size);
+        m4.compose(pos, q, sc);
         im.setMatrixAt(n, m4);
-        im.setColorAt(n, col.set(pal[Math.floor(seed * 997) % pal.length]));
-        n++;
-      }
-      im.count = n;
+        im.setColorAt(n, col.set(pal[Math.floor(hash(p.seed * 31.3) * pal.length) % pal.length]));
+      });
+      im.count = list.length;
       im.instanceMatrix.needsUpdate = true;
       if (im.instanceColor) im.instanceColor.needsUpdate = true;
     }
@@ -552,8 +599,8 @@ function Reef({ zone, time }: { zone: Zone; time: { value: number } }) {
 
   return (
     <>
-      {kinds.map((k) => (
-        <primitive key={k} object={meshes[k]} />
+      {SPECIES.map((sp) => (
+        <primitive key={sp} object={meshes[sp]} />
       ))}
     </>
   );
@@ -678,43 +725,79 @@ function Buoys({ zone }: { zone: Zone }) {
 }
 
 /** A few small schools of illustrative reef fish circling coral near the boat (one instanced mesh). */
+/** A stylized reef fish: flattened body, forked tail and dorsal fin, lighter belly; nose along +z. */
+function fishGeometry() {
+  const body = new THREE.SphereGeometry(0.5, 10, 7);
+  body.scale(0.3, 0.58, 1);
+  body.deleteAttribute("uv");
+  const fin = (pts: number[]) => {
+    const g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.Float32BufferAttribute(pts, 3));
+    g.computeVertexNormals();
+    return g;
+  };
+  const tail = fin([0, 0, -0.42, 0, 0.3, -0.78, 0, 0.02, -0.62, 0, 0, -0.42, 0, -0.02, -0.62, 0, -0.3, -0.78]);
+  const dorsal = fin([0, 0.26, 0.18, 0, 0.42, -0.08, 0, 0.24, -0.3]);
+  const g = mergeGeometries([body.toNonIndexed(), tail, dorsal])!;
+  const p = g.attributes.position as THREE.BufferAttribute;
+  const c = new Float32Array(p.count * 3);
+  for (let i = 0; i < p.count; i++) {
+    const v = p.getY(i) < -0.05 ? 1.35 : p.getZ(i) < -0.4 ? 0.85 : 1.0;
+    c[i * 3] = c[i * 3 + 1] = c[i * 3 + 2] = v;
+  }
+  g.setAttribute("color", new THREE.BufferAttribute(c, 3));
+  return g;
+}
+
+/** Schools of reef fish circling over coral and hard bottom (closer to the camera when diving). */
 function Fish({ zone }: { zone: Zone }) {
-  const SCHOOLS = LITE ? 3 : 6;
-  const PER = LITE ? 14 : 24;
+  const SCHOOLS = LITE ? 4 : 8;
+  const PER = LITE ? 12 : 20;
+  const time = useMemo(() => ({ value: 0 }), []);
   const mesh = useMemo(() => {
-    const body = new THREE.ConeGeometry(0.12, 0.42, 6);
-    body.rotateX(Math.PI / 2);
-    const tail = new THREE.ConeGeometry(0.1, 0.16, 4);
-    tail.rotateX(-Math.PI / 2);
-    tail.translate(0, 0, -0.27);
-    const geo = mergeGeometries([body, tail])!;
-    const im = new THREE.InstancedMesh(geo, underwater(new THREE.MeshStandardMaterial({ color: "#ffffff", roughness: 0.4 })), SCHOOLS * PER);
-    const pal = ["#ffd23f", "#2f6bff", "#c0c8d0", "#ff8c42", "#7b5cff", "#30c0b0"];
-    const c = new THREE.Color();
-    for (let i = 0; i < SCHOOLS * PER; i++) im.setColorAt(i, c.set(pal[Math.floor(i / PER) % pal.length]));
+    const mat = new THREE.MeshStandardMaterial({ color: "#ffffff", vertexColors: true, roughness: 0.45, side: THREE.DoubleSide });
+    mat.onBeforeCompile = (sh) => {
+      sh.uniforms.uTime = time;
+      sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nuniform float uTime;").replace(
+        "#include <begin_vertex>",
+        `#include <begin_vertex>
+        // Tail beat: the rear of the body swings side to side.
+        float ph = instanceMatrix[3].x * 3.1 + instanceMatrix[3].z * 1.7;
+        transformed.x += sin(uTime * 9.0 + ph) * 0.16 * max(0.0, -position.z - 0.05);`,
+      );
+    };
+    mat.customProgramCacheKey = () => "rq-fish";
+    const im = new THREE.InstancedMesh(fishGeometry(), underwater(mat), SCHOOLS * PER);
+    // Blue tang, yellowtail snapper, sergeant major, French grunt, creole wrasse, parrotfish, schoolmaster, blue chromis.
+    const pal = ["#3a66d8", "#dfe4ea", "#e6d66a", "#f0c040", "#7454c8", "#3fb39a", "#e2c79a", "#4f9fe8"];
+    const col = new THREE.Color();
+    for (let i = 0; i < SCHOOLS * PER; i++) im.setColorAt(i, col.set(pal[Math.floor(i / PER) % pal.length]));
     im.frustumCulled = false;
     return im;
-  }, [SCHOOLS, PER]);
-  const schools = useRef<{ x: number; z: number; y: number; r: number; speed: number }[]>([]);
-  const last = useRef({ x: 1e9, z: 1e9 });
+  }, [SCHOOLS, PER, time]);
+  const schools = useRef<{ x: number; z: number; y: number; r: number; speed: number; size: number }[]>([]);
+  const last = useRef({ x: 1e9, z: 1e9, under: false });
   const m4 = useMemo(() => new THREE.Matrix4(), []);
   const q = useMemo(() => new THREE.Quaternion(), []);
   const e = useMemo(() => new THREE.Euler(), []);
-  const one = useMemo(() => new THREE.Vector3(1, 1, 1), []);
+  const sc3 = useMemo(() => new THREE.Vector3(), []);
   const pos = useMemo(() => new THREE.Vector3(), []);
 
   useFrame((st) => {
-    const tele = useBoat.getState().tele;
+    const { tele, under } = useBoat.getState();
     if (!tele) return;
-    if (Math.hypot(tele.x - last.current.x, tele.z - last.current.z) > 120) {
-      last.current = { x: tele.x, z: tele.z };
+    time.value = st.clock.elapsedTime;
+    if (Math.hypot(tele.x - last.current.x, tele.z - last.current.z) > (under ? 40 : 120) || under !== last.current.under) {
+      last.current = { x: tele.x, z: tele.z, under };
       const list: typeof schools.current = [];
-      for (let k = 0; k < 40 && list.length < SCHOOLS; k++) {
-        const a = hash(k + Math.floor(tele.x)) * Math.PI * 2, r = 25 + hash(k * 7 + Math.floor(tele.z)) * 140;
+      for (let k = 0; k < 60 && list.length < SCHOOLS; k++) {
+        const a = hash(k + Math.floor(tele.x)) * Math.PI * 2;
+        const r = under ? 5 + hash(k * 7 + Math.floor(tele.z)) * 32 : 25 + hash(k * 7 + Math.floor(tele.z)) * 140;
         const x = tele.x + Math.cos(a) * r, z = tele.z + Math.sin(a) * r;
         const h = heightAtXZ(zone, x, z);
         const cls = habitatAtXZ(zone, x, z).benthic;
-        if (h < -2.5 && h > -25 && (cls === 15 || cls === 13 || k > 30)) list.push({ x, z, y: floorY(h) + 1.2 + hash(k) * 1.5, r: 3 + hash(k + 3) * 5, speed: 0.25 + hash(k + 5) * 0.35 });
+        if (h < -2.5 && h > -25 && (cls === 15 || cls === 13 || k > 40))
+          list.push({ x, z, y: floorY(h) + 0.9 + hash(k) * 1.8, r: 2.5 + hash(k + 3) * 4.5, speed: 0.22 + hash(k + 5) * 0.3, size: 0.22 + hash(k + 9) * 0.25 });
       }
       schools.current = list;
     }
@@ -726,9 +809,11 @@ function Fish({ zone }: { zone: Zone }) {
         const ang = t * sc.speed + ph + Math.sin(t * 0.7 + i) * 0.15;
         const rr = sc.r * (0.7 + 0.3 * Math.sin(i * 1.7 + si));
         pos.set(sc.x + Math.cos(ang) * rr, sc.y + Math.sin(t * 1.5 + i) * 0.25 + (i % 3) * 0.3, sc.z + Math.sin(ang) * rr);
-        e.set(0, -ang, Math.sin(t * 8 + i) * 0.15);
+        // Swim along the circle (tangent), with a slight roll.
+        e.set(0, -ang, Math.sin(t * 2 + i) * 0.08);
         q.setFromEuler(e);
-        m4.compose(pos, q, one);
+        const k = sc.size * (0.85 + 0.3 * hash(i + si * 31));
+        m4.compose(pos, q, sc3.set(k, k, k));
         mesh.setMatrixAt(n++, m4);
       }
     });

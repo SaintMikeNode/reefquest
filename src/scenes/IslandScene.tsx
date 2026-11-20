@@ -84,7 +84,7 @@ export default function IslandScene({ island }: { island: string }) {
         )}
       </Canvas>
       {!boat && <PinOverlay td={td} />}
-      {boat ? <BoatHud index={index} zoneName={zoneEntry ? zoneName(zoneEntry, lang) : ""} /> : <Hud td={td} index={index} />}
+      {boat ? <BoatHud index={index} zoneName={zoneEntry ? zoneName(zoneEntry, lang) : ""} islandName={td.meta.name} /> : <Hud td={td} index={index} />}
     </div>
   );
 }

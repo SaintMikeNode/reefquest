@@ -1,3 +1,4 @@
+import type { Species } from "./corals";
 import { create } from "zustand";
 
 export interface Telemetry {
@@ -30,6 +31,10 @@ interface BoatState {
   near: string | null; // site id within reach
   samples: Sample[];
   mapColors: boolean;
+  /** Camera below the surface, close to the reef. */
+  under: boolean;
+  /** Species of the illustrative reef within ~40 m of the boat, most common first. */
+  nearby: Species[];
   present: number[]; // benthic classes found in this zone
   estimated: boolean; // shallow depths estimated from reef zones (no Atlas bathymetry)
   loading: boolean;
@@ -62,6 +67,8 @@ export const useBoat = create<BoatState>((set, get) => ({
   near: null,
   samples: [],
   mapColors: false,
+  under: false,
+  nearby: [],
   present: [],
   estimated: false,
   loading: false,

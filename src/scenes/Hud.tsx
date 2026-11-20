@@ -1,18 +1,19 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { loadZoneIndex, zoneName, type ZoneIndexEntry } from "../boat/zone";
 import { SITES } from "../content/sites";
-import { fmtNum, useL, useLang, useT } from "../i18n";
+import { fmtNum, rich, useL, useLang, useT } from "../i18n";
+import { rampCSS } from "../lib/alert";
 import type { HeatIndex } from "../lib/data";
 import { href } from "../lib/router";
 import { AlertChip } from "../ui/AlertChip";
 import { HeatKey } from "../ui/HeatKey";
-import { IconBack, IconHome, IconLayers, IconShip } from "../ui/Icons";
+import { IconArrow, IconBack, IconCheck, IconHelp, IconHome, IconLayers, IconShip } from "../ui/Icons";
 import { LangToggle } from "../ui/LangToggle";
 import { dhwAt } from "./heatLookup";
 import { BENTHIC, GEOMORPHIC } from "./materials";
 import { useScene } from "./sceneStore";
 import { fmtLat, fmtLon, SiteCard } from "./SiteCard";
-import { homeDistance, type TerrainData } from "./terrain";
+import { homeDistance, uvToLonLat, xzToUV, type TerrainData } from "./terrain";
 import { Timeline } from "./Timeline";
 
 /** The boat zone containing a lon/lat, if any. */
@@ -23,6 +24,8 @@ export function zoneFor(zones: ZoneIndexEntry[], lon: number, lat: number): Zone
     return Math.abs(dx) < z.size_m[0] / 2 - 120 && Math.abs(dy) < z.size_m[1] / 2 - 120;
   });
 }
+
+const HINT_KEY = "rq-guide-1";
 
 export function Hud({ td, index }: { td: TerrainData; index: HeatIndex }) {
   const t = useT();
@@ -37,11 +40,11 @@ export function Hud({ td, index }: { td: TerrainData; index: HeatIndex }) {
   const fly = useScene((s) => s.fly);
   const setBoat = useScene((s) => s.setBoat);
   const [showLayers, setShowLayers] = useState(false);
-  const [open, setOpen] = useState<"layers" | "legend" | "boat">("layers");
+  const [open, setOpen] = useState<SectionId>("layers");
   const [zones, setZones] = useState<ZoneIndexEntry[]>([]);
   const [hint, setHint] = useState(() => {
     try {
-      return !localStorage.getItem("rq-hint");
+      return !localStorage.getItem(HINT_KEY);
     } catch {
       return true;
     }
@@ -52,7 +55,7 @@ export function Hud({ td, index }: { td: TerrainData; index: HeatIndex }) {
   const closeHint = () => {
     setHint(false);
     try {
-      localStorage.setItem("rq-hint", "1");
+      localStorage.setItem(HINT_KEY, "1");
     } catch {
       /* storage blocked */
     }
@@ -60,70 +63,114 @@ export function Hud({ td, index }: { td: TerrainData; index: HeatIndex }) {
   const site = SITES.find((s) => s.id === siteId);
   const siteZone = site ? zoneFor(zones, site.lon, site.lat) : undefined;
   const dhw = readout ? dhwAt(index, readout.lon, readout.lat, day) : null;
+  const { u, v } = xzToUV(td, td.center.x, td.center.z);
+  const here = uvToLonLat(td, u, v);
 
-  const rows: { k: keyof typeof layers; label: string }[] = [
-    { k: "habitat", label: t("scene.layer.habitat") },
-    { k: "heat", label: t("scene.layer.heat") },
-    { k: "contours", label: t("scene.layer.contours") },
-    { k: "sites", label: t("scene.layer.sites") },
+  const rows: { k: keyof typeof layers; sw: ReactNode; what: string; key?: ReactNode }[] = [
+    {
+      k: "habitat",
+      sw: <Swatch colors={[BENTHIC[11].color, BENTHIC[14].color, BENTHIC[13].color, BENTHIC[15].color]} />,
+      what: t("scene.layer.habitat.what"),
+      key: (
+        <div className="key-cats">
+          {Object.values(BENTHIC).map((c) => (
+            <span key={c.color}>
+              <i style={{ background: c.color }} />
+              {L(c)}
+            </span>
+          ))}
+        </div>
+      ),
+    },
+    {
+      k: "heat",
+      sw: <Swatch colors={[0, 2, 4, 8, 12, 20].map((d) => rampCSS(d))} />,
+      what: t("scene.layer.heat.what"),
+      key: <HeatKey compact />,
+    },
+    {
+      k: "contours",
+      sw: (
+        <svg className="sw" viewBox="0 0 26 18" aria-hidden="true" style={{ background: "#0a3550" }}>
+          {[4, 9, 14].map((y) => (
+            <path key={y} d={`M-2 ${y} C 6 ${y - 4}, 14 ${y + 4}, 28 ${y - 1}`} stroke="#6fe0ee" strokeWidth="1" fill="none" opacity={0.85} />
+          ))}
+        </svg>
+      ),
+      what: t("scene.layer.contours.what"),
+    },
+    {
+      k: "sites",
+      sw: (
+        <svg className="sw" viewBox="0 0 26 18" aria-hidden="true" style={{ background: "#0a3550" }}>
+          <rect x="5" y="5" width="6" height="6" transform="rotate(45 8 8)" fill="#ff8a6e" />
+          <circle cx="19" cy="10" r="2.6" fill="#8fc3f0" />
+        </svg>
+      ),
+      what: t("scene.layer.sites.what"),
+    },
   ];
 
   return (
     <>
-      <div className="hud hud-top">
-        <div className="group">
-          <a className="hbtn" href={href.home}>
-            <IconBack /> <span className="hide-sm">{t("scene.back")}</span>
-          </a>
-          <div className="panel title-block">
-            <div className="hud-label">{t("scene.region")}</div>
-            <h1>{td.meta.name}</h1>
-          </div>
+      <div className="scrim-top" />
+      <div className="scrim-bottom" />
+
+      <header className="hud plate">
+        <div className="kicker">{t("scene.region")}</div>
+        <h1>{td.meta.name}</h1>
+        <div className="coords">
+          {fmtLat(here.lat, lang)} · {fmtLon(here.lon, lang)}
         </div>
-        <div className="group">
-          <button className="hbtn layers-toggle" aria-pressed={showLayers} onClick={() => setShowLayers(!showLayers)} aria-label={t("scene.layers")}>
-            <IconLayers />
-          </button>
-          <button className="hbtn icon-only" onClick={() => fly(td.center.x, td.center.z, homeDistance(td), true)} title={t("scene.reset")} aria-label={t("scene.reset")}>
-            <IconHome />
-          </button>
-          <LangToggle />
-        </div>
+        <a className="back-btn" href={href.home}>
+          <IconBack /> {t("scene.back")}
+        </a>
+      </header>
+
+      <div className="hud tools">
+        <button className="hbtn icon-only layers-toggle" aria-pressed={showLayers} onClick={() => setShowLayers(!showLayers)} aria-label={t("scene.layers")} title={t("scene.layers")}>
+          <IconLayers />
+        </button>
+        <button className="hbtn icon-only" onClick={() => setHint(true)} aria-label={t("scene.help")} title={t("scene.help")}>
+          <IconHelp />
+        </button>
+        <button className="hbtn icon-only" onClick={() => fly(td.center.x, td.center.z, homeDistance(td), true)} title={t("scene.reset")} aria-label={t("scene.reset")}>
+          <IconHome />
+        </button>
+        <LangToggle />
       </div>
 
       <aside className={showLayers ? "hud hud-left panel" : "hud hud-left panel collapsed"}>
         <Section id="layers" title={t("scene.layers")} open={open} setOpen={setOpen}>
           {rows.map((r) => (
-            <button key={r.k} className="toggle" aria-pressed={layers[r.k]} onClick={() => toggle(r.k)}>
-              {r.label}
-              <span className="sw" />
-            </button>
-          ))}
-        </Section>
-        <Section id="legend" title={t("scene.legend")} open={open} setOpen={setOpen}>
-          <div className="key" style={{ marginBottom: 10 }}>
-            <span className="key-title">{t("key.habitatTitle")}</span>
-            <div className="key-cats">
-              {Object.values(BENTHIC).map((c) => (
-                <span key={c.color}>
-                  <i style={{ background: c.color }} />
-                  {L(c)}
+            <div key={r.k}>
+              <button className="layer" aria-pressed={layers[r.k]} onClick={() => toggle(r.k)}>
+                {r.sw}
+                <span className="name">{t(`scene.layer.${r.k}`)}</span>
+                <span className="check">
+                  <IconCheck />
                 </span>
-              ))}
+                <span className="what">{r.what}</span>
+              </button>
+              {r.key && layers[r.k] && <div className="layer-key">{r.key}</div>}
             </div>
-          </div>
-          <HeatKey compact />
-          <p className="notes" style={{ margin: "10px 0 0" }}>
-            {t("scene.modelNote")} {t("scene.exaggeration")} {td.meta.bathymetry_source !== "aca-bathymetry" && t("scene.depthModel")} {t("scene.heatNote")}
+          ))}
+          <p className="panel-note">
+            {t("scene.modelNote")} {t("scene.exaggeration")} {td.meta.bathymetry_source !== "aca-bathymetry" && t("scene.depthModel")}{" "}
+            <a href={href.about}>{t("scene.aboutData")}</a>
           </p>
         </Section>
         {zones.length > 0 && (
           <Section id="boat" title={t("boat.zones")} open={open} setOpen={setOpen}>
-            <p className="notes" style={{ margin: "0 0 6px" }}>{t("boat.zonesLead")}</p>
+            <p className="notes" style={{ margin: "0 0 4px" }}>
+              {t("boat.zonesLead")}
+            </p>
             {zones.map((z) => (
-              <button key={z.id} className="toggle" onClick={() => setBoat({ zone: z.id, lon: z.lon, lat: z.lat })}>
+              <button key={z.id} className="zone-row" onClick={() => setBoat({ zone: z.id, lon: z.lon, lat: z.lat })}>
                 {zoneName(z, lang)}
-                <IconShip />
+                <span className="go">
+                  <IconShip /> {t("boat.go")}
+                </span>
               </button>
             ))}
           </Section>
@@ -144,7 +191,9 @@ export function Hud({ td, index }: { td: TerrainData; index: HeatIndex }) {
         />
       ) : (
         <aside className="hud hud-right panel readout-panel" aria-live="off">
-          <h4 style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600 }}>{t("scene.readout")}</h4>
+          <div className="kicker" style={{ marginBottom: 10 }}>
+            {t("scene.readout")}
+          </div>
           {readout ? (
             <dl className="readout">
               <dt>{t("scene.lat")}</dt>
@@ -156,19 +205,21 @@ export function Hud({ td, index }: { td: TerrainData; index: HeatIndex }) {
               {readout.benthic > 0 && (
                 <>
                   <dt>{t("scene.habitat")}</dt>
-                  <dd>{BENTHIC[readout.benthic] ? L(BENTHIC[readout.benthic]) : "–"}</dd>
+                  <dd className="txt">{BENTHIC[readout.benthic] ? L(BENTHIC[readout.benthic]) : "–"}</dd>
                 </>
               )}
               {readout.geomorphic > 0 && (
                 <>
                   <dt>{t("scene.zone")}</dt>
-                  <dd>{GEOMORPHIC[readout.geomorphic] ? L(GEOMORPHIC[readout.geomorphic]) : "–"}</dd>
+                  <dd className="txt">{GEOMORPHIC[readout.geomorphic] ? L(GEOMORPHIC[readout.geomorphic]) : "–"}</dd>
                 </>
               )}
               {dhw !== null && (
                 <>
                   <dt>{t("scene.dhw")}</dt>
-                  <dd>{fmtNum(dhw, lang)}</dd>
+                  <dd>
+                    {fmtNum(dhw, lang)} {t("unit.dhw")}
+                  </dd>
                   <dt />
                   <dd>
                     <AlertChip dhw={dhw} />
@@ -177,7 +228,7 @@ export function Hud({ td, index }: { td: TerrainData; index: HeatIndex }) {
               )}
             </dl>
           ) : (
-            <p className="hud-faint" style={{ margin: 0, fontSize: 13.5 }}>
+            <p className="hud-faint" style={{ margin: 0, fontSize: 13.5, lineHeight: 1.45 }}>
               {t("scene.hover")}
             </p>
           )}
@@ -185,11 +236,21 @@ export function Hud({ td, index }: { td: TerrainData; index: HeatIndex }) {
       )}
 
       {hint && (
-        <div className="hud hint panel" role="note">
-          <span>{t("scene.hint")}</span>
+        <div className="hud hint panel" role="dialog" aria-labelledby="guide-title">
           <div>
-            <button className="hbtn primary" onClick={closeHint}>
-              {t("scene.hintOk")}
+            <div className="kicker">{td.meta.name}</div>
+            <h2 id="guide-title">{t("scene.guideTitle")}</h2>
+          </div>
+          <ol>
+            {(["scene.guide1", "scene.guide2", "scene.guide3", "scene.guide4"] as const).map((k) => (
+              <li key={k}>
+                <span>{rich(t(k))}</span>
+              </li>
+            ))}
+          </ol>
+          <div className="actions">
+            <button className="hbtn primary" onClick={closeHint} autoFocus>
+              {t("scene.guideStart")} <IconArrow />
             </button>
           </div>
         </div>
@@ -204,13 +265,23 @@ export function Hud({ td, index }: { td: TerrainData; index: HeatIndex }) {
   );
 }
 
-type SectionId = "layers" | "legend" | "boat";
-function Section({ id, title, open, setOpen, children }: { id: SectionId; title: string; open: SectionId; setOpen: (s: SectionId) => void; children: React.ReactNode }) {
+function Swatch({ colors }: { colors: string[] }) {
+  return (
+    <span className="sw" aria-hidden="true" style={{ display: "flex" }}>
+      {colors.map((c, i) => (
+        <span key={i} style={{ flex: 1, background: c }} />
+      ))}
+    </span>
+  );
+}
+
+type SectionId = "layers" | "boat";
+function Section({ id, title, open, setOpen, children }: { id: SectionId; title: string; open: SectionId; setOpen: (s: SectionId) => void; children: ReactNode }) {
   const isOpen = open === id;
   return (
-    <div className="hud-section acc">
+    <div className="acc">
       <button className="acc-head" aria-expanded={isOpen} onClick={() => setOpen(id)}>
-        {title}
+        <span className="kicker">{title}</span>
         <svg viewBox="0 0 24 24" className="icon" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6" style={{ transform: isOpen ? "rotate(180deg)" : undefined }}>
           <path d="M6 9l6 6 6-6" />
         </svg>

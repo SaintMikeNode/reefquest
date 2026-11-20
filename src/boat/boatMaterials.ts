@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { WATER, WATER_GLSL } from "./props";
 
 export const SUN = new THREE.Vector3(-0.45, 0.8, -0.35).normalize();
 export const SKY_TOP = new THREE.Color("#3f8fc4");
@@ -40,6 +41,7 @@ export function seafloorMaterial(habitat: THREE.DataTexture, lite: boolean, cove
       uHorizon: { value: SKY_HORIZON },
       uFog: { value: FOG_DENSITY },
       uMapColors: { value: 0 },
+      ...WATER,
     },
     vertexShader: /* glsl */ `
       attribute float aH;
@@ -67,6 +69,7 @@ export function seafloorMaterial(habitat: THREE.DataTexture, lite: boolean, cove
       uniform float uSonar;
       uniform vec2 uSize;
       uniform vec2 uCovSize;
+      ${WATER_GLSL}
       varying float vH;
       varying vec2 vUv;
       varying vec3 vN;
@@ -138,25 +141,21 @@ export function seafloorMaterial(habitat: THREE.DataTexture, lite: boolean, cove
         c *= 0.45 + 0.7 * lambert;
         if (vH <= 0.0) {
           float d = -vH;
-          ${lite ? "" : "c += vec3(0.7, 1.0, 0.95) * caustic(p, uTime) * 0.35 * exp(-d / 9.0) * (1.0 - smoothstep(80.0, 320.0, vDist));"}
-          // Light lost through the water column: shallow sand goes turquoise, depth goes blue.
-          vec3 water = mix(vec3(0.10, 0.72, 0.74), vec3(0.02, 0.30, 0.48), smoothstep(2.0, 30.0, d));
-          // Light travels through the water along the line of sight: at low viewing angles the path
-          // is much longer than the depth, so distant seafloor fades into the sea color (as in reality).
-          float vy = max(normalize(cameraPosition - vW).y, 0.08);
-          float path = d / vy;
-          c = mix(c, water, 1.0 - exp(-path / 12.0));
-          // Surveyed seafloor: the multibeam bathymetry is drawn as data, over the natural view.
-          if (uSonar > 0.5) {
+          ${lite ? "" : "c += vec3(0.7, 1.0, 0.95) * caustic(p, uTime) * (uRqUnder > 0.5 ? 0.6 : 0.35) * exp(-d / 9.0) * (1.0 - smoothstep(80.0, 320.0, vDist));"}
+          c = rqWaterTint(c, vW);
+          // Surveyed seafloor: the multibeam bathymetry is drawn as data, over the natural view (not while diving).
+          if (uSonar > 0.5 && uRqUnder < 0.5) {
             float cov = texture2D(uCoverage, (vW.xz + uSize * 0.5) / uCovSize).r;
             if (cov > 0.01) {
               vec3 b = bathy(d) * (0.55 + 0.6 * lambert);
-              b = mix(b, vec3(0.04, 0.10, 0.20), iso(d, 1.0, 1.0) * 0.28 + iso(d, 5.0, 1.4) * 0.55);
-              c = mix(c, haze(b, vDist) , smoothstep(0.0, 0.6, cov) * 0.9);
+              b = mix(b, vec3(0.04, 0.10, 0.20), iso(d, 5.0, 1.2) * 0.45);
+              c = mix(c, haze(b, vDist), smoothstep(0.0, 0.6, cov) * 0.58);
             }
           }
+        } else if (uRqUnder > 0.5) {
+          c = mix(c, uRqFog, 1.0 - exp(-vDist / uRqVis));
         }
-        gl_FragColor = vec4(haze(c, vDist), 1.0);
+        gl_FragColor = vec4(uRqUnder > 0.5 ? c : haze(c, vDist), 1.0);
       }
     `,
   });
@@ -167,7 +166,9 @@ export function seaMaterial(depthTex: THREE.Texture | null, size: [number, numbe
   return new THREE.ShaderMaterial({
     transparent: true,
     depthWrite: false,
+    side: THREE.DoubleSide,
     uniforms: {
+      ...WATER,
       uDepth: { value: depthTex },
       uHasDepth: { value: depthTex ? 1 : 0 },
       uSize: { value: new THREE.Vector2(...size) },
@@ -197,6 +198,7 @@ export function seaMaterial(depthTex: THREE.Texture | null, size: [number, numbe
       uniform vec3 uSun;
       uniform vec3 uSky;
       uniform float uGrid;
+      ${WATER_GLSL}
       varying vec3 vW;
       varying float vDist;
       ${NOISE}
@@ -217,6 +219,20 @@ export function seaMaterial(depthTex: THREE.Texture | null, size: [number, numbe
         g += vec2(0.2, -0.9) * cos(dot(p, vec2(0.2, -0.9)) * 1.3 + t * 2.3) * 0.12 * (1.0 - smoothstep(50.0, 220.0, vDist));
         vec3 n = normalize(vec3(-g.x * 0.25, 1.0, -g.y * 0.25));
         vec3 v = normalize(cameraPosition - vW);
+        if (uRqUnder > 0.5) {
+          // From below: Snell's window (the sky squeezed into a ~97° cone overhead), total internal
+          // reflection of the water color outside it, and moving ripple highlights.
+          float cosT = clamp(-v.y, 0.0, 1.0);
+          float wob = dot(n.xz, vec2(0.7, 0.5)) * 3.0;
+          float win = smoothstep(0.6, 0.74, cosT + wob * 0.05);
+          vec3 skyc = mix(vec3(0.6, 0.9, 0.96), vec3(1.0, 0.99, 0.94), pow(cosT, 8.0));
+          vec3 tir = uRqFog * 0.88 + vec3(0.01, 0.03, 0.03) * wob; // mirror of the darker water below
+          vec3 uc = mix(tir, skyc, win);
+          uc += vec3(0.9, 1.0, 1.0) * pow(max(0.0, 1.0 - abs(wob)), 10.0) * 0.18 * win;
+          uc = mix(uc, uRqFog, 1.0 - exp(-vDist / (uRqVis * 1.7)));
+          gl_FragColor = vec4(uc, 1.0);
+          return;
+        }
         float fres = pow(1.0 - max(dot(n, v), 0.0), 3.0);
         vec3 r = reflect(-v, n);
         float spec = pow(max(dot(r, uSun), 0.0), 180.0) * 2.5;

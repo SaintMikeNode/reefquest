@@ -135,7 +135,7 @@ export function Timeline({ index, island }: { index: HeatIndex; island: string }
     <>
       <div className="now">
         <button
-          className="hbtn icon-only"
+          className="play-btn"
           aria-pressed={playing}
           onClick={() => {
             if (!playing && day >= yi.days - 1 && year === lastY) setYear(first, 0);

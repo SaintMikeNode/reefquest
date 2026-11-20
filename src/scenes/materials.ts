@@ -94,6 +94,27 @@ export function terrainMaterial(habitatTex: THREE.Texture) {
         return 1.0 - smoothstep(0.0, w, f);
       }
       // Cheap animated caustics: two warped sine grids.
+      float h21(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+      float vn(vec2 p) {
+        vec2 i = floor(p), f = fract(p);
+        vec2 u = f * f * (3.0 - 2.0 * f);
+        return mix(mix(h21(i), h21(i + vec2(1, 0)), u.x), mix(h21(i + vec2(0, 1)), h21(i + vec2(1, 1)), u.x), u.y);
+      }
+      // Natural seafloor seen from the air (scene units are 100 m): pale sand, dark grass beds,
+      // mottled coral heads and spurs, rock, rubble.
+      vec3 naturalBottom(float cls, vec2 p) {
+        float n1 = vn(p * 4.0), n2 = vn(p * 13.0), n3 = vn(p * 31.0);
+        if (cls < 0.5 || cls > 17.5 && cls < 18.5) return mix(vec3(0.80, 0.78, 0.62), vec3(0.62, 0.62, 0.44), n1 * 0.6 + n2 * 0.4);
+        if (cls < 11.5) return mix(vec3(0.97, 0.94, 0.82), vec3(0.88, 0.85, 0.72), n2 * 0.7 + n3 * 0.3);
+        if (cls < 12.5) return mix(vec3(0.82, 0.79, 0.68), vec3(0.58, 0.56, 0.48), step(0.55, n3));
+        if (cls < 13.5) return mix(vec3(0.50, 0.45, 0.36), vec3(0.36, 0.33, 0.27), n2);
+        if (cls < 14.5) return mix(vec3(0.10, 0.22, 0.14), vec3(0.20, 0.32, 0.18), vn(vec2(p.x * 22.0, p.y * 5.0)) * 0.5 + n1 * 0.5);
+        // Coral / algae: warm browns with purple and gold colonies, dark grooves between spurs.
+        vec3 b = mix(vec3(0.42, 0.33, 0.24), vec3(0.30, 0.25, 0.20), n1);
+        b = mix(b, vec3(0.62, 0.44, 0.56), smoothstep(0.62, 0.74, n2) * 0.7);
+        b = mix(b, vec3(0.74, 0.58, 0.32), smoothstep(0.66, 0.78, n3) * 0.6);
+        return b * (0.75 + 0.35 * smoothstep(0.3, 0.7, vn(p * 7.0 + 3.1)));
+      }
       float caustic(vec2 p, float t) {
         vec2 q = p * 0.9;
         float a = sin(q.x * 1.7 + sin(q.y * 1.3 + t * 0.7) * 1.4 + t);
@@ -127,12 +148,22 @@ export function terrainMaterial(habitatTex: THREE.Texture) {
           base = mix(base, deep, smoothstep(18.0, 700.0, d));
           vec4 hab = texture2D(uHabitat, vUv);
           float benthic = floor(hab.r * 255.0 + 0.5);
+          float geo = floor(hab.g * 255.0 + 0.5);
           if (uShowHabitat > 0.5 && benthic > 0.5) {
+            // Classified map: Allen Coral Atlas legend colors, dimmer with depth.
             vec3 hc = texture2D(uBenthic, vec2((benthic + 0.5) / 32.0, 0.5)).rgb;
-            // Habitat seen through water: dimmer with depth.
             base = mix(base, hc * 0.95, 0.78 * (1.0 - smoothstep(4.0, 22.0, d) * 0.45));
+          } else if (benthic > 0.5 && d < 30.0) {
+            // Natural view: the bottom through clear water (more water color with depth).
+            vec3 nb = naturalBottom(benthic, vWorld.xz);
+            base = mix(nb, base, 1.0 - exp(-d / 7.5));
           }
           col = base * (0.45 + 0.75 * lambert);
+          // Surf breaking along the reef crest (and outer reef flat): white streaks that drift.
+          if (uShowHabitat < 0.5 && (geo > 14.5 && geo < 15.5 || geo > 13.5 && geo < 14.5 && d < 1.5)) {
+            float s = vn(vec2(vWorld.x * 9.0 + uTime * 0.25, vWorld.z * 9.0)) * 0.6 + vn(vWorld.xz * 23.0 - uTime * 0.4) * 0.4;
+            col = mix(col, vec3(0.95, 0.98, 1.0), smoothstep(0.5, 0.75, s) * (geo > 14.5 ? 0.75 : 0.35));
+          }
           // Light caustics in the shallows.
           col += vec3(0.6, 1.0, 1.0) * caustic(vWorld.xz * 0.9, uTime) * 0.16 * (1.0 - smoothstep(0.0, 14.0, d));
           if (uShowContours > 0.5) {
@@ -201,14 +232,16 @@ export function waterMaterial(heatTex: THREE.Texture, geo: number[][], grid: { l
         float a = 0.10;
         if (uShowHeat > 0.5 && cell.a > 0.0) {
           // cell.a = heat intensity (0 at 0 DHW → 1 at 12+ DHW).
-          vec2 f = fract(vec2(col, row));
-          vec2 edge = min(f, 1.0 - f);
-          float border = 1.0 - smoothstep(0.0, 0.018, min(edge.x, edge.y));
+          // Cell edges as a hairline (about 1 px at any zoom), like a graticule, not a neon grid.
+          vec2 cr = vec2(col, row);
+          vec2 f = fract(cr);
+          vec2 edge = min(f, 1.0 - f) / max(fwidth(cr), vec2(1e-4));
+          float border = 1.0 - smoothstep(0.4, 1.4, min(edge.x, edge.y));
           float k = cell.a;
           c = mix(c, cell.rgb, 0.30 + 0.45 * k);
-          a = 0.06 + 0.26 * k;
-          c = mix(c, cell.rgb * 1.3 + 0.1, border * 0.8);
-          a = max(a, border * (0.18 + 0.5 * k));
+          a = 0.05 + 0.2 * k;
+          c = mix(c, cell.rgb * 1.15 + 0.05, border * 0.6);
+          a = max(a, border * (0.22 + 0.35 * k));
         }
         // Faint moving sheen.
         a += 0.03 * sin(vWorld.x * 0.08 + vWorld.z * 0.05 + uTime * 0.6);
