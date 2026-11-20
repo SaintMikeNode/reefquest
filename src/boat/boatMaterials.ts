@@ -26,9 +26,13 @@ const FOG = /* glsl */ `
 `;
 
 /** Seafloor and land, natural colors from the Allen Coral Atlas classes, seen through clear water. */
-export function seafloorMaterial(habitat: THREE.DataTexture, lite: boolean) {
+export function seafloorMaterial(habitat: THREE.DataTexture, lite: boolean, coverage: THREE.DataTexture, size: [number, number], covCell: number) {
   return new THREE.ShaderMaterial({
     uniforms: {
+      uCoverage: { value: coverage },
+      uSonar: { value: 1 },
+      uSize: { value: new THREE.Vector2(...size) },
+      uCovSize: { value: new THREE.Vector2(coverage.image.width * covCell, coverage.image.height * covCell) },
       uHabitat: { value: habitat },
       uTexSize: { value: new THREE.Vector2(habitat.image.width, habitat.image.height) },
       uTime: { value: 0 },
@@ -59,6 +63,10 @@ export function seafloorMaterial(habitat: THREE.DataTexture, lite: boolean) {
       uniform float uTime;
       uniform vec3 uSun;
       uniform float uMapColors;
+      uniform sampler2D uCoverage;
+      uniform float uSonar;
+      uniform vec2 uSize;
+      uniform vec2 uCovSize;
       varying float vH;
       varying vec2 vUv;
       varying vec3 vN;
@@ -66,6 +74,22 @@ export function seafloorMaterial(habitat: THREE.DataTexture, lite: boolean) {
       varying float vDist;
       ${NOISE}
       ${FOG}
+      // Bathymetry ramp for surveyed seafloor: "turbo" (red shallow → blue deep, 0–30 m), the palette
+      // research vessels use to display multibeam maps. Polynomial fit by A. Mikhailov (Google, 2019).
+      vec3 bathy(float d) {
+        float x = clamp(1.0 - d / 30.0, 0.04, 0.96);
+        vec4 v4 = vec4(1.0, x, x * x, x * x * x);
+        vec2 v2 = v4.zw * v4.z;
+        return clamp(vec3(
+          dot(v4, vec4(0.13572138, 4.61539260, -42.66032258, 132.13108234)) + dot(v2, vec2(-152.94239396, 59.28637943)),
+          dot(v4, vec4(0.09140261, 2.19418839, 4.84296658, -14.18503333)) + dot(v2, vec2(4.27729857, 2.82956604)),
+          dot(v4, vec4(0.10667330, 12.64194608, -60.58204836, 110.36276771)) + dot(v2, vec2(-89.90310912, 27.34824973))
+        ), 0.0, 1.0);
+      }
+      float iso(float v, float step, float w) {
+        float f = abs(fract(v / step + 0.5) - 0.5) * step;
+        return 1.0 - smoothstep(0.0, fwidth(v) * w, f);
+      }
       float caustic(vec2 p, float t) {
         float a = sin(p.x * 0.55 + sin(p.y * 0.42 + t * 0.9) * 1.6 + t * 1.1);
         float b = sin(p.y * 0.61 + sin(p.x * 0.37 - t * 0.7) * 1.8 - t * 0.9);
@@ -122,6 +146,15 @@ export function seafloorMaterial(habitat: THREE.DataTexture, lite: boolean) {
           float vy = max(normalize(cameraPosition - vW).y, 0.08);
           float path = d / vy;
           c = mix(c, water, 1.0 - exp(-path / 12.0));
+          // Surveyed seafloor: the multibeam bathymetry is drawn as data, over the natural view.
+          if (uSonar > 0.5) {
+            float cov = texture2D(uCoverage, (vW.xz + uSize * 0.5) / uCovSize).r;
+            if (cov > 0.01) {
+              vec3 b = bathy(d) * (0.55 + 0.6 * lambert);
+              b = mix(b, vec3(0.04, 0.10, 0.20), iso(d, 1.0, 1.0) * 0.28 + iso(d, 5.0, 1.4) * 0.55);
+              c = mix(c, haze(b, vDist) , smoothstep(0.0, 0.6, cov) * 0.9);
+            }
+          }
         }
         gl_FragColor = vec4(haze(c, vDist), 1.0);
       }
@@ -143,6 +176,7 @@ export function seaMaterial(depthTex: THREE.Texture | null, size: [number, numbe
       uHorizon: { value: SKY_HORIZON },
       uFog: { value: FOG_DENSITY },
       uSky: { value: SKY_TOP },
+      uGrid: { value: 1 },
     },
     vertexShader: /* glsl */ `
       varying vec3 vW;
@@ -162,12 +196,17 @@ export function seaMaterial(depthTex: THREE.Texture | null, size: [number, numbe
       uniform float uTime;
       uniform vec3 uSun;
       uniform vec3 uSky;
+      uniform float uGrid;
       varying vec3 vW;
       varying float vDist;
       ${NOISE}
       ${FOG}
       void main() {
         vec2 p = vW.xz;
+        // 100 m survey grid on the water, fading with distance.
+        vec2 gq = abs(fract(p / 100.0 + 0.5) - 0.5) * 100.0;
+        vec2 gw = fwidth(p) * 1.2;
+        float grid = uGrid * (1.0 - smoothstep(0.0, 1.0, min(gq.x / gw.x, gq.y / gw.y))) * (1.0 - smoothstep(60.0, 380.0, vDist));
         float t = uTime;
         // Ripple normal from a few travelling waves.
         // Ripple normal from a few travelling waves; each fades out before it is small enough on
@@ -196,6 +235,8 @@ export function seaMaterial(depthTex: THREE.Texture | null, size: [number, numbe
         a = max(a, f * 0.65);
         col += vec3(1.0, 0.95, 0.85) * spec;
         a = min(1.0, a + spec);
+        col = mix(col, vec3(1.0), grid * 0.22);
+        a = max(a, grid * 0.16);
         // Open ocean beyond the shallows: less see-through.
         a = mix(a, max(a, 0.55), smoothstep(15.0, 40.0, depth));
         gl_FragColor = vec4(haze(col, vDist), a);
@@ -209,7 +250,7 @@ export function skyMaterial() {
   return new THREE.ShaderMaterial({
     side: THREE.BackSide,
     depthWrite: false,
-    uniforms: { uTop: { value: SKY_TOP }, uHorizon: { value: SKY_HORIZON }, uSun: { value: SUN } },
+    uniforms: { uTop: { value: SKY_TOP }, uHorizon: { value: SKY_HORIZON }, uSun: { value: SUN }, uTime: { value: 0 } },
     vertexShader: /* glsl */ `
       varying vec3 vDir;
       void main() {
@@ -221,10 +262,16 @@ export function skyMaterial() {
       uniform vec3 uTop;
       uniform vec3 uHorizon;
       uniform vec3 uSun;
+      uniform float uTime;
       varying vec3 vDir;
+      ${NOISE}
       void main() {
         float h = clamp(vDir.y, 0.0, 1.0);
         vec3 c = mix(uHorizon, uTop, pow(h, 0.55));
+        // Soft trade-wind cumulus, flattened toward the horizon.
+        vec2 cp = vDir.xz / max(vDir.y, 0.06) * 1.4 + vec2(uTime * 0.004, 0.0);
+        float cl = smoothstep(0.52, 0.78, fbm(cp * 0.9)) * smoothstep(0.02, 0.22, vDir.y);
+        c = mix(c, vec3(0.98, 0.99, 1.0), cl * 0.75);
         c += vec3(1.0, 0.92, 0.75) * pow(max(dot(normalize(vDir), uSun), 0.0), 220.0) * 1.5;
         c += vec3(1.0, 0.9, 0.7) * pow(max(dot(normalize(vDir), uSun), 0.0), 8.0) * 0.15;
         gl_FragColor = vec4(c, 1.0);

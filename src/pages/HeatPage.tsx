@@ -2,9 +2,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { fmtDate, fmtNum, useLang, useT } from "../i18n";
 import { LEVELS } from "../lib/alert";
 import { dayDiff, loadHeatIndex, loadLatest, loadSeries, type HeatIndex, type IslandSeries, type Latest } from "../lib/data";
+import { AlertChip } from "../ui/AlertChip";
+import { HeatKey } from "../ui/HeatKey";
 import { HeatStripes } from "../ui/HeatStripes";
 
-const ISLAND_COLORS: Record<string, string> = { roatan: "#5ff2ff", utila: "#f1e2bd", guanaja: "#ff6f5e", "cayos-cochinos": "#b49cff" };
+// Series colors: distinguishable, sober, colorblind-aware.
+const ISLAND_COLORS: Record<string, string> = { roatan: "#6fb6f2", utila: "#5fd0d6", guanaja: "#ff8a6e", "cayos-cochinos": "#b9a3ff" };
+const ORDER = ["roatan", "utila", "guanaja", "cayos-cochinos"];
 
 export function HeatPage() {
   const t = useT();
@@ -24,7 +28,6 @@ export function HeatPage() {
     });
   }, []);
 
-  // Per island per year: peak mean DHW, days ≥ 4, days ≥ 8.
   const stats = useMemo(() => {
     if (!series || !index) return null;
     const out: Record<string, { year: number; peak: number; d4: number; d8: number }[]> = {};
@@ -42,124 +45,166 @@ export function HeatPage() {
     return (
       <main className="page">
         <div className="page-head">
-          <div className="label">{t("heat.loading")}</div>
+          <p className="muted">{t("heat.loading")}</p>
         </div>
       </main>
     );
 
-  const worst = Object.values(stats)
-    .flat()
-    .reduce<Record<number, number>>((m, r) => ((m[r.year] = Math.max(m[r.year] ?? 0, r.peak)), m), {});
+  const worst: Record<number, number> = {};
+  for (const rows of Object.values(stats)) for (const r of rows) worst[r.year] = Math.max(worst[r.year] ?? 0, r.peak);
   const topYears = Object.entries(worst)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 6)
-    .map(([y]) => Number(y));
+    .map(([y]) => Number(y))
+    .sort((a, b) => b - a);
 
   return (
     <main className="page">
-      <header className="page-head">
-        <div className="label">{t("heat.kicker")}</div>
+      <header className="page-head page-band-head">
+        <p className="eyebrow">{t("heat.kicker")}</p>
         <h1>{t("heat.title")}</h1>
-        <p>{t("heat.lead")}</p>
+        <p className="standfirst">{t("heat.lead")}</p>
       </header>
 
       <section className="section">
-        <h2>{t("heat.chartTitle")}</h2>
-        <p className="lead">{t("heat.chartLead")}</p>
-        <div className="panel" style={{ padding: 16 }}>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 12, justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-            <div className="legend">
-              {Object.entries(series.islands).map(([id]) => (
-                <button key={id} aria-pressed={on[id]} onClick={() => setOn({ ...on, [id]: !on[id] })}>
+        <figure className="figure">
+          <p className="fig-title">
+            {t("fig")} 3. {t("heat.chartTitle")} · <span className="num">{year}</span>
+          </p>
+          <p className="fig-sub">{t("heat.chartLead")}</p>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 12, justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+            <div className="series-toggles">
+              {ORDER.map((id) => (
+                <label key={id}>
+                  <input type="checkbox" checked={on[id]} onChange={() => setOn({ ...on, [id]: !on[id] })} />
                   <i style={{ background: ISLAND_COLORS[id] }} />
                   {latest.islands[id]?.name ?? id}
-                </button>
+                </label>
               ))}
             </div>
-            <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-              <label className="label" htmlFor="yr">
-                {t("heat.year")}
-              </label>
-              <select id="yr" className="btn" value={year} onChange={(e) => setYear(Number(e.target.value))} style={{ background: "var(--panel-solid)" }}>
+            <label style={{ display: "inline-flex", gap: 8, alignItems: "center", fontSize: 14.5 }}>
+              {t("heat.year")}
+              <select className="select" value={year} onChange={(e) => setYear(Number(e.target.value))}>
                 {[...index.years].reverse().map((y) => (
                   <option key={y.year} value={y.year}>
                     {y.year}
                   </option>
                 ))}
               </select>
-            </div>
+            </label>
           </div>
           <YearChart series={series} index={index} year={year} on={on} names={latest} />
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
-            {topYears.sort((a, b) => b - a).map((y) => (
-              <button key={y} className="btn" aria-pressed={y === year} onClick={() => setYear(y)}>
-                {y}
-              </button>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="section">
-        <h2>{t("heat.recordTitle")}</h2>
-        <div className="cards">
-          {Object.entries(stats).map(([id, rows]) => {
-            const top = [...rows].sort((a, b) => b.peak - a.peak).slice(0, 5);
-            return (
-              <div className="panel card" key={id}>
-                <h3>
-                  <span style={{ color: ISLAND_COLORS[id] }}>{latest.islands[id]?.name}</span>
-                </h3>
-                <table className="mono" style={{ width: "100%", fontSize: 12.5, borderCollapse: "collapse" }}>
-                  <thead>
-                    <tr className="label" style={{ textAlign: "left" }}>
-                      <th style={{ fontWeight: 400 }}>{t("heat.year")}</th>
-                      <th style={{ fontWeight: 400 }}>{t("heat.peak")}</th>
-                      <th style={{ fontWeight: 400 }}>{t("heat.daysAbove4")}</th>
-                      <th style={{ fontWeight: 400 }}>{t("heat.daysAbove8")}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {top.map((r) => (
-                      <tr key={r.year} style={{ borderTop: "1px solid var(--line)", cursor: "pointer" }} onClick={() => setYear(r.year)}>
-                        <td style={{ padding: "5px 0" }}>{r.year}</td>
-                        <td style={{ color: LEVELS.reduce((c, l) => (r.peak >= l.min ? l.color : c), LEVELS[0].color) }}>{fmtNum(r.peak, lang)}</td>
-                        <td>{r.d4}</td>
-                        <td>{r.d8}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      <section className="section">
-        <div className="panel" style={{ padding: 16 }}>
-          <HeatStripes latest={latest} />
-        </div>
-      </section>
-
-      <section className="section">
-        <h2>{t("heat.scaleTitle")}</h2>
-        <div className="cards" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))" }}>
-          {LEVELS.map((l) => (
-            <div key={l.id} className="panel card" style={{ gap: 6 }}>
-              <span className="chip" style={{ color: l.color, alignSelf: "flex-start" }}>
-                <i />
-                {t(`alert.${l.key}`)}
-              </span>
-              <span className="mono" style={{ fontSize: 12 }}>
-                {l.key === "none" ? "DHW = 0" : l.key === "building" ? "0 < DHW < 4" : `DHW ≥ ${l.min}`}
-              </span>
-              <span className="dim" style={{ fontSize: 13.5, lineHeight: 1.45 }}>{t(`alert.${l.key}.desc`)}</span>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center", marginTop: 12 }}>
+            <span className="muted" style={{ fontSize: 14 }}>
+              {t("heat.worstYears")}
+            </span>
+            <div className="chips">
+              {topYears.map((y) => (
+                <button key={y} aria-pressed={y === year} onClick={() => setYear(y)}>
+                  {y}
+                </button>
+              ))}
             </div>
-          ))}
+          </div>
+          <p className="fig-source">{t("heat.source").replace("{date}", fmtDate(latest.date, lang))}</p>
+        </figure>
+      </section>
+
+      <section className="section">
+        <div className="section-head">
+          <h2>{t("heat.recordTitle")}</h2>
+          <p>{t("heat.recordLead")}</p>
         </div>
-        <p className="faint" style={{ fontSize: 12.5, marginTop: 10 }}>
-          NOAA Coral Reef Watch (2023). <a href="https://coralreefwatch.noaa.gov/product/5km/methodology.php">coralreefwatch.noaa.gov</a> · {t("home.dataThrough")} {fmtDate(latest.date, lang)}
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>{t("table.island")}</th>
+              <th>{t("heat.year")}</th>
+              <th className="r">{t("heat.peak")}</th>
+              <th>{t("table.level")}</th>
+              <th className="r">{t("heat.daysAbove4")}</th>
+              <th className="r">{t("heat.daysAbove8")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {ORDER.flatMap((id) =>
+              [...stats[id]]
+                .sort((a, b) => b.peak - a.peak)
+                .slice(0, 3)
+                .map((r, i) => (
+                  <tr key={id + r.year} style={{ cursor: "pointer" }} onClick={() => setYear(r.year)}>
+                    <td className={i === 0 ? "name" : ""} data-label={t("table.island")}>
+                      {i === 0 ? latest.islands[id]?.name : <span className="sr-only">{latest.islands[id]?.name}</span>}
+                    </td>
+                    <td className="num" data-label={t("heat.year")}>
+                      {r.year}
+                    </td>
+                    <td className="r" data-label={t("heat.peak")}>
+                      {fmtNum(r.peak, lang)}
+                    </td>
+                    <td data-label={t("table.level")}>
+                      <AlertChip dhw={r.peak} />
+                    </td>
+                    <td className="r" data-label={t("heat.daysAbove4")}>
+                      {r.d4}
+                    </td>
+                    <td className="r" data-label={t("heat.daysAbove8")}>
+                      {r.d8}
+                    </td>
+                  </tr>
+                )),
+            )}
+          </tbody>
+        </table>
+      </section>
+
+      <section className="section">
+        <figure className="figure">
+          <p className="fig-title">
+            {t("fig")} 4. {t("home.stripesTitle")}
+          </p>
+          <p className="fig-sub">{t("home.stripesLead")}</p>
+          <HeatStripes latest={latest} onPick={(y) => setYear(y)} />
+          <div style={{ marginTop: 12 }}>
+            <HeatKey compact />
+          </div>
+        </figure>
+      </section>
+
+      <section className="section">
+        <div className="section-head">
+          <h2>{t("heat.scaleTitle")}</h2>
+          <p>{t("heat.scaleLead")}</p>
+        </div>
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>{t("table.level")}</th>
+              <th>{t("heat.threshold")}</th>
+              <th>{t("heat.impact")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {LEVELS.map((l) => (
+              <tr key={l.id}>
+                <td className="name" style={{ fontSize: 15.5 }}>
+                  <span className="alert">
+                    <i style={{ background: l.color }} />
+                    {t(`alert.${l.key}`)}
+                  </span>
+                </td>
+                <td className="num" data-label={t("heat.threshold")}>
+                  {l.key === "none" ? "0" : l.key === "building" ? "0 – 4" : `≥ ${l.min}`} {t("unit.dhw")}
+                </td>
+                <td data-label={t("heat.impact")} style={{ textAlign: "left" }}>
+                  {t(`alert.${l.key}.desc`)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <p className="fig-source" style={{ marginTop: 10 }}>
+          NOAA Coral Reef Watch (2023), <a href="https://coralreefwatch.noaa.gov/product/5km/methodology.php">coralreefwatch.noaa.gov</a>
         </p>
       </section>
     </main>
@@ -169,11 +214,11 @@ export function HeatPage() {
 function YearChart({ series, index, year, on, names }: { series: IslandSeries; index: HeatIndex; year: number; on: Record<string, boolean>; names: Latest }) {
   const ref = useRef<HTMLCanvasElement>(null);
   const lang = useLang((s) => s.lang);
-  const [tip, setTip] = useState<{ x: number; y: number; html: string } | null>(null);
+  const [tip, setTip] = useState<{ x: number; y: number; rows: string[]; date: string } | null>(null);
   const yi = index.years.find((y) => y.year === year)!;
   const off = dayDiff(series.first, yi.first);
-  const lines = Object.entries(series.islands).map(([id, s]) => ({ id, v: s.dhw_mean.slice(off, off + yi.days) }));
-  const top = Math.max(10, ...lines.filter((l) => on[l.id]).flatMap((l) => l.v)) / 10;
+  const lines = ORDER.filter((id) => series.islands[id]).map((id) => ({ id, v: series.islands[id].dhw_mean.slice(off, off + yi.days) }));
+  const top = Math.max(8, ...lines.filter((l) => on[l.id]).flatMap((l) => l.v)) / 10;
 
   useEffect(() => {
     const c = ref.current;
@@ -185,78 +230,109 @@ function YearChart({ series, index, year, on, names }: { series: IslandSeries; i
       c.height = H * dpr;
       const g = c.getContext("2d")!;
       g.scale(dpr, dpr);
-      const L = 30, B = 22, T = 8;
-      const x = (i: number) => L + (i / Math.max(yi.days - 1, 1)) * (W - L - 8);
-      const y = (v: number) => T + (1 - v / (top * 1.08)) * (H - T - B);
+      // Right margin fits the end-of-line island labels (short names on narrow screens).
+      g.font = "600 12.5px 'Source Sans 3 Variable', sans-serif";
+      const label = (id: string) => {
+        const n = names.islands[id]?.name ?? id;
+        return W < 520 ? n.replace(/^Cayos /, "C. ") : n;
+      };
+      const R = Math.ceil(Math.max(40, ...lines.filter((l) => on[l.id]).map((l) => g.measureText(label(l.id)).width)) + 12);
+      const L = 34, B = 24, T = 10;
+      const x = (i: number) => L + (i / Math.max(yi.days - 1, 1)) * (W - L - R);
+      const ymax = Math.ceil((top * 1.1) / 4) * 4;
+      const y = (v: number) => T + (1 - v / ymax) * (H - T - B);
       g.clearRect(0, 0, W, H);
+      g.font = "12.5px 'Source Sans 3 Variable', sans-serif";
+      // Bleaching season.
       const s0 = dayDiff(yi.first, `${year}-08-01`), s1 = dayDiff(yi.first, `${year}-10-31`);
       if (s1 > 0 && s0 < yi.days) {
-        g.fillStyle = "rgba(95,242,255,0.06)";
+        g.fillStyle = "rgba(255,255,255,0.045)";
         g.fillRect(x(Math.max(0, s0)), T, x(Math.min(s1, yi.days - 1)) - x(Math.max(0, s0)), H - T - B);
+        g.fillStyle = "#6a879a";
+        g.fillText(lang === "es" ? "temporada de blanqueamiento" : "bleaching season", x(Math.max(0, s0)) + 6, T + 14);
       }
-      g.font = "11px JetBrains Mono, monospace";
-      g.fillStyle = "#5b7f94";
-      for (let v = 0; v <= top * 1.05; v += top > 12 ? 4 : 2) {
-        g.globalAlpha = 0.25;
-        g.fillRect(L, y(v), W - L - 8, 1);
-        g.globalAlpha = 1;
-        g.fillText(String(v), 2, y(v) + 4);
+      // Gridlines and y labels.
+      for (let v = 0; v <= ymax; v += ymax > 12 ? 4 : 2) {
+        g.fillStyle = v === 0 ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.08)";
+        g.fillRect(L, Math.round(y(v)) + 0.5, W - L - R, 1);
+        g.fillStyle = "#8ea8b9";
+        g.textAlign = "right";
+        g.fillText(String(v), L - 8, y(v) + 4);
       }
-      for (const [th, col] of [[4, "#ef3b2c"], [8, "#a50f15"], [12, "#d4199a"], [16, "#8b1fc9"], [20, "#5b1fb0"]] as const) {
-        if (th > top * 1.05) continue;
-        g.strokeStyle = col;
-        g.setLineDash([4, 4]);
+      g.textAlign = "left";
+      // Alert thresholds labelled at the right edge.
+      for (const lv of LEVELS.filter((l) => l.min >= 4 && l.min <= ymax)) {
+        g.strokeStyle = lv.color;
+        g.globalAlpha = 0.7;
+        g.setLineDash([3, 4]);
         g.beginPath();
-        g.moveTo(L, y(th));
-        g.lineTo(W - 8, y(th));
+        g.moveTo(L, y(lv.min));
+        g.lineTo(W - R, y(lv.min));
         g.stroke();
+        g.setLineDash([]);
+        g.globalAlpha = 1;
       }
-      g.setLineDash([]);
+      // Month ticks.
+      g.fillStyle = "#8ea8b9";
       for (let m = 0; m < 12; m++) {
         const d = dayDiff(yi.first, `${year}-${String(m + 1).padStart(2, "0")}-01`);
         if (d < 0 || d >= yi.days) continue;
-        const label = new Date(Date.UTC(year, m, 1)).toLocaleDateString(lang === "es" ? "es-HN" : "en-US", { month: "short", timeZone: "UTC" });
-        g.fillStyle = "#5b7f94";
-        if (W > 500 || m % 2 === 0) g.fillText(label.replace(".", ""), x(d), H - 6);
+        const mon = new Date(Date.UTC(year, m, 1)).toLocaleDateString(lang === "es" ? "es-HN" : "en-US", { month: "short", timeZone: "UTC" }).replace(".", "");
+        if (W > 520 || m % 2 === 0) g.fillText(mon, x(d) + 2, H - 6);
       }
+      // Series, directly labelled at the end of each line.
+      const ends: { y: number; id: string; v: number }[] = [];
       for (const l of lines) {
-        if (!on[l.id]) continue;
+        if (!on[l.id] || !l.v.length) continue;
         g.strokeStyle = ISLAND_COLORS[l.id];
         g.lineWidth = 2;
-        g.shadowColor = ISLAND_COLORS[l.id];
-        g.shadowBlur = 6;
         g.beginPath();
         l.v.forEach((v, i) => (i ? g.lineTo(x(i), y(v / 10)) : g.moveTo(x(i), y(v / 10))));
         g.stroke();
-        g.shadowBlur = 0;
+        ends.push({ y: y(l.v[l.v.length - 1] / 10), id: l.id, v: l.v[l.v.length - 1] / 10 });
+      }
+      ends.sort((a, b) => a.y - b.y);
+      for (let i = 1; i < ends.length; i++) if (ends[i].y - ends[i - 1].y < 14) ends[i].y = ends[i - 1].y + 14;
+      g.font = "600 12.5px 'Source Sans 3 Variable', sans-serif";
+      for (const e of ends) {
+        g.fillStyle = ISLAND_COLORS[e.id];
+        g.fillText(label(e.id), W - R + 6, e.y + 4);
       }
     };
     draw();
     const ro = new ResizeObserver(draw);
     ro.observe(c);
     return () => ro.disconnect();
-  }, [lines, on, top, yi, year, lang]);
+  }, [lines, on, top, yi, year, lang, names]);
 
   return (
-    <div className="chart" onMouseLeave={() => setTip(null)}>
+    <div className="chart" onMouseLeave={() => setTip(null)} style={{ position: "relative" }}>
       <canvas
         ref={ref}
-        style={{ height: 300 }}
+        style={{ height: 320 }}
         role="img"
         aria-label={`DHW ${year}`}
         onMouseMove={(e) => {
           const r = e.currentTarget.getBoundingClientRect();
-          const i = Math.round(((e.clientX - r.left - 30) / (r.width - 38)) * (yi.days - 1));
+          const i = Math.round(((e.clientX - r.left - 34) / (r.width - 98)) * (yi.days - 1));
           if (i < 0 || i >= yi.days) return setTip(null);
           const d = new Date(Date.parse(yi.first + "T12:00:00Z") + i * 864e5).toISOString().slice(0, 10);
-          const rows = lines
-            .filter((l) => on[l.id])
-            .map((l) => `<div><span style="color:${ISLAND_COLORS[l.id]}">■</span> ${names.islands[l.id]?.name}: ${fmtNum(l.v[i] / 10, lang)}</div>`)
-            .join("");
-          setTip({ x: e.clientX, y: e.clientY, html: `<div class="label">${fmtDate(d, lang)}</div>${rows}` });
+          setTip({
+            x: e.clientX,
+            y: e.clientY,
+            date: fmtDate(d, lang),
+            rows: lines.filter((l) => on[l.id]).map((l) => `${names.islands[l.id]?.name}: ${fmtNum(l.v[i] / 10, lang)}`),
+          });
         }}
       />
-      {tip && <div className="tooltip mono" style={{ left: tip.x + 14, top: tip.y + 14 }} dangerouslySetInnerHTML={{ __html: tip.html }} />}
+      {tip && (
+        <div className="tip" style={{ left: Math.min(tip.x + 14, window.innerWidth - 200), top: tip.y + 14 }}>
+          <div style={{ fontWeight: 600 }}>{tip.date}</div>
+          {tip.rows.map((r) => (
+            <div key={r}>{r}</div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

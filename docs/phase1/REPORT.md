@@ -70,6 +70,27 @@ protection), coral restoration. All sourced.
 **Data & credits (`#/about`)**: five plain-language caveats, every dataset with its citation and
 license, software and fonts.
 
+## Redesign pass (after the boat)
+
+- **One dark ocean look everywhere.** Pages, charts, map, 3D HUD and boat HUD share the same palette
+  (deep navy, sand-colored islands, cyan accents, NOAA alert colors for heat). Typography is
+  Source Serif 4 for headings, Source Sans 3 for text and IBM Plex Mono for numbers, set like a
+  research publication: numbered figures with source lines, direct labels instead of legends where
+  possible, data tables that stack on phones.
+- **No sideways-scrolling boxes.** Checked every page at 375 px wide: nothing overflows.
+- **Islands have nature.** Instanced palms along the shore and forest canopy inland, placed by
+  elevation and land cover; one draw call each, skipped in lite mode.
+- **The research vessel** was rebuilt: dark blue hull with a red boot top, white superstructure,
+  A-frame and crane on the aft deck, radomes, lifeboat, a CTD rosette and the Honduran flag.
+- **Science on board.** A multibeam sonar fan sweeps the seafloor while you sail; the strip it
+  covers turns into a depth-colored bathymetry map (red = shallow, blue = 30 m), like the maps
+  research ships produce, with "hectares mapped" and a depth key in the HUD. The echo sounder
+  scrolls a live echogram. The CTD button (or space bar) lowers the instrument to the bottom,
+  logs a sample of that habitat and brings it back up; the mission is to sample every habitat
+  in the zone.
+- **Phones.** In the boat, the instruments and logbook start folded to one line each so the
+  scene stays visible; tap to open them.
+
 ## Size and performance
 
 | What | Download (compressed) |
@@ -99,7 +120,6 @@ The scene only redraws when something changes, which saves battery.
   "today" shows Dec 31, 2023. When it completes I rebuild the heat files; if you read this first,
   run `~/.venvs/reefquest/bin/python pipeline/crw_download.py --all` then `heat_products.py` from
   the `pipeline/` folder and restart the dev server.
-- Coral photogrammetry models: not started (needs your downloads/permission decision).
 - **Cayos Cochinos 3D: blocked.** The Earth Engine copy of the Allen Coral Atlas has no habitat
   classes there (only the reef outline), so the scene would have no reef colors. It stays "coming
   soon" until you download its Atlas package (it includes benthic and geomorphic maps): same steps
@@ -115,6 +135,7 @@ The scene only redraws when something changes, which saves battery.
 
 1. Commit this work (it's all local and uncommitted)?
 2. Deploy? That creates the `reefquest` Worker and `reefquest.todosenlaweb.com` (only on your word).
-3. Coral models: buy the paid ones / ask the photographer, or start with the CC-licensed pillar coral?
+3. Coral models: decided, no photographer or paid models. Corals in the boat scene are illustrative
+   and labeled as such.
 4. Branding: stand-alone (as built: its own coral logo and "instrument" look) or part of a series
    with CopánQuest?

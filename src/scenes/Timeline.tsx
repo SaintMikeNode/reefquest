@@ -3,9 +3,11 @@ import { fmtDate, fmtNum, useLang, useT } from "../i18n";
 import { rampCSS } from "../lib/alert";
 import { addDays, dayDiff, loadLatest, loadSeries, loadYearGrid, type HeatIndex, type IslandSeries, type Latest } from "../lib/data";
 import { AlertChip } from "../ui/AlertChip";
+import { IconPause, IconPlay } from "../ui/Icons";
 import { useScene } from "./sceneStore";
 
-/** Year chips + a DHW chart of the selected year for this island + scrubber + play. */
+/** Timebar: date and play on the left; the selected year's heat curve with a scrubber; and a
+ *  full-width strip of every year since 1985 (colored by its peak), so nothing scrolls sideways. */
 export function Timeline({ index, island }: { index: HeatIndex; island: string }) {
   const t = useT();
   const lang = useLang((s) => s.lang);
@@ -16,7 +18,6 @@ export function Timeline({ index, island }: { index: HeatIndex; island: string }
   const [series, setSeries] = useState<IslandSeries | null>(null);
   const [latest, setLatest] = useState<Latest | null>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
-  const yearsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     loadSeries().then(setSeries).catch(() => {});
@@ -28,19 +29,13 @@ export function Timeline({ index, island }: { index: HeatIndex; island: string }
   const values = series ? series.islands[island].dhw_mean.slice(offset, offset + yi.days) : [];
   const date = addDays(yi.first, day);
   const dhwNow = values[day] !== undefined ? values[day] / 10 : null;
+  const yearMax = latest?.islands[island]?.year_max_dhw ?? [];
 
-  // Keep the selected year chip in view.
-  useEffect(() => {
-    const el = yearsRef.current?.querySelector<HTMLButtonElement>(`[data-y="${year}"]`);
-    el?.scrollIntoView({ block: "nearest", inline: "center" });
-  }, [year]);
-
-  // Prefetch the next year so playback doesn't stall.
   useEffect(() => {
     if (playing) loadYearGrid(year + 1).catch(() => {});
   }, [playing, year]);
 
-  // Playback: ~3 days per frame step at 30 fps; continues into the next year.
+  // Playback: ~3 days per step at 30 fps; continues into the next year.
   useEffect(() => {
     if (!playing) return;
     let raf = 0;
@@ -64,7 +59,7 @@ export function Timeline({ index, island }: { index: HeatIndex; island: string }
     return () => cancelAnimationFrame(raf);
   }, [playing, index]);
 
-  // Draw the year's chart.
+  // The selected year's curve.
   useEffect(() => {
     const c = canvas.current;
     if (!c || !values.length) return;
@@ -76,97 +71,89 @@ export function Timeline({ index, island }: { index: HeatIndex; island: string }
     g.scale(dpr, dpr);
     g.clearRect(0, 0, W, H);
     const days = yi.days;
-    const top = Math.max(100, ...values) / 10; // at least 0–10 DHW so quiet years look quiet
+    const top = Math.max(100, ...values) / 10;
     const x = (i: number) => (i / Math.max(days - 1, 1)) * W;
-    const y = (v: number) => H - 14 - (v / top) * (H - 22);
-    // Bleaching season band (Aug 1 – Oct 31).
+    const y = (v: number) => H - 13 - (v / top) * (H - 18);
     const s0 = dayDiff(yi.first, `${year}-08-01`), s1 = dayDiff(yi.first, `${year}-10-31`);
     if (s1 > 0 && s0 < days) {
-      g.fillStyle = "rgba(95,242,255,0.06)";
-      g.fillRect(x(Math.max(s0, 0)), 0, x(Math.min(s1, days - 1)) - x(Math.max(s0, 0)), H - 14);
+      g.fillStyle = "rgba(255,255,255,0.05)";
+      g.fillRect(x(Math.max(s0, 0)), 0, x(Math.min(s1, days - 1)) - x(Math.max(s0, 0)), H - 13);
     }
-    // Thresholds.
-    g.font = "10px JetBrains Mono, monospace";
-    for (const [th, col] of [[4, "#ef3b2c"], [8, "#a50f15"], [12, "#d4199a"], [16, "#8b1fc9"]] as const) {
+    g.font = "11px 'Source Sans 3 Variable', sans-serif";
+    for (const th of [4, 8, 12, 16]) {
       if (th > top) continue;
-      g.strokeStyle = col;
-      g.globalAlpha = 0.6;
-      g.setLineDash([3, 4]);
-      g.beginPath();
-      g.moveTo(0, y(th));
-      g.lineTo(W, y(th));
-      g.stroke();
-      g.setLineDash([]);
-      g.globalAlpha = 0.9;
-      g.fillStyle = col;
-      g.fillText(String(th), W - 16, y(th) - 3);
+      g.fillStyle = "rgba(255,255,255,0.14)";
+      g.fillRect(0, Math.round(y(th)) + 0.5, W, 1);
+      g.fillStyle = "rgba(238,242,245,0.5)";
+      g.fillText(String(th), W - 14, y(th) - 2);
     }
-    g.globalAlpha = 1;
-    // Area, colored by value.
     for (let i = 1; i < values.length; i++) {
       const v = values[i] / 10;
-      g.fillStyle = rampCSS(Math.max(v, 0.5));
-      g.globalAlpha = 0.55;
-      g.fillRect(x(i - 1), y(v), Math.max(1, x(i) - x(i - 1) + 0.5), H - 14 - y(v));
+      g.fillStyle = rampCSS(Math.max(v, 0.6));
+      g.globalAlpha = 0.5;
+      g.fillRect(x(i - 1), y(v), Math.max(1, x(i) - x(i - 1) + 0.5), H - 13 - y(v));
     }
     g.globalAlpha = 1;
-    g.strokeStyle = "#e6f6ff";
-    g.lineWidth = 1.2;
+    g.strokeStyle = "#eef2f5";
+    g.lineWidth = 1.3;
     g.beginPath();
     values.forEach((v, i) => (i ? g.lineTo(x(i), y(v / 10)) : g.moveTo(x(i), y(v / 10))));
     g.stroke();
-    // Month ticks.
-    g.fillStyle = "#5b7f94";
+    g.fillStyle = "rgba(238,242,245,0.55)";
     for (let m = 0; m < 12; m++) {
       const d = dayDiff(yi.first, `${year}-${String(m + 1).padStart(2, "0")}-01`);
       if (d < 0 || d >= days) continue;
-      g.fillRect(x(d), H - 12, 1, 4);
-      const label = new Date(Date.UTC(year, m, 1)).toLocaleDateString(lang === "es" ? "es-HN" : "en-US", { month: "short", timeZone: "UTC" });
-      if (W > 420 || (W > 260 ? m % 2 === 0 : m % 3 === 0)) g.fillText(label.replace(".", ""), x(d) + 3, H - 2);
+      const label = new Date(Date.UTC(year, m, 1)).toLocaleDateString(lang === "es" ? "es-HN" : "en-US", { month: "short", timeZone: "UTC" }).replace(".", "");
+      if (W > 460 || (W > 260 ? m % 2 === 0 : m % 3 === 0)) g.fillText(label, x(d) + 2, H - 1);
     }
-    // Cursor.
-    g.strokeStyle = "#5ff2ff";
+    g.strokeStyle = "#ffffff";
     g.lineWidth = 1.5;
     g.beginPath();
     g.moveTo(x(day), 0);
-    g.lineTo(x(day), H - 14);
+    g.lineTo(x(day), H - 13);
     g.stroke();
     if (dhwNow !== null) {
-      g.fillStyle = "#5ff2ff";
+      g.fillStyle = "#ffffff";
       g.beginPath();
       g.arc(x(day), y(dhwNow), 3.5, 0, Math.PI * 2);
       g.fill();
     }
   }, [values, day, year, yi, lang, dhwNow]);
 
-  const roatanIdx = latest ? Object.keys(latest.islands).indexOf(island) : -1;
-  const yearMaxes = latest && roatanIdx >= 0 ? latest.islands[island].year_max_dhw : [];
+  const peakDay = (yr: { year: number; first: string; days: number }) => {
+    if (!series) return yr.days - 1;
+    const off = dayDiff(series.first, yr.first);
+    const v = series.islands[island].dhw_mean.slice(off, off + yr.days);
+    const m = Math.max(...v);
+    return m > 0 ? v.indexOf(m) : yr.days - 1;
+  };
+
+  const first = index.years[0].year, lastY = index.years[index.years.length - 1].year;
+  const ticks = [first, ...index.years.map((y) => y.year).filter((y) => y % 10 === 0 && y - first > 3 && lastY - y > 3), lastY];
 
   return (
-    <div className="timeline">
-      <div className="controls">
+    <>
+      <div className="now">
         <button
-          className="btn"
+          className="hbtn icon-only"
           aria-pressed={playing}
           onClick={() => {
-            if (!playing && day >= yi.days - 1 && year === index.years[index.years.length - 1].year) setYear(index.years[0].year, 0);
+            if (!playing && day >= yi.days - 1 && year === lastY) setYear(first, 0);
             setPlaying(!playing);
           }}
           aria-label={playing ? t("scene.pause") : t("scene.play")}
         >
-          {playing ? "❚❚" : "▶"}
+          {playing ? <IconPause /> : <IconPlay />}
         </button>
         <div>
           <div className="date">{fmtDate(date, lang)}</div>
-          <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 2 }}>
-            <span className="mono dim" style={{ fontSize: 12 }}>
-              DHW {dhwNow !== null ? fmtNum(dhwNow, lang) : "–"}
-            </span>
+          <div style={{ display: "flex", gap: 10, alignItems: "center", fontSize: 13.5, marginTop: 2 }}>
+            <span className="hud-value">{dhwNow !== null ? fmtNum(dhwNow, lang) : "–"} {t("unit.dhw")}</span>
             {dhwNow !== null && <AlertChip dhw={dhwNow} />}
           </div>
         </div>
       </div>
-      <div className="track">
+      <div className="curve">
         <canvas ref={canvas} aria-hidden="true" />
         <input
           type="range"
@@ -180,30 +167,30 @@ export function Timeline({ index, island }: { index: HeatIndex; island: string }
           aria-label={fmtDate(date, lang)}
         />
       </div>
-      <div className="years" ref={yearsRef}>
+      <div className="timebar-key">{t("scene.timebarKey")}</div>
+      <div className="yearstrip" role="group" aria-label={t("heat.year")}>
         {index.years.map((y, i) => (
           <button
             key={y.year}
-            data-y={y.year}
-            className={[y.year === year ? "on" : "", (yearMaxes[i] ?? 0) >= 8 ? "event" : ""].join(" ")}
-            title={yearMaxes[i] !== undefined ? `${t("card.record")}: ${fmtNum(yearMaxes[i], lang)} DHW` : undefined}
+            className={y.year === year ? "on" : undefined}
+            style={{ background: rampCSS(yearMax[i] ?? 0) }}
+            title={`${y.year}${yearMax[i] !== undefined ? ` · ${fmtNum(yearMax[i], lang)} ${t("unit.dhw")}` : ""}`}
+            aria-label={String(y.year)}
+            aria-pressed={y.year === year}
             onClick={() => {
               setPlaying(false);
-              // Jump to the year's peak heat stress (or its last day).
-              let best = y.days - 1;
-              if (series) {
-                const off = dayDiff(series.first, y.first);
-                const v = series.islands[island].dhw_mean.slice(off, off + y.days);
-                const m = Math.max(...v);
-                if (m > 0) best = v.indexOf(m);
-              }
-              setYear(y.year, best);
+              setYear(y.year, peakDay(y));
             }}
-          >
-            {y.year}
-          </button>
+          />
         ))}
       </div>
-    </div>
+      <div className="year-axis">
+        {ticks.map((y, i) => (
+          <span key={`${y}-${i}`} style={{ left: `${((y - first + 0.5) / index.years.length) * 100}%` }}>
+            {y}
+          </span>
+        ))}
+      </div>
+    </>
   );
 }

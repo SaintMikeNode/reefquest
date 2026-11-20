@@ -45,9 +45,14 @@ Chunks: `index` (top bar, home map, cards; keep it small, ~76 KB gz) → `engine
 ~250 KB gz) → `IslandScene` and each page, loaded with `React.lazy`. Hash routes: `#/`,
 `#/island/roatan`, `#/heat`, `#/learn`, `#/about` (`src/lib/router.ts`).
 
-Design: "scientific instrument" look. Tokens and all CSS in `src/styles.css` (dark abyss
-background, cyan lines, `.panel` with corner marks, JetBrains Mono for data, Space Grotesk for text,
-both self-hosted via @fontsource). Heat colors follow NOAA's alert scale (`src/lib/alert.ts`).
+Design: a calm research-publication look on one dark ocean palette, used everywhere (pages, 3D HUD,
+boat HUD; Tulio rejected light/beige pages: "this is a sea project", "there's gotta be
+consistency"). Tokens and all CSS in `src/styles.css` (`--abyss`, `--deep`, `--ink`, `--text`,
+`--muted`, `--accent`, `--coral`; `--paper` is dark now, so use `--ink` for light fills). Fonts,
+self-hosted via @fontsource: Source Serif 4 (headings), Source Sans 3 (text), IBM Plex Mono (data).
+Charts are numbered figures with source lines and direct labels; tables stack into label/value rows
+on phones; **no horizontally scrolling boxes** anywhere (check pages at 375 px). Heat colors follow
+NOAA's alert scale (`src/lib/alert.ts`); surveyed seafloor uses the turbo ramp (0–30 m).
 
 ## Layout
 
@@ -65,16 +70,21 @@ both self-hosted via @fontsource). Heat colors follow NOAA's alert scale (`src/l
   ×4 and depths beyond 40 m compressed; heightfield ray-march picking; lat/lon via the pipeline's
   affine fit), `materials.ts` (terrain shader: hillshade, habitat colors, contours, caustics; water
   shader: NOAA 5 km cells), `IslandScene.tsx` (Canvas with `frameloop="demand"`, pins, camera
-  fly-to), `Hud.tsx` (layers, readout, site card), `Timeline.tsx` (year chips, DHW chart, scrubber,
+  fly-to), `nature.ts` (instanced palms and forest canopy on land, by elevation and habitat),
+  `Hud.tsx` (accordion: layers, legend, boat zones; readout), `SiteCard.tsx`, `Timeline.tsx` (year chips, DHW chart, scrubber,
   playback), `sceneStore.ts`.
-- `src/boat/`: the research-boat mode (lazy chunk, ~9 KB gz). `zone.ts` (detailed zone tiles: 10 m
+- `src/boat/`: the research-boat mode (lazy chunk, ~16 KB gz). `zone.ts` (detailed zone tiles: 10 m
   relief, 5 m habitat, meters as scene units, depths beyond 60 m compressed), `boatMaterials.ts`
   (seafloor with natural habitat colors + line-of-sight water attenuation + caustics; sea surface
   with ripples, fresnel, foam on very shallow water; sky; abyss floor), `boatModel.ts` (procedural
-  vessel), `props.ts` (instanced illustrative corals/sponges/seagrass placed by habitat, within
+  research vessel: blue hull, white superstructure, A-frame, crane, radomes, CTD rosette),
+  `sonar.ts` (multibeam swath ≈ 3.5 × depth per side, coverage on a 20 m grid saved in localStorage
+  `rq-survey-<zone>`, drawn on the seafloor with the turbo depth ramp; sonar fan mesh), `echo.ts` +
+  `Echogram.tsx` (scrolling echo sounder), `props.ts` (instanced illustrative corals/sponges/seagrass placed by habitat, within
   350 m of the boat), `BoatWorld.tsx` (physics: throttle/drag/turn, grounding by depth ahead of the
   bow, tap-to-go, WASD/arrows, chase camera, wake, buoys at real moorings, fish schools),
-  `BoatHud.tsx` (compass, sounder, sample/logbook mission saved in localStorage `rq-log-<zone>`).
+  `BoatHud.tsx` (compass, sounder, survey %, depth key, CTD cast button/space bar, logbook mission
+  saved in localStorage `rq-log-<zone>`; on phones the sounder and logbook start folded).
   Entered from a story card ("Explore by boat") or the zone list in the layers panel; zones are
   listed in `pipeline/zones.json` and built by `pipeline/zone_tiles.py`.
 - `src/scenes/labels.tsx`: screen-space labels (one projector + plain DOM), used instead of drei

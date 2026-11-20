@@ -2,31 +2,38 @@ import { OrbitControls } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
+import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import { SITES } from "../content/sites";
 import { LITE, REDUCED_MOTION } from "../lib/device";
-import { abyssMaterial, seafloorMaterial, seaMaterial, skyMaterial, SKY_HORIZON, SUN } from "./boatMaterials";
-import { makeBoat } from "./boatModel";
-import { useBoat } from "./boatStore";
-import { buildCandidates, CAPS, grassMaterial, PALETTES, propGeometries, underwater, type Candidates, type PropKind } from "./props";
 import { clearLabels, LabelProjector, setLabelAnchor } from "../scenes/labels";
-import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
+import { CANOPY_GREENS, canopyGeometry, h01, PALM_GREENS, palmGeometry, vegetationMaterial } from "../scenes/nature";
+import { abyssMaterial, seafloorMaterial, seaMaterial, skyMaterial, SKY_HORIZON, SUN } from "./boatMaterials";
+import { makeVessel } from "./boatModel";
+import { useBoat } from "./boatStore";
+import { echo } from "./echo";
+import { buildCandidates, CAPS, grassMaterial, PALETTES, propGeometries, underwater, type Candidates, type PropKind } from "./props";
+import { COV_CELL, makeCoverage, resetCoverage, saveCoverage, SonarFan, stamp, type Coverage } from "./sonar";
 import { floorY, habitatAtXZ, hash, heightAtXZ, loadZone, lonLatToXZ, xzToLonLat, zoneGeometry, type Zone } from "./zone";
 
-// Physics (m, s).
-const V_MAX = 9; // ~17 knots
-const V_REV = 3;
-const ACCEL = 2.4;
-const DRAG = 0.55;
-const YAW = 0.55; // rad/s at speed
-const DRAFT = 1.1; // the boat touches bottom shallower than this
-const PROP_RADIUS = 350;
+// Physics (m, s) for a ~24 m research vessel.
+const V_MAX = 6.5; // ~12.6 knots
+const V_REV = 2.2;
+const ACCEL = 1.6;
+const DRAG = 0.42;
+const YAW = 0.32; // rad/s at speed
+const DRAFT = 2.2; // keel depth: shallower water ahead stops the boat
+const BOW = 12.5;
+const STERN = -12;
+const PROP_RADIUS = 380;
+const CAST_SPEED = 2.2; // m/s winch speed
 
 export default function BoatWorld({ island, zoneId, start }: { island: string; zoneId: string; start: { lon: number; lat: number } }) {
   const [zone, setZone] = useState<Zone | null>(null);
   useEffect(() => {
     let alive = true;
     useBoat.setState({ loading: true });
+    echo.reset();
     loadZone(island, zoneId).then((z) => {
       if (!alive) return;
       useBoat.setState({ loading: false });
@@ -54,18 +61,38 @@ function Scene({ zone, start }: { zone: Zone; start: { lon: number; lat: number 
   const { camera, scene } = useThree();
   const time = useRef({ value: 0 });
   const mapColors = useBoat((s) => s.mapColors);
+  const sonarOn = useBoat((s) => s.sonar);
+  const gridOn = useBoat((s) => s.grid);
+  const resetReq = useBoat((s) => s.resetSurveyReq);
 
+  const coverage = useMemo(() => makeCoverage(zone), [zone]);
   const floorGeo = useMemo(() => zoneGeometry(zone, LITE ? 2 : 1), [zone]);
-  const floorMat = useMemo(() => seafloorMaterial(zone.habitatTex, LITE), [zone]);
+  const floorMat = useMemo(() => seafloorMaterial(zone.habitatTex, LITE, coverage.tex, [zone.sizeX, zone.sizeZ], COV_CELL), [zone, coverage]);
   const seaMat = useMemo(() => seaMaterial(zone.depthTex, [zone.sizeX, zone.sizeZ]), [zone]);
   const sky = useMemo(() => skyMaterial(), []);
   const abyss = useMemo(() => abyssMaterial(), []);
 
   useEffect(() => {
     floorMat.uniforms.uMapColors.value = mapColors ? 1 : 0;
-  }, [mapColors, floorMat]);
+    floorMat.uniforms.uSonar.value = sonarOn ? 1 : 0;
+    seaMat.uniforms.uGrid.value = gridOn ? 1 : 0;
+  }, [mapColors, sonarOn, gridOn, floorMat, seaMat]);
 
-  // Camera for close range; restored by the island view when it remounts.
+  useEffect(() => {
+    useBoat.setState({ surveyPct: coverage.totalSurveyable ? (100 * coverage.covered) / coverage.totalSurveyable : 0, surveyHa: (coverage.covered * COV_CELL * COV_CELL) / 10000 });
+    const t = window.setInterval(() => saveCoverage(zone.meta.id, coverage), 10000);
+    return () => {
+      clearInterval(t);
+      saveCoverage(zone.meta.id, coverage);
+    };
+  }, [zone, coverage]);
+
+  useEffect(() => {
+    if (!resetReq) return;
+    resetCoverage(zone.meta.id, coverage);
+    useBoat.setState({ surveyPct: 0, surveyHa: 0 });
+  }, [resetReq, zone, coverage]);
+
   useEffect(() => {
     const cam = camera as THREE.PerspectiveCamera;
     cam.near = 0.3;
@@ -80,27 +107,26 @@ function Scene({ zone, start }: { zone: Zone; start: { lon: number; lat: number 
 
   useFrame((_, dt) => {
     if (!REDUCED_MOTION) time.current.value += dt;
-    floorMat.uniforms.uTime.value = time.current.value;
-    seaMat.uniforms.uTime.value = time.current.value;
+    const t = time.current.value;
+    floorMat.uniforms.uTime.value = t;
+    seaMat.uniforms.uTime.value = t;
+    sky.uniforms.uTime.value = t;
   });
 
-  if (import.meta.env.DEV) (window as unknown as Record<string, unknown>).__zone = { zone, h: (x: number, z: number) => heightAtXZ(zone, x, z), floorGeo };
-
-  // Start on the site, or the nearest water at least 4 m deep (zone centers can be inland).
+  // Start on the site, or the nearest water at least 6 m deep (zone centers can be inland).
   const startXZ = useMemo(() => {
     const p = lonLatToXZ(zone, start.lon, start.lat);
-    if (heightAtXZ(zone, p.x, p.z) < -4) return p;
+    if (heightAtXZ(zone, p.x, p.z) < -6) return p;
     let best = p, bestD = Infinity;
     for (let j = 0; j < zone.h; j += 2)
       for (let i = 0; i < zone.w; i += 2) {
-        if (zone.heights[j * zone.w + i] >= -4) continue;
+        if (zone.heights[j * zone.w + i] >= -6) continue;
         const x = (i / (zone.w - 1) - 0.5) * zone.sizeX, z = (j / (zone.h - 1) - 0.5) * zone.sizeZ;
         const d = (x - p.x) ** 2 + (z - p.z) ** 2;
         if (d < bestD) (bestD = d), (best = { x, z });
       }
-    // Step a little further out so the bow isn't right on the edge of the shallows.
     const dx = best.x - p.x, dz = best.z - p.z, l = Math.hypot(dx, dz) || 1;
-    return { x: best.x + (dx / l) * 40, z: best.z + (dz / l) * 40 };
+    return { x: best.x + (dx / l) * 50, z: best.z + (dz / l) * 50 };
   }, [zone, start]);
 
   return (
@@ -108,8 +134,8 @@ function Scene({ zone, start }: { zone: Zone; start: { lon: number; lat: number 
       <mesh material={sky} renderOrder={-1}>
         <sphereGeometry args={[9000, 32, 16]} />
       </mesh>
-      <hemisphereLight args={["#cfeeff", "#3d5a4a", 1.0]} />
-      <directionalLight position={SUN.clone().multiplyScalar(100)} intensity={1.6} color="#fff4e0" />
+      <hemisphereLight args={["#d6efff", "#3d5a4a", 1.05]} />
+      <directionalLight position={SUN.clone().multiplyScalar(100)} intensity={1.7} color="#fff3dc" />
       <mesh geometry={floorGeo} material={floorMat} />
       <mesh rotation-x={-Math.PI / 2} position-y={-70} material={abyss}>
         <planeGeometry args={[30000, 30000, 1, 1]} />
@@ -119,27 +145,31 @@ function Scene({ zone, start }: { zone: Zone; start: { lon: number; lat: number 
       </mesh>
       <Reef zone={zone} time={time.current} />
       <Fish zone={zone} />
+      <Vegetation zone={zone} time={time.current} />
       <Buoys zone={zone} />
-      <Boat zone={zone} start={startXZ} />
+      <Boat zone={zone} start={startXZ} coverage={coverage} />
     </>
   );
 }
 
-/** The boat, its physics, the wake, the chase camera and the inputs. */
-function Boat({ zone, start }: { zone: Zone; start: { x: number; z: number } }) {
+/** The vessel, its physics, sonar, CTD casts, wake, foam, chase camera and inputs. */
+function Boat({ zone, start, coverage }: { zone: Zone; start: { x: number; z: number }; coverage: Coverage }) {
   const { camera, gl } = useThree();
-  const { group, radar } = useMemo(() => makeBoat(), []);
+  const vessel = useMemo(() => makeVessel(), []);
   const controls = useRef<OrbitControlsImpl>(null);
-  const st = useRef({ x: start.x, z: start.z, a: Math.PI, v: 0, aground: false, lastTele: 0 });
+  const st = useRef({ x: start.x, z: start.z, a: Math.PI, v: 0, aground: false, lastTele: 0, sx: start.x, sz: start.z, lastTex: 0 });
+  const cast = useRef({ phase: "idle" as "idle" | "down" | "hold" | "up", L: 0, target: 0, t: 0, req: useBoat.getState().castReq });
   const wake = useMemo(() => new Wake(), []);
+  const fan = useMemo(() => new SonarFan(), []);
+  const foam = useMemo(() => hullFoam(), []);
   const marker = useRef<THREE.Mesh>(null);
+  const base = useMemo(() => vessel.rosette.position.clone(), [vessel]);
 
-  // Initial camera behind and above the boat.
   useEffect(() => {
     const s = st.current;
     const dx = Math.sin(s.a), dz = Math.cos(s.a);
-    camera.position.set(s.x - dx * 38, 18, s.z - dz * 38);
-    controls.current?.target.set(s.x, 1.5, s.z);
+    camera.position.set(s.x - dx * 62 + 18, 30, s.z - dz * 62);
+    controls.current?.target.set(s.x, 3, s.z);
     controls.current?.update();
   }, [camera]);
 
@@ -160,6 +190,7 @@ function Boat({ zone, start }: { zone: Zone; start: { x: number; z: number } }) 
     return () => {
       window.removeEventListener("keydown", down);
       window.removeEventListener("keyup", up);
+      useBoat.setState({ keys: { up: false, down: false, left: false, right: false } });
     };
   }, []);
 
@@ -192,30 +223,68 @@ function Boat({ zone, start }: { zone: Zone; start: { x: number; z: number } }) 
   useFrame((state, rawDt) => {
     const dt = Math.min(rawDt, 0.05);
     const s = st.current;
-    const { keys, target, setTarget } = useBoat.getState();
-    let throttle = (keys.up ? 1 : 0) - (keys.down ? 1 : 0);
-    let turn = (keys.left ? 1 : 0) - (keys.right ? 1 : 0);
-    if (target && !throttle && !turn) {
+    const c = cast.current;
+    const store = useBoat.getState();
+    const { keys, target, setTarget } = store;
+    const t = state.clock.elapsedTime;
+    const depthHere = Math.max(0, -heightAtXZ(zone, s.x, s.z));
+
+    // ---- CTD cast: hold station, lower the rosette to ~1.5 m above the bottom, record, recover.
+    const rest = base.y + 0.6; // rosette center above the waterline at rest
+    if (store.castReq !== c.req && c.phase === "idle" && depthHere > 1) {
+      c.req = store.castReq;
+      c.phase = "down";
+      c.target = rest + Math.max(0.5, depthHere - 1.5);
+      setTarget(null);
+    }
+    const casting = c.phase !== "idle";
+    if (casting) {
+      if (c.phase === "down") {
+        c.L = Math.min(c.target, c.L + CAST_SPEED * dt);
+        if (c.L >= c.target) (c.phase = "hold"), (c.t = 0);
+      } else if (c.phase === "hold") {
+        c.t += dt;
+        if (c.t > 1.2) {
+          const hab = habitatAtXZ(zone, s.x, s.z);
+          const ll = xzToLonLat(zone, s.x, s.z);
+          store.addSample({ t: Date.now(), lat: ll.lat, lon: ll.lon, depth: depthHere, benthic: hab.benthic, geomorphic: hab.geomorphic, dhw: null });
+          c.phase = "up";
+        }
+      } else {
+        c.L = Math.max(0, c.L - CAST_SPEED * 1.3 * dt);
+        if (c.L <= 0) c.phase = "idle";
+      }
+      useBoat.setState({ cast: { phase: c.phase, depth: Math.max(0, c.L - rest), target: depthHere } });
+    }
+    vessel.rosette.position.set(base.x, base.y - c.L, base.z);
+    const cableTop = vessel.ctdTop.y, cableBottom = base.y - c.L + 0.6;
+    vessel.cable.scale.y = Math.max(0.01, cableTop - cableBottom);
+    vessel.cable.position.set(base.x, (cableTop + cableBottom) / 2, base.z);
+
+    // ---- Helm.
+    let throttle = casting ? 0 : (keys.up ? 1 : 0) - (keys.down ? 1 : 0);
+    let turn = casting ? 0 : (keys.left ? 1 : 0) - (keys.right ? 1 : 0);
+    if (!casting && target && !throttle && !turn) {
       const dx = target.x - s.x, dz = target.z - s.z;
       const dist = Math.hypot(dx, dz);
-      if (dist < 10) setTarget(null);
+      if (dist < 14) setTarget(null);
       else {
         let diff = Math.atan2(dx, dz) - s.a;
         diff = Math.atan2(Math.sin(diff), Math.cos(diff));
         turn = Math.max(-1, Math.min(1, diff * 2));
-        throttle = Math.abs(diff) > 1.6 ? 0.25 : Math.min(1, Math.max(0.3, dist / 60));
+        throttle = Math.abs(diff) > 1.6 ? 0.25 : Math.min(1, Math.max(0.3, dist / 80));
       }
     }
     s.v += (throttle * (throttle > 0 ? ACCEL : ACCEL * 0.6) - DRAG * s.v) * dt;
+    if (casting) s.v *= 1 - Math.min(1, dt * 1.5);
     s.v = Math.max(-V_REV, Math.min(V_MAX, s.v));
-    const turnRate = YAW * Math.min(1, 0.25 + Math.abs(s.v) / 4);
+    const turnRate = YAW * Math.min(1, 0.25 + Math.abs(s.v) / 3);
     s.a += turn * turnRate * dt * (s.v < -0.1 ? -1 : 1);
     const dirx = Math.sin(s.a), dirz = Math.cos(s.a);
     const nx = s.x + dirx * s.v * dt, nz = s.z + dirz * s.v * dt;
-    // Grounding: check the water depth ahead of the bow (or behind the stern when reversing).
-    const probe = s.v >= 0 ? 7 : -7;
+    const probe = s.v >= 0 ? BOW : STERN;
     const ahead = heightAtXZ(zone, nx + dirx * probe, nz + dirz * probe);
-    const margin = 80;
+    const margin = 100;
     const inside = Math.abs(nx) < zone.sizeX / 2 - margin && Math.abs(nz) < zone.sizeZ / 2 - margin;
     if (ahead > -DRAFT || !inside) {
       s.aground = Math.abs(s.v) > 0.05 || s.aground;
@@ -227,57 +296,84 @@ function Boat({ zone, start }: { zone: Zone; start: { x: number; z: number } }) 
       if (Math.abs(s.v) > 0.3) s.aground = false;
     }
 
-    // Pose: bob, pitch with speed, lean into turns.
-    const t = state.clock.elapsedTime;
-    group.position.set(s.x, Math.sin(t * 1.3) * 0.12 - 0.05, s.z);
-    group.rotation.set(Math.sin(t * 0.9) * 0.02 - s.v * 0.006, s.a, Math.sin(t * 1.1) * 0.025 - turn * s.v * 0.012, "YXZ");
-    radar.rotation.y += dt * 2.5;
+    // ---- Pose: swell, pitch with speed, heel into turns.
+    vessel.group.position.set(s.x, Math.sin(t * 0.9) * 0.18 - 0.05, s.z);
+    vessel.group.rotation.set(Math.sin(t * 0.7) * 0.015 - s.v * 0.004, s.a, Math.sin(t * 0.8) * 0.02 - turn * s.v * 0.01, "YXZ");
+    vessel.radar[0].rotation.y += dt * 2.2;
+    vessel.radar[1].rotation.y -= dt * 3.1;
+    const fp = vessel.flag.geometry.attributes.position as THREE.BufferAttribute;
+    for (let i = 0; i < fp.count; i++) {
+      const x = fp.getX(i);
+      fp.setZ(i, Math.sin(t * 6 + x * 5) * 0.08 * (x + 0.6));
+    }
+    fp.needsUpdate = true;
 
-    // Chase: carry the camera and orbit target along with the boat.
-    const c = controls.current;
-    if (c) {
-      const ddx = s.x - c.target.x, ddz = s.z - c.target.z;
-      c.target.x += ddx;
-      c.target.z += ddz;
+    foam.position.set(s.x, 0.05, s.z);
+    foam.rotation.y = s.a;
+    (foam.material as THREE.ShaderMaterial).uniforms.uSpeed.value = Math.abs(s.v) / V_MAX;
+    (foam.material as THREE.ShaderMaterial).uniforms.uTime.value = t;
+
+    // ---- Chase camera.
+    const ctl = controls.current;
+    if (ctl) {
+      const ddx = s.x - ctl.target.x, ddz = s.z - ctl.target.z;
+      ctl.target.x += ddx;
+      ctl.target.z += ddz;
       camera.position.x += ddx;
       camera.position.z += ddz;
-      c.update();
+      ctl.update();
     }
 
-    wake.push(s.x - dirx * 6.5, s.z - dirz * 6.5, Math.abs(s.v), dt);
+    wake.push(s.x - dirx * 12, s.z - dirz * 12, Math.abs(s.v), dt);
+
+    // ---- Multibeam survey.
+    const sonarOn = store.sonar;
+    fan.update(zone, s.x, s.z, s.a, depthHere, t, sonarOn);
+    if (sonarOn && Math.hypot(s.x - s.sx, s.z - s.sz) > 4) {
+      s.sx = s.x;
+      s.sz = s.z;
+      stamp(coverage, zone, s.x, s.z, s.a, depthHere);
+    }
+    if (coverage.dirty && t - s.lastTex > 0.25) {
+      s.lastTex = t;
+      coverage.dirty = false;
+      coverage.tex.needsUpdate = true;
+      useBoat.setState({ surveyPct: coverage.totalSurveyable ? (100 * coverage.covered) / coverage.totalSurveyable : 0, surveyHa: (coverage.covered * COV_CELL * COV_CELL) / 10000 });
+    }
 
     if (marker.current) {
       marker.current.visible = !!target;
       if (target) marker.current.position.set(target.x, 0.15 + Math.sin(t * 4) * 0.1, target.z);
     }
 
-    // Telemetry to the HUD ~10×/s.
+    // ---- Telemetry ~10×/s (and the echogram).
     if (t - s.lastTele > 0.1) {
       s.lastTele = t;
-      const h = heightAtXZ(zone, s.x, s.z);
       const hab = habitatAtXZ(zone, s.x, s.z);
       const ll = xzToLonLat(zone, s.x, s.z);
-      useBoat.getState().setTele({
+      echo.push(depthHere, hab.benthic);
+      store.setTele({
         x: s.x, z: s.z, heading: (((Math.PI - s.a) % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2), speed: s.v,
-        depth: Math.max(0, -h), benthic: hab.benthic, geomorphic: hab.geomorphic, lat: ll.lat, lon: ll.lon, aground: s.aground,
+        depth: depthHere, benthic: hab.benthic, geomorphic: hab.geomorphic, lat: ll.lat, lon: ll.lon, aground: s.aground,
       });
-      // Nearest story/dive site buoy.
       let near: string | null = null;
       for (const site of SITES) {
         if (site.island !== zone.meta.island) continue;
         const p = lonLatToXZ(zone, site.lon, site.lat);
-        if (Math.hypot(p.x - s.x, p.z - s.z) < 60) near = site.id;
+        if (Math.hypot(p.x - s.x, p.z - s.z) < 80) near = site.id;
       }
-      if (near !== useBoat.getState().near) useBoat.getState().setNear(near);
+      if (near !== store.near) store.setNear(near);
     }
   });
 
   return (
     <>
-      <primitive object={group} />
+      <primitive object={vessel.group} />
+      <primitive object={foam} />
       <primitive object={wake.mesh} />
+      <primitive object={fan.mesh} />
       <mesh ref={marker} rotation-x={-Math.PI / 2} visible={false}>
-        <ringGeometry args={[2.2, 3, 32]} />
+        <ringGeometry args={[3.2, 4.2, 40]} />
         <meshBasicMaterial color="#ffffff" transparent opacity={0.85} />
       </mesh>
       <OrbitControls
@@ -286,17 +382,53 @@ function Boat({ zone, start }: { zone: Zone; start: { x: number; z: number } }) 
         enableDamping
         dampingFactor={0.1}
         enablePan={false}
-        minDistance={14}
-        maxDistance={420}
+        minDistance={22}
+        maxDistance={520}
         maxPolarAngle={Math.PI * 0.47}
       />
     </>
   );
 }
 
+/** White water around the hull and a bow wave that grows with speed. */
+function hullFoam() {
+  const m = new THREE.ShaderMaterial({
+    transparent: true,
+    depthWrite: false,
+    uniforms: { uSpeed: { value: 0 }, uTime: { value: 0 } },
+    vertexShader: "varying vec2 vP; void main(){ vP = position.xz; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }",
+    fragmentShader: `
+      uniform float uSpeed; uniform float uTime; varying vec2 vP;
+      float h(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+      float n(vec2 p){ vec2 i = floor(p), f = fract(p); vec2 u = f*f*(3.0-2.0*f);
+        return mix(mix(h(i), h(i+vec2(1,0)), u.x), mix(h(i+vec2(0,1)), h(i+vec2(1,1)), u.x), u.y); }
+      void main(){
+        // vP: x across, y forward (local). Hull ellipse ring.
+        vec2 q = vec2(vP.x / 3.9, (vP.y - 0.3) / 13.2);
+        float r = length(q);
+        float ring = smoothstep(1.3, 0.98, r) * smoothstep(0.85, 0.99, r);
+        // Bow wave: a V spreading back from the bow.
+        float side = abs(vP.x) - (12.8 - vP.y) * 0.42;
+        float bow = smoothstep(2.4, 0.0, abs(side)) * smoothstep(-8.0, 9.0, vP.y) * step(vP.y, 13.0);
+        float tx = smoothstep(0.35, 0.75, n(vP * 0.9 + vec2(0.0, uTime * 3.0)));
+        float a = (ring * (0.25 + 0.5 * uSpeed) + bow * uSpeed * 0.9) * tx;
+        gl_FragColor = vec4(vec3(0.96, 0.99, 1.0), a * 0.85);
+      }`,
+  });
+  // Flat plane in the XZ plane; z = forward.
+  const g = new THREE.PlaneGeometry(16, 36, 1, 1);
+  g.rotateX(-Math.PI / 2); // plane y → −z
+  g.scale(1, 1, -1); // so local "forward" is +z (a flat plane: winding doesn't matter, DoubleSide)
+  m.side = THREE.DoubleSide;
+  const mesh = new THREE.Mesh(g, m);
+  mesh.renderOrder = 4;
+  mesh.frustumCulled = false;
+  return mesh;
+}
+
 /** Foam trail behind the stern: a ribbon of recent positions that widens and fades. */
 class Wake {
-  N = 70;
+  N = 80;
   pts: { x: number; z: number; age: number }[] = [];
   mesh: THREE.Mesh;
   private pos: Float32Array;
@@ -316,8 +448,9 @@ class Wake {
     const m = new THREE.ShaderMaterial({
       transparent: true,
       depthWrite: false,
+      side: THREE.DoubleSide,
       vertexShader: "attribute float aAlpha; varying float vA; void main(){ vA = aAlpha; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }",
-      fragmentShader: "varying float vA; void main(){ gl_FragColor = vec4(1.0, 1.0, 1.0, vA); }",
+      fragmentShader: "varying float vA; void main(){ gl_FragColor = vec4(0.97, 0.99, 1.0, vA); }",
     });
     this.mesh = new THREE.Mesh(g, m);
     this.mesh.frustumCulled = false;
@@ -326,8 +459,8 @@ class Wake {
   push(x: number, z: number, speed: number, dt: number) {
     for (const p of this.pts) p.age += dt;
     const last = this.pts[0];
-    if (speed > 0.6 && (!last || Math.hypot(last.x - x, last.z - z) > 2.5)) this.pts.unshift({ x, z, age: 0 });
-    while (this.pts.length > this.N || (this.pts.length && this.pts[this.pts.length - 1].age > 9)) this.pts.pop();
+    if (speed > 0.5 && (!last || Math.hypot(last.x - x, last.z - z) > 3)) this.pts.unshift({ x, z, age: 0 });
+    while (this.pts.length > this.N || (this.pts.length && this.pts[this.pts.length - 1].age > 14)) this.pts.pop();
     for (let i = 0; i < this.N; i++) {
       const p = this.pts[i];
       const q = this.pts[Math.min(i + 1, this.pts.length - 1)] ?? p;
@@ -339,9 +472,9 @@ class Wake {
       const l = Math.hypot(dx, dz) || 1;
       dx /= l;
       dz /= l;
-      const w = 1.4 + p.age * 1.6;
+      const w = 2.6 + p.age * 1.9;
       this.pos.set([p.x - dz * w, 0.06, p.z + dx * w, p.x + dz * w, 0.06, p.z - dx * w], i * 6);
-      const a = Math.max(0, 0.75 - p.age / 9) * Math.min(1, speed / 2 + 0.3);
+      const a = Math.max(0, 0.6 - p.age / 14) * Math.min(1, speed / 2 + 0.3);
       this.alpha[i * 2] = this.alpha[i * 2 + 1] = a;
     }
     this.mesh.geometry.attributes.position.needsUpdate = true;
@@ -355,9 +488,9 @@ function Reef({ zone, time }: { zone: Zone; time: { value: number } }) {
   const geos = useMemo(() => propGeometries(), []);
   const mats = useMemo(
     () => ({
-      boulder: underwater(new THREE.MeshStandardMaterial({ color: "#ffffff", roughness: 0.95 })),
-      branch: underwater(new THREE.MeshStandardMaterial({ color: "#ffffff", roughness: 0.8 })),
-      sponge: underwater(new THREE.MeshStandardMaterial({ color: "#ffffff", roughness: 0.9 })),
+      boulder: underwater(new THREE.MeshStandardMaterial({ color: "#ffffff", roughness: 0.95, flatShading: true })),
+      branch: underwater(new THREE.MeshStandardMaterial({ color: "#ffffff", roughness: 0.8, flatShading: true })),
+      sponge: underwater(new THREE.MeshStandardMaterial({ color: "#ffffff", roughness: 0.9, flatShading: true })),
       grass: underwater(grassMaterial(time)),
     }),
     [time],
@@ -388,7 +521,6 @@ function Reef({ zone, time }: { zone: Zone; time: { value: number } }) {
       const arr = cand[k];
       const im = meshes[k];
       const cap = im.instanceMatrix.count;
-      // Count candidates in range, then keep each with probability cap/count (even spread).
       const r2 = PROP_RADIUS * PROP_RADIUS;
       let inRange = 0;
       for (let i = 0; i < arr.length; i += 4) {
@@ -402,7 +534,7 @@ function Reef({ zone, time }: { zone: Zone; time: { value: number } }) {
         const dx = arr[i] - tele.x, dz = arr[i + 2] - tele.z;
         if (dx * dx + dz * dz >= r2) continue;
         const seed = arr[i + 3];
-        if (((seed * 9973) % 1) > keep) continue;
+        if ((seed * 9973) % 1 > keep) continue;
         const size = k === "boulder" ? 0.6 + seed * 1.8 : k === "branch" ? 0.7 + seed * 1.2 : k === "sponge" ? 0.6 + seed * 0.9 : 0.6 + seed * 0.5;
         p.set(arr[i], floorY(arr[i + 1]) - (k === "boulder" ? size * 0.12 : 0), arr[i + 2]);
         q.setFromAxisAngle(up, seed * 40);
@@ -427,6 +559,72 @@ function Reef({ zone, time }: { zone: Zone; time: { value: number } }) {
   );
 }
 
+/** Palms on the coast and broadleaf forest inland, within ~1.3 km of the boat. */
+function Vegetation({ zone, time }: { zone: Zone; time: { value: number } }) {
+  const R = 1300;
+  const cand = useMemo(() => {
+    const palms: number[] = [], trees: number[] = [];
+    for (let j = 0; j < zone.h; j++)
+      for (let i = 0; i < zone.w; i++) {
+        const k = j * zone.w + i;
+        const h = zone.heights[k];
+        if (h < 0.9) continue;
+        const r = h01(k);
+        const x = ((i + h01(k + 1)) / (zone.w - 1) - 0.5) * zone.sizeX, z = ((j + h01(k + 2)) / (zone.h - 1) - 0.5) * zone.sizeZ;
+        if (h < 7 && r < 0.3) palms.push(x, h, z, h01(k + 3));
+        else if (h >= 3 && r < 0.42) trees.push(x, h, z, h01(k + 4));
+      }
+    return { palms: new Float32Array(palms), trees: new Float32Array(trees) };
+  }, [zone]);
+  const meshes = useMemo(() => {
+    const capP = LITE ? 700 : 2200, capT = LITE ? 1200 : 4200;
+    const palms = new THREE.InstancedMesh(palmGeometry(), vegetationMaterial(time, 0.06), capP);
+    const trees = new THREE.InstancedMesh(canopyGeometry(), vegetationMaterial(), capT);
+    palms.count = trees.count = 0;
+    palms.frustumCulled = trees.frustumCulled = false;
+    return { palms, trees };
+  }, [time]);
+  const last = useRef({ x: 1e9, z: 1e9 });
+  useFrame(() => {
+    const tele = useBoat.getState().tele;
+    if (!tele || Math.hypot(tele.x - last.current.x, tele.z - last.current.z) < 150) return;
+    last.current = { x: tele.x, z: tele.z };
+    const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), s = new THREE.Vector3(), p = new THREE.Vector3(), col = new THREE.Color();
+    const up = new THREE.Vector3(0, 1, 0);
+    const fill = (arr: Float32Array, im: THREE.InstancedMesh, greens: string[], h0: number, h1: number, wide: number) => {
+      const cap = im.instanceMatrix.count;
+      let inR = 0;
+      for (let i = 0; i < arr.length; i += 4) if ((arr[i] - tele.x) ** 2 + (arr[i + 2] - tele.z) ** 2 < R * R) inR++;
+      const keep = Math.min(1, cap / Math.max(inR, 1));
+      let n = 0;
+      for (let i = 0; i < arr.length && n < cap; i += 4) {
+        if ((arr[i] - tele.x) ** 2 + (arr[i + 2] - tele.z) ** 2 >= R * R) continue;
+        const seed = arr[i + 3];
+        if ((seed * 7919) % 1 > keep) continue;
+        const ht = h0 + seed * (h1 - h0);
+        p.set(arr[i], arr[i + 1] - 0.3, arr[i + 2]);
+        q.setFromAxisAngle(up, seed * 60);
+        s.set(ht * wide, ht, ht * wide);
+        m4.compose(p, q, s);
+        im.setMatrixAt(n, m4);
+        im.setColorAt(n, col.set(greens[Math.floor(seed * 991) % greens.length]));
+        n++;
+      }
+      im.count = n;
+      im.instanceMatrix.needsUpdate = true;
+      if (im.instanceColor) im.instanceColor.needsUpdate = true;
+    };
+    fill(cand.palms, meshes.palms, PALM_GREENS, 8, 14, 0.9);
+    fill(cand.trees, meshes.trees, CANOPY_GREENS, 7, 15, 1.1);
+  });
+  return (
+    <>
+      <primitive object={meshes.palms} />
+      <primitive object={meshes.trees} />
+    </>
+  );
+}
+
 /** Mooring buoys at the real dive-site positions inside this zone (labels: BoatHud overlay). */
 function Buoys({ zone }: { zone: Zone }) {
   const sites = useMemo(
@@ -437,7 +635,7 @@ function Buoys({ zone }: { zone: Zone }) {
     [zone],
   );
   useEffect(() => {
-    for (const s of sites) setLabelAnchor(`buoy:${s.id}`, s.x, 3.2, s.z);
+    for (const s of sites) setLabelAnchor(`buoy:${s.id}`, s.x, 3.6, s.z);
     useBoat.setState({ buoys: sites.map((s) => s.id) });
     return () => {
       clearLabels("buoy:");
@@ -457,17 +655,21 @@ function Buoys({ zone }: { zone: Zone }) {
     <>
       {sites.map((s, i) => (
         <group key={s.id} position={[s.x, 0, s.z]} ref={(g) => { refs.current[i] = g; }}>
-          <mesh position-y={0.35}>
-            <sphereGeometry args={[0.6, 14, 10]} />
+          <mesh position-y={0.4}>
+            <sphereGeometry args={[0.75, 14, 10]} />
             <meshStandardMaterial color="#f2f2f2" roughness={0.4} />
           </mesh>
-          <mesh position-y={0.4}>
-            <cylinderGeometry args={[0.62, 0.62, 0.22, 14]} />
-            <meshStandardMaterial color={s.kind === "story" ? "#ff6f5e" : "#2563eb"} roughness={0.5} />
+          <mesh position-y={0.45}>
+            <cylinderGeometry args={[0.77, 0.77, 0.26, 14]} />
+            <meshStandardMaterial color={s.kind === "story" ? "#c2412d" : "#1d4e89"} roughness={0.5} />
           </mesh>
-          <mesh position-y={1.4}>
-            <cylinderGeometry args={[0.04, 0.04, 1.4, 5]} />
+          <mesh position-y={1.7}>
+            <cylinderGeometry args={[0.05, 0.05, 1.8, 5]} />
             <meshStandardMaterial color="#333" />
+          </mesh>
+          <mesh position-y={2.65}>
+            <sphereGeometry args={[0.12, 8, 6]} />
+            <meshBasicMaterial color={s.kind === "story" ? "#ffb08a" : "#bfe6ff"} />
           </mesh>
         </group>
       ))}
@@ -504,7 +706,6 @@ function Fish({ zone }: { zone: Zone }) {
   useFrame((st) => {
     const tele = useBoat.getState().tele;
     if (!tele) return;
-    // Re-seat the schools over nearby reef when the boat has moved on.
     if (Math.hypot(tele.x - last.current.x, tele.z - last.current.z) > 120) {
       last.current = { x: tele.x, z: tele.z };
       const list: typeof schools.current = [];

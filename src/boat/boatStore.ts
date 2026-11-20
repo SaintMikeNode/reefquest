@@ -33,6 +33,13 @@ interface BoatState {
   present: number[]; // benthic classes found in this zone
   estimated: boolean; // shallow depths estimated from reef zones (no Atlas bathymetry)
   loading: boolean;
+  sonar: boolean;
+  grid: boolean;
+  surveyPct: number; // % of the zone's 0.5–40 m shelf mapped by the multibeam
+  surveyHa: number; // area mapped, hectares
+  cast: { phase: "idle" | "down" | "hold" | "up"; depth: number; target: number };
+  castReq: number; // timestamp of the last "take sample" request
+  resetSurveyReq: number;
   buoys: string[]; // site ids with a buoy in this zone
   setPresent: (p: number[]) => void;
   clearSamples: () => void;
@@ -58,6 +65,13 @@ export const useBoat = create<BoatState>((set, get) => ({
   present: [],
   estimated: false,
   loading: false,
+  sonar: true,
+  grid: true,
+  surveyPct: 0,
+  surveyHa: 0,
+  cast: { phase: "idle", depth: 0, target: 0 },
+  castReq: 0,
+  resetSurveyReq: 0,
   buoys: [],
   setPresent: (present) => set({ present }),
   clearSamples: () => {

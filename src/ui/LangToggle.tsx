@@ -1,11 +1,16 @@
-import { useLang, useT } from "../i18n";
+import { useLang } from "../i18n";
 
+/** ES | EN segmented switch (Spanish first). */
 export function LangToggle() {
-  const t = useT();
   const { lang, setLang } = useLang();
   return (
-    <button className="btn" aria-label={t("lang.switchLabel")} onClick={() => setLang(lang === "es" ? "en" : "es")}>
-      {t("lang.switch")}
-    </button>
+    <div className="lang" role="group" aria-label="Idioma / Language">
+      <button aria-pressed={lang === "es"} onClick={() => setLang("es")} lang="es">
+        ES
+      </button>
+      <button aria-pressed={lang === "en"} onClick={() => setLang("en")} lang="en">
+        EN
+      </button>
+    </div>
   );
 }

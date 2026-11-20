@@ -19,7 +19,7 @@ function Loading() {
   return (
     <div className="loading-screen">
       <div className="box">
-        <div className="label">{t("scene.loading")}</div>
+        <div>{t("scene.loading")}</div>
         <div className="bar">
           <i />
         </div>

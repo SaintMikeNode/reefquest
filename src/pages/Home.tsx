@@ -5,11 +5,11 @@ import { ISLAND_ORDER as ORDER, SCENE_ISLANDS as AVAILABLE } from "../lib/island
 import { href } from "../lib/router";
 import { AlertChip } from "../ui/AlertChip";
 import { ArchipelagoMap } from "../ui/ArchipelagoMap";
+import { HeatKey } from "../ui/HeatKey";
 import { HeatStripes } from "../ui/HeatStripes";
+import { IconArrow } from "../ui/Icons";
 import { Sparkline } from "../ui/Sparkline";
-import { levelFor } from "../lib/alert";
 import { HAS_WEBGL } from "../webgl";
-
 
 export function Home() {
   const t = useT();
@@ -18,150 +18,183 @@ export function Home() {
   useEffect(() => {
     loadLatest().then(setLatest).catch(() => {});
   }, []);
+  const date = latest ? fmtDate(latest.date, lang, { day: "numeric", month: "long", year: "numeric" }) : "…";
+
+  let rec = { name: "", year: 0, v: 0 };
+  if (latest)
+    for (const isl of Object.values(latest.islands))
+      isl.year_max_dhw.forEach((v, i) => {
+        if (v > rec.v) rec = { name: isl.name, year: latest.years[i], v };
+      });
 
   return (
-    <main className="page">
-      <section className="hero">
-        <div>
-          <div className="label">{t("home.kicker")}</div>
-          <h1 className="hero-title">
-            {t("home.title1")}
-            <br />
-            <em>{t("home.title2")}</em>
-          </h1>
-          <p className="hero-sub">{t("home.sub")}</p>
-          <div className="hero-meta">
-            <span className="label">
-              {t("home.dataThrough")} <span style={{ color: "var(--cyan)" }}>{latest ? fmtDate(latest.date, lang) : "…"}</span>
-            </span>
-            <span className="label">15.8–16.6°N · 85.7–87.1°W</span>
+    <>
+      <section className="hero-band">
+        <Contours />
+        <div className="inner split">
+          <div>
+            <p className="eyebrow">{t("home.kicker")}</p>
+            <h1>{t("home.title")}</h1>
+            <p className="standfirst">{t("home.sub")}</p>
+            <div className="hero-actions">
+              {HAS_WEBGL && (
+                <a className="btn primary" href={href.island("roatan")}>
+                  {t("home.ctaRoatan")} <IconArrow />
+                </a>
+              )}
+              <a className="btn" href={href.heat}>
+                {t("nav.heat")}
+              </a>
+            </div>
           </div>
+          {latest && (
+            <dl className="summary">
+              <div>
+                <dt>{t("home.sumDate")}</dt>
+                <dd className="num">{date}</dd>
+              </div>
+              <div>
+                <dt>{t("home.sumRecord")}</dt>
+                <dd className="num">
+                  {rec.year} · {rec.name} · {fmtNum(rec.v, lang)} {t("unit.dhw")}
+                </dd>
+              </div>
+              <div>
+                <dt>{t("home.sumSpan")}</dt>
+                <dd className="num">
+                  {latest.years[0]}–{latest.years[latest.years.length - 1]}
+                </dd>
+              </div>
+            </dl>
+          )}
         </div>
-        {latest && <HeroStats latest={latest} />}
-        {!HAS_WEBGL && (
-          <div className="panel caveat">
-            <strong>{t("nowebgl.title")}</strong> {t("nowebgl.body")}
+      </section>
+    <main className="page">
+      {!HAS_WEBGL && (
+        <p className="note" style={{ marginTop: 24 }}>
+          <b>{t("nowebgl.title")}.</b> {t("nowebgl.body")}
+        </p>
+      )}
+
+      <section className="section">
+        <figure className="figure">
+          <p className="fig-title">
+            {t("fig")} 1. {t("home.fig1Title")}
+          </p>
+          <p className="fig-sub">{t("home.fig1Sub").replace("{date}", date)}</p>
+          <ArchipelagoMap latest={latest} />
+          <div className="fig-foot">
+            <HeatKey />
+            <p className="fig-caption">{t("home.fig1Caption")}</p>
           </div>
-        )}
-        <ArchipelagoMap latest={latest} />
+          <p className="fig-source">{t("home.fig1Source")}</p>
+        </figure>
       </section>
 
       <section className="section">
-        <h2>{t("home.cardsTitle")}</h2>
-        <p className="lead">{t("home.cardsLead")}</p>
-        <div className="cards">
-          {ORDER.map((id) => {
-            const s = latest?.islands[id];
-            const ok = AVAILABLE.has(id) && HAS_WEBGL;
-            const recordIdx = s ? s.year_max_dhw.indexOf(Math.max(...s.year_max_dhw)) : -1;
-            const trend = s ? s.dhw - s.dhw_7d_ago : 0;
-            return (
-              <article className="panel card" key={id}>
-                <h3>
-                  {s?.name ?? "…"}
-                  {s && <AlertChip dhw={s.dhw} />}
-                </h3>
-                <div className="row">
-                  <div className="big">
-                    {s ? fmtNum(s.dhw, lang) : "–"}
-                    <small>{t("card.unit")}</small>
-                  </div>
-                  {s && (
-                    <span className="mono dim" style={{ fontSize: 13 }} title={t("card.week")}>
-                      {trend > 0.05 ? "▲" : trend < -0.05 ? "▼" : "■"} {fmtNum(Math.abs(trend), lang)}
-                    </span>
-                  )}
-                </div>
-                {s && <Sparkline values={s.recent_dhw} label={`${s.name}: ${t("card.last120")}`} />}
-                {s && (
-                  <div className="stats">
-                    <div>
-                      <span>{t("card.sst")}</span>
-                      {fmtNum(s.sst, lang)} °C
-                    </div>
-                    <div>
-                      <span>{t("card.max")}</span>
-                      {fmtNum(s.dhw_max, lang)}
-                    </div>
-                    <div>
-                      <span>{t("card.record")}</span>
-                      {latest!.years[recordIdx]} · {fmtNum(s.year_max_dhw[recordIdx], lang)}
-                    </div>
-                    <div>
-                      <span>{t("card.last120")}</span>
-                      {fmtNum(Math.max(...s.recent_dhw) / 10, lang)} max
-                    </div>
-                  </div>
-                )}
-                <div className="actions">
-                  {ok ? (
-                    <a className="btn primary" href={href.island(id)}>
-                      {t("home.enter3d")} →
-                    </a>
-                  ) : (
-                    <span className="btn" aria-disabled="true" style={{ opacity: 0.55, cursor: "default" }}>
-                      {t("home.soon3d")}
-                    </span>
-                  )}
-                  <a className="btn ghost" href={href.heat}>
-                    {t("home.seeHistory")}
-                  </a>
-                </div>
-              </article>
-            );
-          })}
+        <div className="section-head">
+          <h2>{t("home.cardsTitle")}</h2>
+          <p>{t("home.cardsLead")}</p>
         </div>
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>{t("table.island")}</th>
+              <th className="r">{t("table.dhw")}</th>
+              <th>{t("table.level")}</th>
+              <th className="r">{t("table.sst")}</th>
+              <th>{t("table.last120")}</th>
+              <th className="r">{t("table.worst")}</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
+            {ORDER.map((id) => {
+              const s = latest?.islands[id];
+              if (!s) return null;
+              const ri = s.year_max_dhw.indexOf(Math.max(...s.year_max_dhw));
+              const ok = AVAILABLE.has(id) && HAS_WEBGL;
+              return (
+                <tr key={id}>
+                  <td className="name">{s.name}</td>
+                  <td className="r" data-label={t("table.dhw")}>
+                    {fmtNum(s.dhw, lang)}
+                  </td>
+                  <td data-label={t("table.level")}>
+                    <AlertChip dhw={s.dhw} />
+                  </td>
+                  <td className="r" data-label={t("table.sst")}>
+                    {fmtNum(s.sst, lang)} °C
+                  </td>
+                  <td data-label={t("table.last120")}>
+                    <Sparkline values={s.recent_dhw} label={`${s.name}: ${t("table.last120")}`} />
+                  </td>
+                  <td className="r" data-label={t("table.worst")}>
+                    {latest!.years[ri]} ({fmtNum(s.year_max_dhw[ri], lang)})
+                  </td>
+                  <td className="action">
+                    {ok ? (
+                      <a className="arrow-link" href={href.island(id)}>
+                        {t("home.enter3d")} <IconArrow />
+                      </a>
+                    ) : (
+                      <span className="faint" style={{ fontSize: 14 }}>
+                        {t("home.soon3d")}
+                      </span>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+        <p className="fig-source" style={{ marginTop: 10 }}>
+          {t("home.tableNote")}
+        </p>
       </section>
 
       {latest && (
         <section className="section">
-          <h2>{t("home.stripesTitle")}</h2>
-          <p className="lead">{t("home.stripesLead")}</p>
-          <div className="panel" style={{ padding: 16 }}>
-            <HeatStripes latest={latest} />
-          </div>
+          <figure className="figure">
+            <p className="fig-title">
+              {t("fig")} 2. {t("home.stripesTitle")}
+            </p>
+            <p className="fig-sub">{t("home.stripesLead")}</p>
+            <HeatStripes latest={latest} onPick={() => (location.hash = href.heat)} />
+            <div style={{ marginTop: 12 }}>
+              <HeatKey compact />
+            </div>
+            <p className="fig-source">{t("home.fig1Source")}</p>
+          </figure>
         </section>
       )}
 
       <section className="section">
-        <div className="panel caveat">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="12" cy="12" r="10" />
-            <path d="M12 8v5M12 16h.01" />
-          </svg>
-          <span>{t("home.caveat")}</span>
-        </div>
+        <p className="note">
+          <b>{t("home.noteTitle")}</b> {t("home.caveat")}
+        </p>
       </section>
     </main>
+    </>
   );
 }
 
-/** Instrument-style readout beside the title on wide screens. */
-function HeroStats({ latest }: { latest: Latest }) {
-  const t = useT();
-  const lang = useLang((s) => s.lang);
-  let rec = { name: "", year: 0, v: 0 };
-  for (const isl of Object.values(latest.islands))
-    isl.year_max_dhw.forEach((v, i) => {
-      if (v > rec.v) rec = { name: isl.name, year: latest.years[i], v };
-    });
-  const hottest = Object.values(latest.islands).sort((a, b) => b.dhw - a.dhw)[0];
-  const rows: [string, string, string?][] = [
-    [t("hero.now"), `${hottest.name} · ${fmtNum(hottest.dhw, lang)} DHW`, levelFor(hottest.dhw).color],
-    [t("hero.record"), `${rec.year} · ${rec.name} · ${fmtNum(rec.v, lang)} DHW`, levelFor(rec.v).color],
-    [t("hero.span"), `${latest.years[0]}–${latest.years[latest.years.length - 1]} · ${latest.years.length} ${t("hero.years")}`],
-    [t("hero.res"), "5 km · 5 m · 30 m"],
-  ];
+/** Decorative bathymetric contour lines for the title band (deterministic, no data implied). */
+function Contours() {
+  const lines: string[] = [];
+  for (let k = 0; k < 16; k++) {
+    let d = "";
+    for (let x = 0; x <= 1200; x += 20) {
+      const y = 30 + k * 26 + 14 * Math.sin(x * 0.006 + k * 0.7) + 9 * Math.sin(x * 0.017 - k * 1.3) + 5 * Math.sin(x * 0.041 + k);
+      d += `${x === 0 ? "M" : "L"}${x},${y.toFixed(1)}`;
+    }
+    lines.push(d);
+  }
   return (
-    <aside className="panel hero-stats">
-      {rows.map(([k, v, c]) => (
-        <div key={k}>
-          <span className="label">{k}</span>
-          <span className="mono" style={c ? { color: c } : undefined}>
-            {v}
-          </span>
-        </div>
+    <svg className="contours" viewBox="0 0 1200 460" preserveAspectRatio="none" aria-hidden="true">
+      {lines.map((d, i) => (
+        <path key={i} d={d} fill="none" stroke="#9fe3ea" strokeOpacity={i % 5 === 0 ? 0.16 : 0.07} strokeWidth={i % 5 === 0 ? 1.2 : 0.8} vectorEffect="non-scaling-stroke" />
       ))}
-    </aside>
+    </svg>
   );
 }

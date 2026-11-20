@@ -14,24 +14,25 @@ export function TopBar({ route }: { route: Route }) {
     [href.about, t("nav.about"), route.page === "about"],
   ];
   return (
-    <header className="topbar">
-      <a className="brand" href={href.home} aria-label="ReefQuest">
-        <Logo />
-        <span className="brand-name">
-          Reef<b>Quest</b>
-        </span>
-      </a>
-      <button className="btn ghost menu-btn" aria-expanded={open} onClick={() => setOpen(!open)}>
-        {t("nav.menu")}
-      </button>
-      <nav className={open ? "nav open" : "nav"} onClick={() => setOpen(false)}>
-        {links.map(([h, label, on]) => (
-          <a key={h} href={h} className={on ? "on" : undefined} aria-current={on ? "page" : undefined}>
-            {label}
-          </a>
-        ))}
-      </nav>
-      <LangToggle />
+    <header className="site-header">
+      <div className="inner">
+        <a className="wordmark" href={href.home}>
+          <Logo color="#ffffff" accent="#5fd0d6" />
+          <b>ReefQuest</b>
+          <span>{t("app.tagline")}</span>
+        </a>
+        <button className="menu-toggle" aria-expanded={open} onClick={() => setOpen(!open)}>
+          {t("nav.menu")}
+        </button>
+        <nav className={open ? "site-nav open" : "site-nav"} onClick={() => setOpen(false)}>
+          {links.map(([h, label, on]) => (
+            <a key={h} href={h} aria-current={on ? "page" : undefined}>
+              {label}
+            </a>
+          ))}
+        </nav>
+        <LangToggle />
+      </div>
     </header>
   );
 }
@@ -39,9 +40,11 @@ export function TopBar({ route }: { route: Route }) {
 export function Footer() {
   const t = useT();
   return (
-    <footer className="footer">
-      <span>{t("footer.made")}</span>
-      <span className="mono">{t("footer.free")}</span>
+    <footer className="site-footer">
+      <div className="inner">
+        <span>{t("footer.made")}</span>
+        <span>{t("footer.free")}</span>
+      </div>
     </footer>
   );
 }

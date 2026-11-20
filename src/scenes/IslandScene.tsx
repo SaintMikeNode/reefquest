@@ -13,6 +13,7 @@ import { zoneName, type ZoneIndexEntry } from "../boat/zone";
 import { Hud } from "./Hud";
 import { terrainMaterial, waterMaterial } from "./materials";
 import { clearLabels, LabelProjector, labelRef, setLabelAnchor } from "./labels";
+import { CANOPY_GREENS, canopyGeometry, h01, PALM_GREENS, palmGeometry, vegetationMaterial } from "./nature";
 import { heatRef, useScene } from "./sceneStore";
 import { buildGeometry, displayY, homeDistance, homeOffset, habitatAt, heightAt, loadTerrain, lonLatToUV, pickHeightfield, uvToLonLat, uvToXZ, type TerrainData } from "./terrain";
 
@@ -59,7 +60,7 @@ export default function IslandScene({ island }: { island: string }) {
     return (
       <div className="loading-screen">
         <div className="box">
-          <div className="label">{t("scene.loadingTerrain")}</div>
+          <div>{t("scene.loadingTerrain")}</div>
           <div className="bar"><i /></div>
         </div>
       </div>
@@ -179,6 +180,7 @@ function World({ td, index }: { td: TerrainData; index: HeatIndex }) {
         <planeGeometry args={[td.sizeX, td.sizeZ]} />
       </mesh>
       <InstrumentGrid td={td} />
+      <IslandVegetation td={td} />
       {layers.sites && <Pins td={td} />}
       <Picker td={td} />
       <CameraRig td={td} />
@@ -230,7 +232,7 @@ function Pins({ td }: { td: TerrainData }) {
       {sites.map((s) => (
         <mesh key={s.id} position={[s.x, (s.y - 0.1) / 2, s.z]}>
           <cylinderGeometry args={[0.12, 0.12, s.y, 6]} />
-          <meshBasicMaterial color={s.kind === "story" ? "#ff6f5e" : "#5ff2ff"} transparent opacity={0.6} />
+          <meshBasicMaterial color={s.kind === "story" ? "#f2dcc8" : "#b9d4ee"} transparent opacity={0.7} />
         </mesh>
       ))}
     </>
@@ -248,8 +250,7 @@ function PinOverlay({ td }: { td: TerrainData }) {
       {sites.map((s) => (
         <div key={s.id} className="label-anchor" ref={labelRef(`pin:${s.id}`)}>
           <button
-            className={site === s.id ? "pin on" : "pin"}
-            style={s.kind === "dive" ? { opacity: 0.85 } : undefined}
+            className={[site === s.id ? "pin on" : "pin", s.kind === "dive" ? "dive" : ""].join(" ")}
             onClick={() => {
               const st = useScene.getState();
               st.setSite(s.id);
@@ -262,7 +263,7 @@ function PinOverlay({ td }: { td: TerrainData }) {
             }}
           >
             <span>{s.name}</span>
-            <i style={s.kind === "dive" ? { background: "#5ff2ff", boxShadow: "0 0 10px #5ff2ff", width: 8, height: 8 } : undefined} />
+            <i />
           </button>
         </div>
       ))}
@@ -378,4 +379,61 @@ function homeCamera(td: TerrainData): [number, number, number] {
   // Look at the land centroid from the south (landscape) or from the west (portrait), ~45° down.
   const [x, y, z] = homeOffset(td);
   return [td.center.x + x, y, td.center.z + z];
+}
+
+/** Forest canopy and coastal palms across the island (static instancing, scaled like the relief). */
+function IslandVegetation({ td }: { td: TerrainData }) {
+  const { scene } = useThree();
+  const meshes = useMemo(() => {
+    const canopy: number[] = [], palms: number[] = [];
+    const step = LITE ? 3 : 2;
+    for (let j = 0; j < td.h; j += step)
+      for (let i = 0; i < td.w; i += step) {
+        const k = j * td.w + i;
+        const h = td.heights[k];
+        if (h < 1.2) continue;
+        const r = h01(k);
+        const u = (i + h01(k + 1) * step) / (td.w - 1), v = (j + h01(k + 2) * step) / (td.h - 1);
+        const x = (u - 0.5) * td.sizeX, z = (v - 0.5) * td.sizeZ;
+        if (h < 9 && r < 0.55) palms.push(x, displayY(h), z, h01(k + 3));
+        else if (h >= 4 && r < 0.85) canopy.push(x, displayY(h), z, h01(k + 4));
+      }
+    const make = (arr: number[], geo: THREE.BufferGeometry, greens: string[], size: [number, number], tall: number) => {
+      const n = arr.length / 4;
+      const im = new THREE.InstancedMesh(geo, vegetationMaterial(), n);
+      const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), p = new THREE.Vector3(), s = new THREE.Vector3(), c = new THREE.Color();
+      const up = new THREE.Vector3(0, 1, 0);
+      for (let i = 0; i < n; i++) {
+        const seed = arr[i * 4 + 3];
+        const sz = size[0] + seed * (size[1] - size[0]);
+        p.set(arr[i * 4], arr[i * 4 + 1] - 0.02, arr[i * 4 + 2]);
+        q.setFromAxisAngle(up, seed * 50);
+        s.set(sz, sz * tall, sz);
+        m4.compose(p, q, s);
+        im.setMatrixAt(i, m4);
+        im.setColorAt(i, c.set(greens[Math.floor(seed * 977) % greens.length]));
+      }
+      im.instanceMatrix.needsUpdate = true;
+      return im;
+    };
+    return [make(canopy, canopyGeometry(), CANOPY_GREENS, [0.32, 0.55], 1.5), make(palms, palmGeometry(), PALM_GREENS, [0.35, 0.5], 1.8)];
+  }, [td]);
+
+  // Standard materials need lights and fog (the terrain shader does its own).
+  useEffect(() => {
+    scene.fog = new THREE.Fog("#020d16", 500, 2400);
+    return () => {
+      scene.fog = null;
+    };
+  }, [scene]);
+
+  return (
+    <>
+      <hemisphereLight args={["#bfe6ff", "#16322a", 0.9]} />
+      <directionalLight position={[-300, 500, -250]} intensity={1.4} />
+      {meshes.map((m, i) => (
+        <primitive key={i} object={m} />
+      ))}
+    </>
+  );
 }

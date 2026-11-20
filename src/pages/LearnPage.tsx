@@ -6,30 +6,34 @@ export function LearnPage() {
   const L = useL();
   return (
     <main className="page">
-      <header className="page-head">
-        <div className="label">{t("learn.kicker")}</div>
+      <header className="page-head page-band-head">
+        <p className="eyebrow">{t("learn.kicker")}</p>
         <h1>{t("learn.title")}</h1>
-        <p>{t("learn.lead")}</p>
+        <p className="standfirst">{t("learn.lead")}</p>
       </header>
-      <div className="learn-grid">
+      <div className="article">
         {LESSONS.map((l, i) => (
-          <article className="panel learn-card" key={l.id} id={l.id}>
-            <div className="label">
-              {String(i + 1).padStart(2, "0")} · {L(l.kicker)}
+          <article className="lesson" key={l.id} id={l.id}>
+            <div className="meta">
+              <span className="n">{i + 1}</span>
+              {L(l.kicker)}
             </div>
-            <h3>{L(l.title)}</h3>
-            {L(l.body).map((p, k) => (
-              <p key={k}>{p}</p>
-            ))}
-            <div className="src">
-              {l.sources.map((s, k) => (
-                <span key={s.url}>
-                  {k > 0 && " · "}
-                  <a href={s.url} target="_blank" rel="noreferrer">
-                    {s.label}
-                  </a>
-                </span>
+            <div>
+              <h2>{L(l.title)}</h2>
+              {L(l.body).map((p, k) => (
+                <p key={k}>{p}</p>
               ))}
+              <p className="sources">
+                {t("scene.sources")}:{" "}
+                {l.sources.map((s, k) => (
+                  <span key={s.url}>
+                    {k > 0 && "; "}
+                    <a href={s.url} target="_blank" rel="noreferrer">
+                      {s.label}
+                    </a>
+                  </span>
+                ))}
+              </p>
             </div>
           </article>
         ))}

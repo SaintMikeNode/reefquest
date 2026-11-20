@@ -82,53 +82,53 @@ export function AboutPage() {
   }, []);
   return (
     <main className="page">
-      <header className="page-head">
-        <div className="label">{t("about.kicker")}</div>
+      <header className="page-head page-band-head">
+        <p className="eyebrow">{t("about.kicker")}</p>
         <h1>{t("about.title")}</h1>
-        <p>{t("about.lead")}</p>
+        <p className="standfirst">{t("about.lead")}</p>
       </header>
 
       <section className="section">
-        <h2>{t("about.caveatsTitle")}</h2>
-        <div className="credits">
-          {CAVEATS.map((c, i) => (
-            <div className="panel caveat" key={i}>
-              <span className="mono" style={{ color: "var(--cyan)" }}>{String(i + 1).padStart(2, "0")}</span>
-              <span>{L(c)}</span>
-            </div>
-          ))}
+        <div className="section-head">
+          <h2>{t("about.caveatsTitle")}</h2>
         </div>
+        <ol className="caveats">
+          {CAVEATS.map((c, i) => (
+            <li key={i}>{L(c)}</li>
+          ))}
+        </ol>
       </section>
 
       <section className="section">
-        <h2>{t("about.dataTitle")}</h2>
-        {date && (
-          <p className="lead mono" style={{ fontSize: 13 }}>
-            {t("home.dataThrough")} {fmtDate(date, lang)}
-          </p>
-        )}
-        <div className="credits">
+        <div className="section-head">
+          <h2>{t("about.dataTitle")}</h2>
+          {date && <p>{t("home.dataThrough")} {fmtDate(date, lang)}.</p>}
+        </div>
+        <div className="def-list">
           {DATA.map((d) => (
-            <div className="panel credit" key={d.name}>
+            <div className="def" key={d.name}>
               <h3>
                 <a href={d.url} target="_blank" rel="noreferrer">
                   {d.name}
                 </a>
               </h3>
-              <p>{L(d.what)}</p>
-              <p className="mono" style={{ fontSize: 12 }}>{d.cite}</p>
-              <p className="label">{d.license}</p>
+              <div>
+                <p>{L(d.what)}</p>
+                <p className="cite">{d.cite}</p>
+                <p className="lic">{t("about.license")}: {d.license}</p>
+              </div>
             </div>
           ))}
         </div>
       </section>
 
       <section className="section">
-        <h2>{t("about.softwareTitle")}</h2>
-        <div className="panel credit">
-          <p>three.js, React, React Three Fiber, drei, zustand, Vite (MIT) · Space Grotesk, JetBrains Mono (SIL Open Font License) · Google Earth Engine (noncommercial use) · Python: xarray, rasterio, NumPy, SciPy.</p>
-          <p className="label">ReefQuest · MIT License</p>
+        <div className="section-head">
+          <h2>{t("about.softwareTitle")}</h2>
         </div>
+        <p className="measure muted">
+          three.js, React, React Three Fiber, drei, zustand, Vite (MIT). Source Serif 4, Source Sans 3, IBM Plex Mono (SIL Open Font License). Google Earth Engine (noncommercial use). Python: xarray, rasterio, NumPy, SciPy. ReefQuest © 2026, MIT License.
+        </p>
       </section>
     </main>
   );
