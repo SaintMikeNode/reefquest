@@ -63,6 +63,14 @@ export const loadHeatIndex = () => get<HeatIndex>("/data/heat/index.json");
 export const loadSeries = () => get<IslandSeries>("/data/heat/islands.json");
 export const loadYearGrid = (year: number) => get<Uint8Array>(`/data/heat/grid/${year}.bin`, "bin");
 export const loadIslandShapes = () => get<GeoJSON>("/data/islands.geojson");
+export interface Region {
+  source: string;
+  bbox: { south: number; north: number; west: number; east: number };
+  levels: number[];
+  contours: Record<string, number[][][]>;
+  mainland: number[][][];
+}
+export const loadRegion = () => get<Region>("/data/region.json");
 export const loadSceneMeta = (id: string) => get<SceneMeta>(`/data/${id}/meta.json`);
 
 export interface GeoJSON {

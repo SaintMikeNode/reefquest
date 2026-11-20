@@ -69,7 +69,7 @@ export function HeatPage() {
       <section className="section">
         <figure className="figure">
           <p className="fig-title">
-            {t("fig")} 3. {t("heat.chartTitle")} · <span className="num">{year}</span>
+            <span className="fig-n">{t("fig")} 3</span> {t("heat.chartTitle")} · <span className="num">{year}</span>
           </p>
           <p className="fig-sub">{t("heat.chartLead")}</p>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 12, justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
@@ -161,7 +161,7 @@ export function HeatPage() {
       <section className="section">
         <figure className="figure">
           <p className="fig-title">
-            {t("fig")} 4. {t("home.stripesTitle")}
+            <span className="fig-n">{t("fig")} 4</span> {t("home.stripesTitle")}
           </p>
           <p className="fig-sub">{t("home.stripesLead")}</p>
           <HeatStripes latest={latest} onPick={(y) => setYear(y)} />

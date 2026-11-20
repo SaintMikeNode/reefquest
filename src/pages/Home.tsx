@@ -5,6 +5,7 @@ import { ISLAND_ORDER as ORDER, SCENE_ISLANDS as AVAILABLE } from "../lib/island
 import { href } from "../lib/router";
 import { AlertChip } from "../ui/AlertChip";
 import { ArchipelagoMap } from "../ui/ArchipelagoMap";
+import { HeroRelief } from "../ui/Bathymetry";
 import { HeatKey } from "../ui/HeatKey";
 import { HeatStripes } from "../ui/HeatStripes";
 import { IconArrow } from "../ui/Icons";
@@ -30,10 +31,11 @@ export function Home() {
   return (
     <>
       <section className="hero-band">
-        <Contours />
+        <HeroRelief />
+        <p className="relief-credit">{t("home.reliefCredit")}</p>
         <div className="inner split">
           <div>
-            <p className="eyebrow">{t("home.kicker")}</p>
+            <p className="eyebrow kicker-page">{t("home.kicker")}</p>
             <h1>{t("home.title")}</h1>
             <p className="standfirst">{t("home.sub")}</p>
             <div className="hero-actions">
@@ -79,7 +81,7 @@ export function Home() {
       <section className="section">
         <figure className="figure">
           <p className="fig-title">
-            {t("fig")} 1. {t("home.fig1Title")}
+            <span className="fig-n">{t("fig")} 1</span> {t("home.fig1Title")}
           </p>
           <p className="fig-sub">{t("home.fig1Sub").replace("{date}", date)}</p>
           <ArchipelagoMap latest={latest} />
@@ -157,7 +159,7 @@ export function Home() {
         <section className="section">
           <figure className="figure">
             <p className="fig-title">
-              {t("fig")} 2. {t("home.stripesTitle")}
+              <span className="fig-n">{t("fig")} 2</span> {t("home.stripesTitle")}
             </p>
             <p className="fig-sub">{t("home.stripesLead")}</p>
             <HeatStripes latest={latest} onPick={() => (location.hash = href.heat)} />
@@ -180,21 +182,3 @@ export function Home() {
 }
 
 /** Decorative bathymetric contour lines for the title band (deterministic, no data implied). */
-function Contours() {
-  const lines: string[] = [];
-  for (let k = 0; k < 16; k++) {
-    let d = "";
-    for (let x = 0; x <= 1200; x += 20) {
-      const y = 30 + k * 26 + 14 * Math.sin(x * 0.006 + k * 0.7) + 9 * Math.sin(x * 0.017 - k * 1.3) + 5 * Math.sin(x * 0.041 + k);
-      d += `${x === 0 ? "M" : "L"}${x},${y.toFixed(1)}`;
-    }
-    lines.push(d);
-  }
-  return (
-    <svg className="contours" viewBox="0 0 1200 460" preserveAspectRatio="none" aria-hidden="true">
-      {lines.map((d, i) => (
-        <path key={i} d={d} fill="none" stroke="#9fe3ea" strokeOpacity={i % 5 === 0 ? 0.16 : 0.07} strokeWidth={i % 5 === 0 ? 1.2 : 0.8} vectorEffect="non-scaling-stroke" />
-      ))}
-    </svg>
-  );
-}

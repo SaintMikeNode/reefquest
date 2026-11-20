@@ -91,6 +91,63 @@ license, software and fonts.
 - **Phones.** In the boat, the instruments and logbook start folded to one line each so the
   scene stays visible; tap to open them.
 
+## Second redesign pass: an atlas, a living reef, a learning path
+
+The brief: less "AI-made", a serious and elegant science look, dark everywhere, a clearer way back,
+reefs that look like reefs, and a better learning experience. References: NASA Earth Observatory's
+figures (Robert Simmon's "Elegant Figures"), the Global Fishing Watch map, Distill-style figure
+captions, and the instrument displays of ocean research cruises.
+
+**Design rules now in the code (and in CLAUDE.md):** decoration must be real data; type does the
+work, boxes only where content needs a surface; one accent color means "interactive", every other
+color comes from the data; numbers in a mono face, labels in small caps, titles in the serif.
+
+![Home](redesign-home.jpg)
+
+- **Home.** The wavy lines behind the title are gone. Now it's the real seafloor: GEBCO 2023 depth
+  contours of the Bay Islands, credited in the corner. Figure 1 shows each NOAA 5 km cell as the
+  square it is (not a dot), with depth contours and the real mainland coast.
+
+![Figure 1](redesign-map.jpg)
+
+- **3D views.** The place name is a title plate (region in small caps, the name in the serif,
+  coordinates), and **the way back is a clear button right under the name** ("All islands" /
+  "Back to Roatán"). Map layers carry their own legends, pins are map labels with a halo instead
+  of boxes, the 5 km heat cells have hairline edges, and the first visit shows a numbered
+  "How to read this island" guide (also behind the ? button).
+- **Island seafloor in natural colors.** Pale sand shallows, dark seagrass, mottled coral and rock,
+  and surf breaking along the reef crest. The satellite classification is still one click away
+  ("Habitat map" layer).
+
+![Island](redesign-island.jpg)
+
+- **A reef that looks like a Caribbean reef.** New stylized species, each with its own shape and
+  surface pattern: brain coral (winding valleys), star coral (polyp cups), elkhorn, staghorn, pillar
+  coral, purple and gold sea fans (a real lattice), sea rods, giant barrel, tube and azure vase
+  sponges, turtle grass. They are placed by the Atlas habitat and depth (elkhorn on the shallow
+  crest, sponges deeper), dense around the boat. Plus reef fish: blue tangs, snappers, sergeant
+  majors, grunts, wrasses, parrotfish.
+- **Underwater.** "Underwater" (or U) takes the camera down to the reef under the boat: red light
+  lost with depth, visibility fog, the sky seen through Snell's window, light shafts, drifting
+  particles, the hull overhead. A **field guide** lists the species around you, most common first,
+  with how to recognize each one (sources: Coralpedia, IUCN 2024).
+
+![Underwater](redesign-reef.jpg)
+
+![Field guide](redesign-underwater.jpg)
+
+- **Learn.** Two diagrams for classrooms: a coral polyp healthy → stressed → bleached (and the way
+  back), and a worked example of how degree heating weeks add up over 12 weeks. The recent-history
+  lesson now says "2023 and 2024: two extreme years in a row", because the full record shows 2024
+  hotter than 2023 around Roatán (14.3 vs 13.3 °C-weeks; before 2023 no year passed 6.5).
+
+![Learn](redesign-learn.jpg)
+
+- **Heat record complete.** All 42 NOAA years are in (1985 → 18 Nov 2026). Today Roatán is at
+  5.1 °C-weeks (Alert 1); the record is 2024 for Roatán, Utila and Cayos Cochinos, 2023 for Guanaja.
+- **Performance.** Desktop Chrome: ~124 fps above the water, ~149 underwater with the dense reef.
+  Lite devices get 30% of the reef budget, no blur behind panels, and fewer fish and light shafts.
+
 ## Size and performance
 
 | What | Download (compressed) |
@@ -115,11 +172,6 @@ The scene only redraws when something changes, which saves battery.
 
 ## Still running / not done
 
-- **Full heat history**: the NOAA download is ~40% done (PacIOOS is slow tonight, one transient
-  failure retried). Until it finishes, the years 1991–2022 are filled with placeholder values and
-  "today" shows Dec 31, 2023. When it completes I rebuild the heat files; if you read this first,
-  run `~/.venvs/reefquest/bin/python pipeline/crw_download.py --all` then `heat_products.py` from
-  the `pipeline/` folder and restart the dev server.
 - **Cayos Cochinos 3D: blocked.** The Earth Engine copy of the Allen Coral Atlas has no habitat
   classes there (only the reef outline), so the scene would have no reef colors. It stays "coming
   soon" until you download its Atlas package (it includes benthic and geomorphic maps): same steps

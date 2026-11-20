@@ -11,7 +11,7 @@
   "home.sub": "Satellites measure the ocean's temperature around Roatán, Utila, Guanaja and Cayos Cochinos every day. Here you can see how much heat has built up, from 1985 to today, and explore the reefs in 3D.",
   "home.dataThrough": "NOAA data through",
   "home.mapLabel": "Map of the Bay Islands with today's heat stress",
-  "home.mainland": "Mainland",
+  "home.mainland": "Mainland Honduras",
   "home.cardsTitle": "The four islands today",
   "home.cardsLead": "Average of the 5 km cells around each island. Degree heating weeks (°C-weeks) add up the extra heat of the last 12 weeks.",
   "home.enter3d": "Explore in 3D",
@@ -138,8 +138,8 @@
   "fig": "Figure",
   "home.fig1Title": "Today's heat stress across the Bay Islands",
   "home.fig1Sub": "Degree heating weeks in 5 km satellite cells, {date}.",
-  "home.fig1Caption": "Each dot is one 5 km cell of NOAA's product, colored by the heat built up over the last 12 weeks; from 4 °C-weeks, bleaching is expected. Tap an island to open it.",
-  "home.fig1Source": "Source: NOAA Coral Reef Watch v3.1 (5 km). Coastlines: © OpenStreetMap contributors. Chart: ReefQuest.",
+  "home.fig1Caption": "Each square is one 5 km cell of NOAA's product, colored by the heat built up over the last 12 weeks; from 4 °C-weeks, bleaching is expected. Lines are depth contours. Tap an island to open it.",
+  "home.fig1Source": "Source: NOAA Coral Reef Watch v3.1 (5 km). Depth and mainland coast: GEBCO 2023. Islands: © OpenStreetMap contributors. Chart: ReefQuest.",
   "table.island": "Island",
   "table.dhw": "°C-weeks today",
   "table.level": "Alert level",
@@ -194,5 +194,6 @@
   "boat.surface": "Back to the surface",
   "boat.fieldGuide": "Field guide",
   "boat.aroundYou": "Around you",
-  "boat.noReef": "No reef right here"
+  "boat.noReef": "No reef right here",
+  "home.reliefCredit": "Seafloor relief: GEBCO 2023 depth contours, 20 to 3,000 m."
 }

@@ -4,6 +4,7 @@ import { rampCSS } from "../lib/alert";
 import { SCENE_ISLANDS as AVAILABLE } from "../lib/islands";
 import { loadHeatIndex, loadIslandShapes, type GeoJSON, type HeatIndex, type Latest } from "../lib/data";
 import { href } from "../lib/router";
+import { ContourLines, Mainland, useRegion } from "./Bathymetry";
 
 // Figure 1: the archipelago with real OpenStreetMap coastlines and today's NOAA 5 km heat cells.
 // Plain SVG in the style of a printed figure: pale sea, paper land, ink coastlines, a graticule.
@@ -21,6 +22,7 @@ export function ArchipelagoMap({ latest }: { latest: Latest | null }) {
   const [shapes, setShapes] = useState<GeoJSON | null>(null);
   const [grid, setGrid] = useState<HeatIndex | null>(null);
   const [hover, setHover] = useState<string | null>(null);
+  const region = useRegion();
 
   useEffect(() => {
     loadIslandShapes().then(setShapes).catch(() => {});
@@ -74,17 +76,15 @@ export function ArchipelagoMap({ latest }: { latest: Latest | null }) {
           </linearGradient>
         </defs>
         <rect width={W} height={H} fill="url(#seaGrad)" />
-        {/* Each NOAA 5 km cell as a dot colored by its degree heating weeks; the mainland
-            (NOAA's land mask) as land. */}
+        {/* Each NOAA 5 km cell drawn as the square it is, colored by degree heating weeks (a hairline
+            gap keeps the grid legible); GEBCO depth contours on top; the mainland coast from GEBCO. */}
         <g>
           {cells.map((c, i) =>
-            c.land ? (
-              <rect key={i} x={c.x} y={c.y} width={c.w + 0.5} height={c.h + 0.5} fill="#1d3a46" />
-            ) : (
-              <circle key={i} cx={c.x + c.w / 2} cy={c.y + c.h / 2} r={Math.min(c.w, c.h) * 0.2} fill={rampCSS(c.v)} fillOpacity={0.9} />
-            ),
+            c.land ? null : <rect key={i} x={c.x + 0.6} y={c.y + 0.6} width={c.w - 1.2} height={c.h - 1.2} fill={rampCSS(c.v)} fillOpacity={0.78} />,
           )}
         </g>
+        {region && <ContourLines region={region} px={px} py={py} color="#04182a" opacity={0.9} />}
+        {region && <Mainland region={region} px={px} py={py} />}
         <g stroke="#ffffff" strokeOpacity=".14" strokeWidth="1" strokeDasharray="2 4">
           {lonTicks.map((lo) => (
             <line key={lo} x1={px(lo)} x2={px(lo)} y1={0} y2={H} />
@@ -145,7 +145,7 @@ export function ArchipelagoMap({ latest }: { latest: Latest | null }) {
           <path d="M0 -14 L6 6 L0 2 L-6 6 Z" />
           <text y="22" textAnchor="middle">N</text>
         </g>
-        <text x={px(-85.97)} y={H - 52} fill="#8ea8b9" fontSize="13" fontFamily="var(--sans)" fontStyle="italic">
+        <text x={px(-86.02)} y={H - 18} fill="#9fb6c6" fontSize="13" fontFamily="var(--serif)" fontStyle="italic">
           {t("home.mainland")}
         </text>
       </svg>

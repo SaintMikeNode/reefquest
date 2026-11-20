@@ -62,20 +62,20 @@ export const LESSONS: Lesson[] = [
   {
     id: "2023",
     kicker: { es: "Historia reciente", en: "Recent history" },
-    title: { es: "2023: el peor año registrado", en: "2023: the worst year on record" },
+    title: { es: "2023 y 2024: dos años seguidos de calor extremo", en: "2023 and 2024: two extreme years in a row" },
     body: {
       es: [
-        "En 2023, todos los arrecifes del Arrecife Mesoamericano acumularon entre 16 y casi 24 semanas-grado de calentamiento. Fue el peor evento de blanqueamiento registrado: cerca del 40 % de los corales se vieron afectados.",
-        "El coral lechuga fue de los más golpeados: 43 % de sus colonias se blanquearon por completo.",
+        "En el registro satelital de NOAA para las Islas de la Bahía, 2023 y 2024 son los dos años de más calor desde 1985. Alrededor de Roatán, el calor acumulado llegó a 13,3 °C-semana en 2023 y a 14,3 en 2024; antes de 2023, ningún año había pasado de 6,5. (Cálculo de ReefQuest con los datos de 5 km de NOAA.)",
+        "Según el informe de Healthy Reefs de 2024, en 2023 todos los arrecifes del Arrecife Mesoamericano acumularon entre 16 y casi 24 semanas-grado de calentamiento, y fue el peor evento de blanqueamiento registrado: cerca del 40 % de los corales se vieron afectados. El coral lechuga fue de los más golpeados: 43 % de sus colonias se blanquearon por completo.",
         "En abril de 2024, NOAA confirmó el cuarto evento global de blanqueamiento de corales.",
       ],
       en: [
-        "In 2023, every reef in the Mesoamerican Reef built up between 16 and nearly 24 degree heating weeks. It was the worst bleaching event on record: about 40% of corals were affected.",
-        "Lettuce coral was among the hardest hit: 43% of its colonies bleached completely.",
+        "In NOAA's satellite record for the Bay Islands, 2023 and 2024 are the two hottest years since 1985. Around Roatán, heat built up to 13.3 °C-weeks in 2023 and 14.3 in 2024; before 2023, no year had gone above 6.5. (ReefQuest's calculation from NOAA's 5 km data.)",
+        "According to Healthy Reefs' 2024 report card, in 2023 every reef in the Mesoamerican Reef built up between 16 and nearly 24 degree heating weeks, and it was the worst bleaching event on record: about 40% of corals were affected. Lettuce coral was among the hardest hit: 43% of its colonies bleached completely.",
         "In April 2024, NOAA confirmed the fourth global coral bleaching event.",
       ],
     },
-    sources: [HRHP_2024, NOAA_GLOBAL],
+    sources: [CRW_METHODS, HRHP_2024, NOAA_GLOBAL],
   },
   {
     id: "sctld",

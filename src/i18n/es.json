@@ -11,7 +11,7 @@
   "home.sub": "Satélites miden cada día la temperatura del océano alrededor de Roatán, Utila, Guanaja y Cayos Cochinos. Aquí puedes ver cuánto calor se ha acumulado, desde 1985 hasta hoy, y explorar los arrecifes en 3D.",
   "home.dataThrough": "Datos NOAA hasta",
   "home.mapLabel": "Mapa de las Islas de la Bahía con el estrés térmico actual",
-  "home.mainland": "Tierra firme",
+  "home.mainland": "Tierra firme de Honduras",
   "home.cardsTitle": "Las cuatro islas hoy",
   "home.cardsLead": "Promedio de las celdas de 5 km alrededor de cada isla. Las semanas-grado de calentamiento (°C-semana) suman el calor extra de las últimas 12 semanas.",
   "home.enter3d": "Explorar en 3D",
@@ -138,8 +138,8 @@
   "fig": "Figura",
   "home.fig1Title": "Estrés térmico de hoy en las Islas de la Bahía",
   "home.fig1Sub": "Semanas-grado de calentamiento en celdas satelitales de 5 km, {date}.",
-  "home.fig1Caption": "Cada punto es una celda de 5 km del producto de NOAA, coloreada según el calor acumulado en las últimas 12 semanas; desde 4 °C-semana se espera blanqueamiento. Toca una isla para abrirla.",
-  "home.fig1Source": "Fuente: NOAA Coral Reef Watch v3.1 (5 km). Contornos: © colaboradores de OpenStreetMap. Gráfico: ReefQuest.",
+  "home.fig1Caption": "Cada cuadro es una celda de 5 km del producto de NOAA, coloreada por el calor acumulado en las últimas 12 semanas; desde 4 °C-semana se espera blanqueamiento. Las líneas son curvas de profundidad. Toca una isla para abrirla.",
+  "home.fig1Source": "Fuente: NOAA Coral Reef Watch v3.1 (5 km). Profundidad y costa continental: GEBCO 2023. Islas: © colaboradores de OpenStreetMap. Gráfico: ReefQuest.",
   "table.island": "Isla",
   "table.dhw": "°C-semana hoy",
   "table.level": "Nivel de alerta",
@@ -194,5 +194,6 @@
   "boat.surface": "Volver a la superficie",
   "boat.fieldGuide": "Guía de campo",
   "boat.aroundYou": "Cerca de ti",
-  "boat.noReef": "Fondo sin arrecife aquí"
+  "boat.noReef": "Fondo sin arrecife aquí",
+  "home.reliefCredit": "Relieve del fondo: curvas de profundidad de GEBCO 2023, de 20 a 3000 m."
 }

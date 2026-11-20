@@ -1,5 +1,9 @@
+import type { ReactElement } from "react";
 import { LESSONS } from "../content/learn";
 import { useL, useT } from "../i18n";
+import { BleachingFigure, DhwFigure } from "../ui/LessonFigures";
+
+const FIGURES: Record<string, () => ReactElement> = { bleaching: BleachingFigure, dhw: DhwFigure };
 
 export function LearnPage() {
   const t = useT();
@@ -23,6 +27,7 @@ export function LearnPage() {
               {L(l.body).map((p, k) => (
                 <p key={k}>{p}</p>
               ))}
+              {FIGURES[l.id] && FIGURES[l.id]()}
               <p className="sources">
                 {t("scene.sources")}:{" "}
                 {l.sources.map((s, k) => (
