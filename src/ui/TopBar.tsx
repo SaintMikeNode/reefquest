@@ -9,7 +9,7 @@ export function TopBar({ route }: { route: Route }) {
   const t = useT();
   const [open, setOpen] = useState(false);
   const links: [string, string, boolean][] = [
-    [href.home, t("nav.home"), route.page === "home" || route.page === "island"],
+    [href.home, t("nav.home"), route.page === "home" || route.page === "island" || route.page === "islands"],
     [href.heat, t("nav.heat"), route.page === "heat"],
     [href.learn, t("nav.learn"), route.page === "learn"],
     [href.about, t("nav.about"), route.page === "about"],
@@ -32,7 +32,7 @@ export function TopBar({ route }: { route: Route }) {
         <div className="header-end">
           <LangToggle />
           {HAS_WEBGL && (
-            <a className="btn light cta" href={href.island("roatan")}>
+            <a className="btn light cta" href={href.islands}>
               {t("nav.cta")}
             </a>
           )}

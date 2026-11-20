@@ -8,6 +8,9 @@ import { useScene } from "./sceneStore";
 
 /** Timebar: date and play on the left; the selected year's heat curve with a scrubber; and a
  *  full-width strip of every year since 1985 (colored by its peak), so nothing scrolls sideways. */
+/** Year label position along the strip; the ones at the ends lean inward so they stay inside. */
+const yearTick = (pct: number): React.CSSProperties => ({ left: `${pct}%`, transform: `translateX(${pct < 5 ? -15 : pct > 95 ? -85 : -50}%)` });
+
 export function Timeline({ index, island }: { index: HeatIndex; island: string }) {
   const t = useT();
   const lang = useLang((s) => s.lang);
@@ -80,12 +83,16 @@ export function Timeline({ index, island }: { index: HeatIndex; island: string }
       g.fillRect(x(Math.max(s0, 0)), 0, x(Math.min(s1, days - 1)) - x(Math.max(s0, 0)), H - 13);
     }
     g.font = "11px 'Inter Variable', sans-serif";
+    // Alert thresholds: hairlines, numbered at the left (the curve is usually low in January), and
+    // only every other one when they are crowded (phones have a short chart).
+    const gap = y(0) - y(4);
     for (const th of [4, 8, 12, 16]) {
       if (th > top) continue;
       g.fillStyle = "rgba(255,255,255,0.14)";
       g.fillRect(0, Math.round(y(th)) + 0.5, W, 1);
+      if (gap < 11 && th % 8) continue;
       g.fillStyle = "rgba(238,242,245,0.5)";
-      g.fillText(String(th), W - 14, y(th) - 2);
+      g.fillText(String(th), 2, y(th) - 2);
     }
     for (let i = 1; i < values.length; i++) {
       const v = values[i] / 10;
@@ -100,11 +107,17 @@ export function Timeline({ index, island }: { index: HeatIndex; island: string }
     values.forEach((v, i) => (i ? g.lineTo(x(i), y(v / 10)) : g.moveTo(x(i), y(v / 10))));
     g.stroke();
     g.fillStyle = "rgba(238,242,245,0.55)";
+    let lastRight = -Infinity;
     for (let m = 0; m < 12; m++) {
       const d = dayDiff(yi.first, `${year}-${String(m + 1).padStart(2, "0")}-01`);
       if (d < 0 || d >= days) continue;
       const label = new Date(Date.UTC(year, m, 1)).toLocaleDateString(lang === "es" ? "es-HN" : "en-US", { month: "short", timeZone: "UTC" }).replace(".", "");
-      if (W > 460 || (W > 260 ? m % 2 === 0 : m % 3 === 0)) g.fillText(label, x(d) + 2, H - 1);
+      if (!(W > 460 || (W > 260 ? m % 2 === 0 : m % 3 === 0))) continue;
+      // Kept inside the chart (the last month used to be cut off at the right edge).
+      const tw = g.measureText(label).width, lx = Math.min(x(d) + 2, W - tw - 1);
+      if (lx < lastRight + 4) continue;
+      g.fillText(label, lx, H - 1);
+      lastRight = lx + tw;
     }
     g.strokeStyle = "#ffffff";
     g.lineWidth = 1.5;
@@ -186,7 +199,7 @@ export function Timeline({ index, island }: { index: HeatIndex; island: string }
       </div>
       <div className="year-axis">
         {ticks.map((y, i) => (
-          <span key={`${y}-${i}`} style={{ left: `${((y - first + 0.5) / index.years.length) * 100}%` }}>
+          <span key={`${y}-${i}`} style={yearTick(((y - first + 0.5) / index.years.length) * 100)}>
             {y}
           </span>
         ))}

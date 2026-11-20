@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ReefQuest · Brand kit</title>
+<link rel="icon" type="image/svg+xml" href="icon/favicon.svg" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400..800&family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@400;500&display=swap" />
+<style>
+  :root {
+    --brand: #0a66f0; --navy: #0b1f3f; --deep: #061d44; --abyss: #04132d; --foam: #bfe0ff;
+    --text: #cad8ee; --muted: #93a9c8; --line: rgba(255, 255, 255, 0.11);
+    --sans: "Inter", "Helvetica Neue", Arial, sans-serif; --serif: "Instrument Serif", Georgia, serif; --mono: "IBM Plex Mono", Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: var(--sans); color: var(--text); line-height: 1.55;
+    background: radial-gradient(circle, rgba(150, 195, 255, 0.16) 1.2px, transparent 1.7px) 0 0 / 22px 22px, radial-gradient(1200px 700px at 50% 0%, #0f377d, transparent 70%), linear-gradient(180deg, #072352, #061d44 40%, #04132d); background-color: var(--deep); }
+  main { max-width: 1180px; margin: 0 auto; padding: 0 clamp(16px, 4vw, 40px) 80px; }
+  header.hero { padding: 64px 0 32px; display: grid; gap: 22px; justify-items: start; }
+  header.hero img { width: min(240px, 60vw); }
+  .kicker { font-family: var(--mono); font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--foam); margin: 0; }
+  h1 { margin: 0; font-size: clamp(38px, 6vw, 68px); line-height: 1; letter-spacing: -0.035em; color: #fff; font-weight: 700; }
+  h1 em, h2 em { font-family: var(--serif); font-weight: 400; letter-spacing: -0.01em; }
+  h2 { margin: 56px 0 6px; font-size: clamp(26px, 3.4vw, 36px); letter-spacing: -0.03em; color: #fff; }
+  .lead { max-width: 640px; margin: 0; font-size: 17px; }
+  p.note { color: var(--muted); font-size: 14px; margin: 4px 0 18px; max-width: 720px; }
+  .panel { background: rgba(5, 18, 34, 0.64); border: 1px solid var(--line); border-radius: 22px; padding: clamp(16px, 2.6vw, 28px); backdrop-filter: blur(16px); }
+  .grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); }
+  .tile { border-radius: 16px; overflow: hidden; border: 1px solid var(--line); display: flex; flex-direction: column; }
+  .tile .art { aspect-ratio: 16 / 10; display: grid; place-items: center; padding: 22px; }
+  .tile .art img { max-width: 100%; max-height: 100%; }
+  .tile .art.tall img { max-height: 82%; }
+  .tile .cap { padding: 10px 14px; font-family: var(--mono); font-size: 11.5px; color: var(--muted); background: rgba(5, 18, 34, 0.8); overflow-wrap: anywhere; }
+  .tile .cap a { color: var(--foam); }
+  .bg-deep { background: var(--deep); } .bg-blue { background: linear-gradient(160deg, #1d6cf5, #0941b4 60%, #062b84); } .bg-white { background: #fff; } .bg-soft { background: #eef4fc; }
+  .icons { display: flex; flex-wrap: wrap; gap: 18px; align-items: end; }
+  .icons figure { margin: 0; display: grid; gap: 8px; justify-items: center; font-family: var(--mono); font-size: 11.5px; color: var(--muted); }
+  .social { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); }
+  .social img { width: 100%; border-radius: 14px; border: 1px solid var(--line); display: block; }
+  .swatches { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 170px), 1fr)); }
+  .sw { border-radius: 14px; overflow: hidden; border: 1px solid var(--line); background: rgba(5, 18, 34, 0.8); }
+  .sw i { display: block; height: 76px; }
+  .sw div { padding: 8px 12px 10px; font-size: 13px; }
+  .sw b { display: block; color: #fff; font-weight: 600; }
+  .sw code { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+  .heat { display: grid; grid-template-columns: repeat(7, 1fr); border-radius: 12px; overflow: hidden; }
+  .heat span { padding: 26px 6px 8px; font-family: var(--mono); font-size: 10.5px; color: #fff; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5); overflow-wrap: anywhere; }
+  .type { display: grid; gap: 16px; }
+  .type .row { display: grid; gap: 4px; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
+  .type .row:last-child { border-bottom: 0; padding-bottom: 0; }
+  .type .meta { font-family: var(--mono); font-size: 11.5px; color: var(--muted); }
+  .spec-sans { font-size: clamp(30px, 4.6vw, 52px); font-weight: 700; letter-spacing: -0.035em; color: #fff; line-height: 1.05; }
+  .spec-serif { font-family: var(--serif); font-style: italic; font-size: clamp(32px, 5vw, 58px); color: #fff; line-height: 1.05; }
+  .spec-mono { font-family: var(--mono); font-size: clamp(14px, 1.8vw, 18px); color: var(--foam); letter-spacing: 0.04em; }
+  .spec-head { font-size: clamp(30px, 4.6vw, 52px); font-weight: 700; letter-spacing: -0.035em; color: #fff; line-height: 1.02; }
+  .spec-head em { font-family: var(--serif); font-weight: 400; display: block; font-size: 1.1em; }
+  .rules { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); }
+  .rules ul { margin: 0; padding-left: 18px; }
+  .rules li { margin: 4px 0; }
+  .clear { position: relative; display: grid; place-items: center; padding: 34px; border-radius: 14px; background: #fff; }
+  .clear .box { position: relative; padding: 26px; outline: 2px dashed rgba(10, 102, 240, 0.55); outline-offset: 0; }
+  .clear .box img { display: block; width: min(320px, 56vw); }
+  .clear .r { position: absolute; top: 4px; left: 6px; font-family: var(--mono); font-size: 11px; color: #0a66f0; }
+  footer { margin-top: 64px; font-size: 13px; color: var(--muted); }
+  a { color: var(--foam); }
+</style>
+</head>
+<body>
+<main>
+  <header class="hero">
+    <img src="logo/svg/reefquest-vertical-color-on-dark.svg" alt="ReefQuest" />
+    <p class="kicker">Brand kit · Islas de la Bahía, Honduras</p>
+    <h1>The reef <em>around our islands.</em></h1>
+    <p class="lead">Logos, icons, colors and type for ReefQuest. The rules are in <a href="README.md">README.md</a>; every file here is in this folder.</p>
+  </header>
+
+  <h2>Logo <em>layouts</em></h2>
+  <p class="note">Horizontal is the default. Vertical for square or tall spaces, the mark alone when space is small or the name is already nearby.</p>
+  <div class="grid">
+    <div class="tile"><div class="art bg-blue"><img src="logo/svg/reefquest-horizontal-color-on-dark.svg" alt="" /></div><div class="cap">horizontal · <a href="logo/svg/reefquest-horizontal-color-on-dark.svg">svg</a> · <a href="logo/png/reefquest-horizontal-color-on-dark.png">png</a></div></div>
+    <div class="tile"><div class="art bg-blue tall"><img src="logo/svg/reefquest-vertical-color-on-dark.svg" alt="" /></div><div class="cap">vertical · <a href="logo/svg/reefquest-vertical-color-on-dark.svg">svg</a> · <a href="logo/png/reefquest-vertical-color-on-dark.png">png</a></div></div>
+    <div class="tile"><div class="art bg-blue tall"><img src="logo/svg/reefquest-mark-color-on-dark.svg" alt="" /></div><div class="cap">mark · <a href="logo/svg/reefquest-mark-color-on-dark.svg">svg</a> · <a href="logo/png/reefquest-mark-color-on-dark.png">png</a></div></div>
+    <div class="tile"><div class="art bg-blue"><img src="logo/svg/reefquest-wordmark-color-on-dark.svg" alt="" /></div><div class="cap">wordmark · <a href="logo/svg/reefquest-wordmark-color-on-dark.svg">svg</a> · <a href="logo/png/reefquest-wordmark-color-on-dark.png">png</a></div></div>
+  </div>
+
+  <h2>Color <em>versions</em></h2>
+  <p class="note">Color on dark and on light, plus one-color white, navy and black for printing. Same for every layout (files end in the version's name).</p>
+  <div class="grid">
+    <div class="tile"><div class="art bg-deep"><img src="logo/svg/reefquest-horizontal-color-on-dark.svg" alt="" /></div><div class="cap">color-on-dark</div></div>
+    <div class="tile"><div class="art bg-white"><img src="logo/svg/reefquest-horizontal-color-on-light.svg" alt="" /></div><div class="cap">color-on-light</div></div>
+    <div class="tile"><div class="art bg-blue"><img src="logo/svg/reefquest-horizontal-white.svg" alt="" /></div><div class="cap">white</div></div>
+    <div class="tile"><div class="art bg-soft"><img src="logo/svg/reefquest-horizontal-navy.svg" alt="" /></div><div class="cap">navy</div></div>
+    <div class="tile"><div class="art bg-white"><img src="logo/svg/reefquest-horizontal-black.svg" alt="" /></div><div class="cap">black</div></div>
+    <div class="tile"><div class="art bg-white tall"><img src="logo/svg/reefquest-vertical-color-on-light.svg" alt="" /></div><div class="cap">vertical · color-on-light</div></div>
+  </div>
+
+  <h2>Clear space <em>and size</em></h2>
+  <div class="rules">
+    <div class="clear"><div class="box"><span class="r">R</span><img src="logo/svg/reefquest-horizontal-color-on-light.svg" alt="" /></div></div>
+    <div class="panel">
+      <ul>
+        <li>Keep a margin as tall as the "R" on every side.</li>
+        <li>Smallest: horizontal 120 px (30 mm), vertical 72 px (20 mm), mark 20 px (6 mm).</li>
+        <li>Below 32 px use the favicon: it has heavier strokes.</li>
+        <li>Don't stretch, rotate, recolor parts, add effects or retype the name.</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2>App icon <em>and favicons</em></h2>
+  <p class="note">The coral on the hero's ocean blue with the dotted sea behind it. The maskable version keeps the mark inside Android's safe zone; the Apple icon is square because iOS rounds it.</p>
+  <div class="panel icons">
+    <figure><img src="icon/app-icon.svg" width="160" height="160" alt="" />app-icon</figure>
+    <figure><img src="icon/maskable-icon.svg" width="120" height="120" alt="" style="border-radius:50%" />maskable (as a circle)</figure>
+    <figure><img src="icon/apple-touch-icon.png" width="90" height="90" alt="" style="border-radius:20px" />apple-touch-icon</figure>
+    <figure><img src="icon/favicon.svg" width="48" height="48" alt="" />favicon 48</figure>
+    <figure><img src="icon/favicon-32.png" width="32" height="32" alt="" />32</figure>
+    <figure><img src="icon/favicon-16.png" width="16" height="16" alt="" />16</figure>
+  </div>
+
+  <h2>Link <em>previews</em></h2>
+  <p class="note">1200 × 630, for WhatsApp, Facebook, X and LinkedIn, in Spanish and English.</p>
+  <div class="social">
+    <img src="social/og-image-es.png" alt="ReefQuest: Conoce el arrecife que rodea nuestras islas." />
+    <img src="social/og-image-en.png" alt="ReefQuest: Meet the reef around our islands." />
+  </div>
+
+  <h2><em>Colors</em></h2>
+  <p class="note">Ocean blue leads; the deep blues hold the data. Also in <a href="tokens.css">tokens.css</a> and <a href="tokens.json">tokens.json</a>.</p>
+  <div class="swatches">
+    <div class="sw"><i style="background:#0a66f0"></i><div><b>Ocean blue</b><code>#0a66f0</code></div></div>
+    <div class="sw"><i style="background:#084fc2"></i><div><b>Blue ink</b><code>#084fc2</code></div></div>
+    <div class="sw"><i style="background:#dce9ff"></i><div><b>Blue soft</b><code>#dce9ff</code></div></div>
+    <div class="sw"><i style="background:#bfe0ff"></i><div><b>Foam</b><code>#bfe0ff</code></div></div>
+    <div class="sw"><i style="background:#0b1f3f"></i><div><b>Navy</b><code>#0b1f3f</code></div></div>
+    <div class="sw"><i style="background:#061d44"></i><div><b>Deep</b><code>#061d44</code></div></div>
+    <div class="sw"><i style="background:#04132d"></i><div><b>Abyss</b><code>#04132d</code></div></div>
+    <div class="sw"><i style="background:linear-gradient(160deg,#0c57dc,#0941b4,#062b84)"></i><div><b>Hero gradient</b><code>#0c57dc → #062b84</code></div></div>
+    <div class="sw"><i style="background:#7fb5ff"></i><div><b>Sky</b><code>#7fb5ff</code></div></div>
+    <div class="sw"><i style="background:#5fd0d6"></i><div><b>Aqua</b><code>#5fd0d6</code></div></div>
+    <div class="sw"><i style="background:#ff8a6e"></i><div><b>Coral</b><code>#ff8a6e</code></div></div>
+    <div class="sw"><i style="background:rgba(5,18,34,.64);box-shadow:inset 0 0 0 1px rgba(255,255,255,.11)"></i><div><b>Glass panel</b><code>rgba(5,18,34,.64)</code></div></div>
+  </div>
+  <p class="note" style="margin-top:18px">Heat alert scale (NOAA Coral Reef Watch): only for heat data, never decoration.</p>
+  <div class="heat">
+    <span style="background:#3a9bb5">None #3a9bb5</span><span style="background:#f7a51c">Warning #f7a51c</span><span style="background:#ef3b2c">Alert 1 #ef3b2c</span><span style="background:#a50f15">Alert 2 #a50f15</span><span style="background:#d4199a">Alert 3 #d4199a</span><span style="background:#8b1fc9">Alert 4 #8b1fc9</span><span style="background:#5b1fb0">Alert 5 #5b1fb0</span>
+  </div>
+
+  <h2><em>Type</em></h2>
+  <div class="panel type">
+    <div class="row"><span class="meta">Inter · bold for headlines, regular for text · free (SIL OFL)</span><span class="spec-sans">Arrecifes de coral</span></div>
+    <div class="row"><span class="meta">Instrument Serif italic · the accent, one or two words</span><span class="spec-serif">nuestras islas</span></div>
+    <div class="row"><span class="meta">IBM Plex Mono · data, coordinates, labels</span><span class="spec-mono">16.35° N · 86.38° O · 5.1 °C-SEM</span></div>
+    <div class="row"><span class="meta">The headline style: bold Inter + italic serif accent</span><span class="spec-head">Conoce el arrecife <em>que rodea nuestras islas.</em></span></div>
+  </div>
+
+  <footer>ReefQuest brand kit · fonts: Inter, Instrument Serif, IBM Plex Mono (SIL Open Font License 1.1).</footer>
+</main>
+</body>
+</html>

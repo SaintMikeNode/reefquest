@@ -14,6 +14,8 @@ import { AlertChip } from "../ui/AlertChip";
 import { IconBack, IconCast, IconCheck, IconDive, IconSurface } from "../ui/Icons";
 import { LangToggle } from "../ui/LangToggle";
 import { MouseGuide } from "../scenes/MouseGuide";
+import { useBottomInset } from "../scenes/useBottomInset";
+import { transition } from "../ui/SceneTransition";
 import { useBoat } from "./boatStore";
 import { Echogram } from "./Echogram";
 
@@ -37,6 +39,17 @@ export function BoatHud({ index, zoneName, islandName }: { index: HeatIndex; zon
   const surveyHa = useBoat((s) => s.surveyHa);
   const cast = useBoat((s) => s.cast);
   const under = useBoat((s) => s.under);
+  const bottomRef = useRef<HTMLDivElement>(null);
+  // Diving and surfacing are animated: a water line sweeping down going under, up coming back, with bubbles.
+  const toggleDive = () => {
+    const goUnder = !useBoat.getState().under;
+    transition({
+      kind: goUnder ? "dive" : "surface",
+      label: goUnder ? t("boat.dive") : t("boat.surfaceShort"),
+      apply: () => useBoat.setState({ under: goUnder }),
+    });
+  };
+  useBottomInset(bottomRef, "--bb"); // the sounder and arrival bar stack above the bottom bar
   const day = useScene((s) => s.day);
   const setBoat = useScene((s) => s.setBoat);
   const [story, setStory] = useState<string | null>(null);
@@ -91,7 +104,7 @@ export function BoatHud({ index, zoneName, islandName }: { index: HeatIndex; zon
 
   useEffect(() => {
     const on = (e: KeyboardEvent) => {
-      if (e.code === "KeyU" && (e.target as HTMLElement)?.tagName !== "INPUT") useBoat.setState((b) => ({ under: !b.under }));
+      if (e.code === "KeyU" && (e.target as HTMLElement)?.tagName !== "INPUT") toggleDive();
       if (e.code === "Space" && (e.target as HTMLElement)?.tagName !== "BUTTON") {
         e.preventDefault();
         startCast();
@@ -164,9 +177,25 @@ export function BoatHud({ index, zoneName, islandName }: { index: HeatIndex; zon
       </div>
 
       <div className="hud tools">
-        <div className="panel instrument" title={t("boat.heading")}>
-          {Math.round(deg).toString().padStart(3, "0")}° · {fmtNum(knots, lang)} {t("boat.knots")}
-        </div>
+        {/* Phones: one instrument pill (heading, speed, depth); tapping it opens the sounder. */}
+        <button className="panel instrument" aria-expanded={instOpen} onClick={() => setInstOpen(!instOpen)} title={t("boat.sounder")}>
+          <span>
+            <b>{Math.round(deg).toString().padStart(3, "0")}°</b>
+          </span>
+          <span>
+            <b>{fmtNum(knots, lang, 0)}</b> {t("boat.knotsShort")}
+          </span>
+          {tele && (
+            <span>
+              <b>
+                {estimated && tele.depth > 0 ? "≈" : ""}
+                {fmtNum(tele.depth, lang, tele.depth < 30 ? 1 : 0)}
+              </b>{" "}
+              m
+            </span>
+          )}
+          <Chevron open={instOpen} />
+        </button>
         <div className="hide-sm">
           <LangToggle />
         </div>
@@ -270,20 +299,21 @@ export function BoatHud({ index, zoneName, islandName }: { index: HeatIndex; zon
       )}
 
       {nearSite && !storySite && (
-        <div className="hud arrive panel">
-          <span className="hud-faint">{t("boat.near")}</span> <strong>{nearSite.name}</strong>
-          {nearSite.kind === "story" && (
-            <button className="hbtn" onClick={() => setStory(nearSite.id)}>
-              {t("boat.readStory")}
-            </button>
-          )}
+        <div className="hud arrive panel top-only">
+          <Arrival name={nearSite.name} onRead={nearSite.kind === "story" ? () => setStory(nearSite.id) : null} />
         </div>
       )}
 
       {tele?.aground && <div className="hud toast warn">{t("boat.aground")}</div>}
       {toast && !tele?.aground && <div className="hud toast">{toast}</div>}
 
-      <div className="hud boat-bottom">
+      <div className="hud boat-bottom" ref={bottomRef}>
+        {/* Phones: everything at the bottom lives in this one dock (arrival, guide or logbook, actions). */}
+        {nearSite && !storySite && (
+          <div className="arrive-row dock-only">
+            <Arrival name={nearSite.name} onRead={nearSite.kind === "story" ? () => setStory(nearSite.id) : null} />
+          </div>
+        )}
         {under ? (
           <FieldGuide bleachNote={bleach > 0.05 && dhw !== null && dateISO ? t("boat.bleachNote").replace("{date}", fmtDate(dateISO, lang)).replace("{dhw}", fmtNum(dhw, lang)) : null} />
         ) : (
@@ -342,9 +372,16 @@ export function BoatHud({ index, zoneName, islandName }: { index: HeatIndex; zon
           {under ? "" : TOUCH ? t("boat.hintTouch") : t("boat.hintKeys")}
         </div>
         <div className="boat-actions">
-        <button className="hbtn cast-btn" aria-pressed={under} onClick={() => useBoat.setState({ under: !under })}>
+        <button className="hbtn cast-btn" aria-pressed={under} onClick={toggleDive}>
           {under ? <IconSurface /> : <IconDive />}
-          {under ? t("boat.surface") : t("boat.dive")}
+          {under ? (
+            <>
+              <span className="lbl-long">{t("boat.surface")}</span>
+              <span className="lbl-short">{t("boat.surfaceShort")}</span>
+            </>
+          ) : (
+            t("boat.dive")
+          )}
         </button>
         <button className="hbtn primary cast-btn" onClick={startCast} disabled={!tele || tele.depth <= 1 || casting}>
           <IconCast />
@@ -354,6 +391,20 @@ export function BoatHud({ index, zoneName, islandName }: { index: HeatIndex; zon
         </button>
         </div>
       </div>
+    </>
+  );
+}
+
+function Arrival({ name, onRead }: { name: string; onRead: (() => void) | null }) {
+  const t = useT();
+  return (
+    <>
+      <span className="hud-faint">{t("boat.near")}</span> <strong>{name}</strong>
+      {onRead && (
+        <button className="hbtn" onClick={onRead}>
+          {t("boat.readStory")}
+        </button>
+      )}
     </>
   );
 }

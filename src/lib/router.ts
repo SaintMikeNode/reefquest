@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 
-// Tiny hash router: #/ (home), #/island/roatan, #/heat, #/learn, #/about.
+// Tiny hash router: #/ (home), #/islands, #/island/roatan, #/heat, #/learn, #/about.
 // Hash routes need no server rewrite rules and work offline from the static files.
 export type Route =
   | { page: "home" }
+  | { page: "islands" }
   | { page: "island"; id: string }
   | { page: "heat" }
   | { page: "learn" }
@@ -12,6 +13,7 @@ export type Route =
 export function parse(hash: string): Route {
   const parts = hash.replace(/^#\/?/, "").split("/").filter(Boolean);
   if (parts[0] === "island" && parts[1]) return { page: "island", id: parts[1] };
+  if (parts[0] === "islands") return { page: "islands" };
   if (parts[0] === "heat") return { page: "heat" };
   if (parts[0] === "learn") return { page: "learn" };
   if (parts[0] === "about") return { page: "about" };
@@ -40,6 +42,7 @@ export function useRoute(): Route {
 
 export const href = {
   home: "#/",
+  islands: "#/islands",
   island: (id: string) => `#/island/${id}`,
   heat: "#/heat",
   learn: "#/learn",

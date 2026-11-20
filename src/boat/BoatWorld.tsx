@@ -348,6 +348,9 @@ function Boat({ zone, start, coverage }: { zone: Zone; start: { x: number; z: nu
     const hop = Math.abs(Math.sin(t * 5.3)) * 0.35 * fast * fast;
     vessel.group.position.set(s.x, Math.sin(t * 0.9) * 0.18 - 0.05 + fast * 0.5 + hop, s.z);
     vessel.group.rotation.set(Math.sin(t * 0.7) * 0.015 - fast * 0.09 - hop * 0.08, s.a, Math.sin(t * 0.8) * 0.02 - turn * fast * 0.2, "YXZ");
+    // Diving, the camera sits right under the boat: its dark red bottom paint filled the top of the
+    // view like a wall (worst on tall phone screens). Hide the vessel then, keeping the CTD and its cable.
+    for (const ch of vessel.group.children) ch.visible = !store.under || ch === vessel.rosette || ch === vessel.cable;
     vessel.radar[0].rotation.y += dt * 2.2;
     vessel.radar[1].rotation.y -= dt * 3.1;
     const fp = vessel.flag.geometry.attributes.position as THREE.BufferAttribute;
@@ -486,21 +489,30 @@ function hullFoam() {
       float h(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
       float n(vec2 p){ vec2 i = floor(p), f = fract(p); vec2 u = f*f*(3.0-2.0*f);
         return mix(mix(h(i), h(i+vec2(1,0)), u.x), mix(h(i+vec2(0,1)), h(i+vec2(1,1)), u.x), u.y); }
+      float band(float x, float a, float b){ float w = fwidth(x); return smoothstep(a - w, a + w, x) * (1.0 - smoothstep(b - w, b + w, x)); }
       void main(){
-        // vP: x across, y forward (local). Hull ellipse ring.
-        vec2 q = vec2(vP.x / 3.9, (vP.y - 0.3) / 13.2);
-        float r = length(q);
-        float ring = smoothstep(1.3, 0.98, r) * smoothstep(0.85, 0.99, r);
-        // Bow wave: a V spreading back from the bow.
+        // vP: x across, y forward (local). r = 1 roughly at the hull's waterline.
+        vec2 q = vec2(vP.x / 4.3, (vP.y - 0.3) / 13.4);
+        float r = length(q) + (n(vP * 0.7 + uTime * 1.2) - 0.5) * 0.05;
+        // Foam collar hugging the hull (wider when moving).
+        float collar = band(r, 0.86, 1.04 + 0.06 * uSpeed);
+        // At rest, thin rings spreading from the hull as it bobs.
+        float rings = 0.0;
+        for (int k = 0; k < 2; k++) {
+          float ph = fract(uTime * 0.3 + float(k) * 0.5);
+          rings += band(r, 1.06 + ph * 0.55, 1.09 + ph * 0.55) * (1.0 - ph);
+        }
+        // Bow wave: two crisp V stripes spreading back from the bow, broken up by noise.
         float side = abs(vP.x) - (12.8 - vP.y) * 0.42;
-        float bow = smoothstep(2.4, 0.0, abs(side)) * smoothstep(-8.0, 9.0, vP.y) * step(vP.y, 13.0);
-        float tx = smoothstep(0.35, 0.75, n(vP * 0.9 + vec2(0.0, uTime * 3.0)));
-        float a = (ring * (0.25 + 0.5 * uSpeed) + bow * uSpeed * 0.9) * tx;
-        gl_FragColor = vec4(vec3(0.96, 0.99, 1.0), a * 0.85);
+        float bow = (band(side, -0.3, 0.5) + band(side, 1.6, 2.1) * 0.6) * smoothstep(-10.0, 8.0, vP.y) * step(vP.y, 13.0);
+        float brk = smoothstep(0.35, 0.5, n(vP * 0.9 + vec2(0.0, uTime * 3.0)));
+        float a = max(collar * (0.75 + 0.2 * uSpeed), rings * 0.55 * (1.0 - uSpeed));
+        a = max(a, bow * uSpeed * brk);
+        gl_FragColor = vec4(vec3(0.97, 0.99, 1.0), a);
       }`,
   });
   // Flat plane in the XZ plane; z = forward.
-  const g = new THREE.PlaneGeometry(16, 36, 1, 1);
+  const g = new THREE.PlaneGeometry(24, 52, 1, 1); // room for the rings
   g.rotateX(-Math.PI / 2); // plane y → −z
   g.scale(1, 1, -1); // so local "forward" is +z (a flat plane: winding doesn't matter, DoubleSide)
   m.side = THREE.DoubleSide;
@@ -520,9 +532,12 @@ class Wake {
   constructor() {
     this.pos = new Float32Array(this.N * 2 * 3);
     this.alpha = new Float32Array(this.N * 2);
+    const side = new Float32Array(this.N * 2);
+    for (let i = 0; i < this.N; i++) side[i * 2 + 1] = 1; // 0 = one edge of the trail, 1 = the other
     const g = new THREE.BufferGeometry();
     g.setAttribute("position", new THREE.BufferAttribute(this.pos, 3));
     g.setAttribute("aAlpha", new THREE.BufferAttribute(this.alpha, 1));
+    g.setAttribute("aSide", new THREE.BufferAttribute(side, 1));
     const idx: number[] = [];
     for (let i = 0; i < this.N - 1; i++) {
       const a = i * 2, b = a + 1, c = a + 2, d = a + 3;
@@ -533,8 +548,20 @@ class Wake {
       transparent: true,
       depthWrite: false,
       side: THREE.DoubleSide,
-      vertexShader: "attribute float aAlpha; varying float vA; void main(){ vA = aAlpha; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }",
-      fragmentShader: "varying float vA; void main(){ gl_FragColor = vec4(0.97, 0.99, 1.0, vA); }",
+      vertexShader: "attribute float aAlpha; attribute float aSide; varying float vA; varying float vS; varying vec2 vP; void main(){ vA = aAlpha; vS = aSide; vP = position.xz; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }",
+      fragmentShader: `
+        varying float vA; varying float vS; varying vec2 vP;
+        float h(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+        float n(vec2 p){ vec2 i = floor(p), f = fract(p); vec2 u = f*f*(3.0-2.0*f);
+          return mix(mix(h(i), h(i+vec2(1,0)), u.x), mix(h(i+vec2(0,1)), h(i+vec2(1,1)), u.x), u.y); }
+        void main(){
+          float e = abs(vS - 0.5) * 2.0; // 0 in the middle, 1 at the edges
+          float w = fwidth(e);
+          float lines = smoothstep(0.7 - w, 0.7 + w, e) * (1.0 - smoothstep(0.97 - w, 0.97 + w, e));
+          float churn = smoothstep(0.45, 0.65, n(vP * 0.35)) * (1.0 - e) * 0.55;
+          float a = vA * 1.4 * max(lines * smoothstep(0.3, 0.55, n(vP * 0.5)), churn);
+          gl_FragColor = vec4(0.97, 0.99, 1.0, min(a, 0.95));
+        }`,
     });
     this.mesh = new THREE.Mesh(g, m);
     this.mesh.frustumCulled = false;
@@ -666,11 +693,47 @@ function Reef({ zone, time }: { zone: Zone; time: { value: number } }) {
   );
 }
 
-/** Palms on the coast and broadleaf forest inland, within ~1.3 km of the boat. */
+/**
+ * A low-poly forest clump (one to three faceted blobs, white vertex colors darkening toward the
+ * base so instance colors shade it): stands in for many trees on far hillsides.
+ */
+function clumpGeometry(blobs: 1 | 3): THREE.BufferGeometry {
+  const parts: THREE.BufferGeometry[] = [];
+  const spots = blobs === 1 ? [[0, 0.5, 0, 0.55]] : [[0, 0.55, 0, 0.5], [0.42, 0.4, 0.15, 0.38], [-0.3, 0.38, -0.32, 0.36]];
+  for (const [x, y, z, r] of spots) {
+    const g = new THREE.IcosahedronGeometry(r, 0);
+    g.scale(1, 0.85, 1);
+    g.translate(x, y, z);
+    parts.push(g.toNonIndexed());
+  }
+  const g = mergeGeometries(parts)!;
+  g.deleteAttribute("uv");
+  const p = g.getAttribute("position"), col = new Float32Array(p.count * 3);
+  for (let i = 0; i < p.count; i++) col.fill(0.7 + 0.3 * Math.min(1, p.getY(i) / 0.9), i * 3, i * 3 + 3);
+  g.setAttribute("color", new THREE.BufferAttribute(col, 3));
+  g.computeVertexNormals();
+  return g;
+}
+
+/**
+ * Vegetation on the zone's land, stylized and chunky so the islands read from the water:
+ * palms on the coast and broadleaf trees inland near the boat (within R), and big forest clumps
+ * over the rest of the tile out to RF so the far hills aren't bare. All instanced (one draw call
+ * per kind), distance-culled around the boat and capped per device tier; refilled every 150 m.
+ */
 function Vegetation({ zone, time }: { zone: Zone; time: { value: number } }) {
-  const R = pick(800, 1000, 1300);
+  const R = pick(700, 900, 1200), RF = pick(2000, 2600, 3400);
   const cand = useMemo(() => {
-    const palms: number[] = [], trees: number[] = [];
+    const palms: number[] = [], trees: number[] = [], clumps: number[] = [];
+    // Forest clumps on a coarser grid (every 4th cell, ~40 m), on land above 2.5 m.
+    for (let j = 0; j < zone.h; j += 4)
+      for (let i = 0; i < zone.w; i += 4) {
+        const k = j * zone.w + i;
+        const h = zone.heights[k];
+        if (h < 2.5 || h01(k + 7) > 0.85) continue;
+        const x = ((i + h01(k + 5) * 4) / (zone.w - 1) - 0.5) * zone.sizeX, z = ((j + h01(k + 6) * 4) / (zone.h - 1) - 0.5) * zone.sizeZ;
+        clumps.push(x, h, z, h01(k + 8));
+      }
     for (let j = 0; j < zone.h; j++)
       for (let i = 0; i < zone.w; i++) {
         const k = j * zone.w + i;
@@ -681,32 +744,37 @@ function Vegetation({ zone, time }: { zone: Zone; time: { value: number } }) {
         if (h < 7 && r < 0.3) palms.push(x, h, z, h01(k + 3));
         else if (h >= 3 && r < 0.42) trees.push(x, h, z, h01(k + 4));
       }
-    return { palms: new Float32Array(palms), trees: new Float32Array(trees) };
+    return { palms: new Float32Array(palms), trees: new Float32Array(trees), clumps: new Float32Array(clumps) };
   }, [zone]);
   const meshes = useMemo(() => {
-    const capP = pick(300, 500, 1400), capT = pick(500, 900, 2600);
+    const capP = pick(300, 500, 1100), capT = pick(500, 900, 2400), capC = pick(260, 500, 800);
     const palms = new THREE.InstancedMesh(palmGeometry(pick(0, 0, 2)), vegetationMaterial(time, 0.06), capP);
     const trees = new THREE.InstancedMesh(canopyGeometry(pick(0, 1, 2)), vegetationMaterial(undefined, 0, false), capT);
-    palms.count = trees.count = 0;
-    palms.frustumCulled = trees.frustumCulled = false;
-    return { palms, trees };
+    const clumps = new THREE.InstancedMesh(clumpGeometry(pick(1, 1, 3)), vegetationMaterial(undefined, 0, false), capC);
+    palms.count = trees.count = clumps.count = 0;
+    palms.frustumCulled = trees.frustumCulled = clumps.frustumCulled = false;
+    return { palms, trees, clumps };
   }, [time]);
   const last = useRef({ x: 1e9, z: 1e9 });
   useFrame(() => {
     const { tele, under } = useBoat.getState();
-    meshes.palms.visible = meshes.trees.visible = !under; // land can't be seen from under the water
+    meshes.palms.visible = meshes.trees.visible = meshes.clumps.visible = !under; // land can't be seen from under the water
     if (!tele || under || Math.hypot(tele.x - last.current.x, tele.z - last.current.z) < 150) return;
     last.current = { x: tele.x, z: tele.z };
     const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), s = new THREE.Vector3(), p = new THREE.Vector3(), col = new THREE.Color();
     const up = new THREE.Vector3(0, 1, 0);
-    const fill = (arr: Float32Array, im: THREE.InstancedMesh, greens: string[], h0: number, h1: number, wide: number) => {
+    const fill = (arr: Float32Array, im: THREE.InstancedMesh, greens: string[], h0: number, h1: number, wide: number, r0 = 0, r1 = R) => {
       const cap = im.instanceMatrix.count;
+      const inBand = (i: number) => {
+        const d2 = (arr[i] - tele.x) ** 2 + (arr[i + 2] - tele.z) ** 2;
+        return d2 >= r0 * r0 && d2 < r1 * r1;
+      };
       let inR = 0;
-      for (let i = 0; i < arr.length; i += 4) if ((arr[i] - tele.x) ** 2 + (arr[i + 2] - tele.z) ** 2 < R * R) inR++;
+      for (let i = 0; i < arr.length; i += 4) if (inBand(i)) inR++;
       const keep = Math.min(1, cap / Math.max(inR, 1));
       let n = 0;
       for (let i = 0; i < arr.length && n < cap; i += 4) {
-        if ((arr[i] - tele.x) ** 2 + (arr[i + 2] - tele.z) ** 2 >= R * R) continue;
+        if (!inBand(i)) continue;
         const seed = arr[i + 3];
         if ((seed * 7919) % 1 > keep) continue;
         const ht = h0 + seed * (h1 - h0);
@@ -722,13 +790,17 @@ function Vegetation({ zone, time }: { zone: Zone; time: { value: number } }) {
       im.instanceMatrix.needsUpdate = true;
       if (im.instanceColor) im.instanceColor.needsUpdate = true;
     };
-    fill(cand.palms, meshes.palms, PALM_GREENS, 8, 14, 0.9);
-    fill(cand.trees, meshes.trees, CANOPY_GREENS, 7, 15, 1.1);
+    // Chunky, stylized sizes (about 1.4× real) so they read from the water.
+    fill(cand.palms, meshes.palms, PALM_GREENS, 11, 19, 0.9);
+    fill(cand.trees, meshes.trees, CANOPY_GREENS, 10, 21, 1.15);
+    // Clumps start a little inside the tree radius so the two blend, out to the far hills.
+    fill(cand.clumps, meshes.clumps, CANOPY_GREENS, 26, 44, 1.5, R * 0.8, RF);
   });
   return (
     <>
       <primitive object={meshes.palms} />
       <primitive object={meshes.trees} />
+      <primitive object={meshes.clumps} />
     </>
   );
 }

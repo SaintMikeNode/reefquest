@@ -1,0 +1,37 @@
+/* ReefQuest brand tokens (the site's live values are in src/styles.css). */
+:root {
+  --rq-color-brand-blue: #0a66f0;
+  --rq-color-brand-blue-ink: #084fc2;
+  --rq-color-brand-blue-soft: #dce9ff;
+  --rq-color-brand-foam: #bfe0ff;
+  --rq-color-ocean-navy: #0b1f3f;
+  --rq-color-ocean-deep: #061d44;
+  --rq-color-ocean-abyss: #04132d;
+  --rq-color-ocean-sea: #0b4f8c;
+  --rq-color-ocean-hero-light: #0c57dc;
+  --rq-color-ocean-hero-mid: #0941b4;
+  --rq-color-ocean-hero-dark: #062b84;
+  --rq-color-accent-sky: #7fb5ff;
+  --rq-color-accent-aqua: #5fd0d6;
+  --rq-color-accent-coral: #ff8a6e;
+  --rq-color-text-on-dark: #f5f8ff;
+  --rq-color-text-on-dark-body: #cad8ee;
+  --rq-color-text-on-dark-muted: #93a9c8;
+  --rq-color-text-on-light: #0b1f3f;
+  --rq-color-text-on-light-muted: #5d6f8c;
+  --rq-color-glass-panel: rgba(5, 18, 34, 0.64);
+  --rq-color-glass-hairline: rgba(255, 255, 255, 0.11);
+  --rq-color-heat-alert-none: #3a9bb5;
+  --rq-color-heat-alert-warning: #f7a51c;
+  --rq-color-heat-alert-alert-1: #ef3b2c;
+  --rq-color-heat-alert-alert-2: #a50f15;
+  --rq-color-heat-alert-alert-3: #d4199a;
+  --rq-color-heat-alert-alert-4: #8b1fc9;
+  --rq-color-heat-alert-alert-5: #5b1fb0;
+  --rq-font-sans: Inter Variable, Inter, Helvetica Neue, Arial, sans-serif;
+  --rq-font-serif: Instrument Serif, Georgia, serif;
+  --rq-font-mono: IBM Plex Mono, Menlo, monospace;
+  --rq-radius-pill: 999px;
+  --rq-radius-card: 22px;
+  --rq-radius-window: clamp(20px, 2.6vw, 34px);
+}

@@ -1,7 +1,14 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="14" fill="#06324a"/>
-  <path d="M0 44c10-6 22-6 32 0s22 6 32 0v20H0z" fill="#0d5d7c"/>
-  <g fill="none" stroke="#ff7a5c" stroke-width="4" stroke-linecap="round">
-    <path d="M32 50V22"/><path d="M32 36l-10-9v-7"/><path d="M32 30l9-8v-6"/><path d="M22 27l-6-3"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="ReefQuest"><title>ReefQuest</title>
+  <defs><radialGradient id="g" cx="50%" cy="34%" r="80%"><stop offset="0" stop-color="#2f7dff"/><stop offset="0.5" stop-color="#0c57dc"/><stop offset="1" stop-color="#062b84"/></radialGradient><radialGradient id="v" cx="50%" cy="45%" r="60%"><stop offset="0.55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity="0.22"/></radialGradient><clipPath id="c"><rect width="64" height="64" rx="14.4"/></clipPath></defs>
+  <g clip-path="url(#c)">
+    <rect width="64" height="64" fill="url(#g)"/>
+    
+    <rect width="64" height="64" fill="url(#v)"/>
+    <g transform="translate(4.74 7.07) scale(1.7)">
+    <path d="M3 24.5c3.2-1.7 6.3-1.7 9.5 0s6.3 1.7 9.5 0 6.3-1.7 7 0" fill="none" stroke="#bfe0ff" stroke-width="2.43" stroke-linecap="round"/>
+    <g fill="none" stroke="#ffffff" stroke-width="2.7" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M16 22V9.5"/><path d="M16 17l-5.2-4.4V7.5"/><path d="M16 13.5l4.6-3.9V5"/><path d="M10.8 12.6l-3.1-1.6"/><path d="M20.6 9.6l2.6-1.2"/>
+    </g>
+  </g>
   </g>
 </svg>

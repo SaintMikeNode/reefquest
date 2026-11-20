@@ -6,7 +6,8 @@ import { IconClose } from "../ui/Icons";
 // Bottom-right card on computers with a mouse: three small mice, each with the button that does
 // the job lit (drag, right-drag, wheel). Hidden on touch screens; closing it is remembered.
 
-const KEY = "rq-mouse-guide";
+// -2: the controls changed (no right-drag), so the card shows again once for everyone.
+const KEY = "rq-mouse-guide-2";
 type Part = "left" | "right" | "wheel";
 
 function Mouse({ lit }: { lit: Part }) {
@@ -23,7 +24,7 @@ function Mouse({ lit }: { lit: Part }) {
 }
 
 /** `inline`: sits in the flow of another bar (the boat's) instead of the bottom-right corner. */
-export function MouseGuide({ items, inline }: { items: { part: Part; label: string; how: string }[]; inline?: boolean }) {
+export function MouseGuide({ items, inline }: { items: { part: Part; key?: string; label: string; how: string }[]; inline?: boolean }) {
   const t = useT();
   const [open, setOpen] = useState(() => {
     try {
@@ -46,6 +47,7 @@ export function MouseGuide({ items, inline }: { items: { part: Part; label: stri
       <ul>
         {items.map((it) => (
           <li key={it.label}>
+            {it.key && <kbd className="mg-key">{it.key}</kbd>}
             <Mouse lit={it.part} />
             <span>
               <b>{it.label}</b>

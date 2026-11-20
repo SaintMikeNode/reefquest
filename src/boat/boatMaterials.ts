@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { MOBILE } from "../lib/device";
+import { LITE, MOBILE } from "../lib/device";
 import { WATER, WATER_GLSL } from "./props";
 
 export const SUN = new THREE.Vector3(-0.45, 0.8, -0.35).normalize();
@@ -146,6 +146,12 @@ export function seafloorMaterial(habitat: THREE.DataTexture, lite: boolean, cove
           c = mix(vec3(0.50, 0.50, 0.28), vec3(0.42, 0.44, 0.22), n);
         }
         float lambert = clamp(dot(normalize(vN), uSun), 0.0, 1.0);
+        if (vH > 0.0) {
+          // Land, stylized: light in three soft bands, greener and lighter up the ridges.
+          float lb = floor(lambert * 3.0 + 0.5) / 3.0;
+          lambert = mix(lambert, lb, 0.65);
+          c = mix(c, c * vec3(0.85, 1.12, 0.8), smoothstep(4.0, 40.0, vH));
+        }
         c *= 0.45 + 0.7 * lambert;
         if (vH <= 0.0) {
           float d = -vH;
@@ -243,28 +249,71 @@ export function seaMaterial(depthTex: THREE.Texture | null, size: [number, numbe
         }
         float fres = pow(1.0 - max(dot(n, v), 0.0), 3.0);
         vec3 r = reflect(-v, n);
-        float spec = pow(max(dot(r, uSun), 0.0), 180.0) * 2.5;
-        vec3 col = mix(vec3(0.05, 0.45, 0.55), uSky, 0.55 + 0.45 * fres);
-        float a = mix(0.18, 0.92, fres);
+        float sunDot = max(dot(r, uSun), 0.0);
         float depth = 40.0;
         if (uHasDepth > 0.5) {
           vec2 uv = p / uSize + 0.5;
           if (uv.x > 0.0 && uv.x < 1.0 && uv.y > 0.0 && uv.y < 1.0) depth = texture2D(uDepth, uv).r * 255.0 / 8.0;
         }
-        // Foam in very shallow water (breaking on reef crests and beaches): broken streaks, not sheets.
-        float f = (1.0 - smoothstep(0.15, 0.7, depth)) * step(0.02, depth);
-        if (f > 0.0) { // the foam noise is only needed along the shallow fringe
-          float streak = fbm(vec2(p.x * 0.9 + t * 0.5, p.y * 0.35 - t * 0.3)) * 0.6 + fbm(p * 1.7 - t * 0.2) * 0.4;
-          f *= smoothstep(0.52, 0.72, streak);
+        float near = 1.0 - smoothstep(60.0, 260.0, vDist);
+        // Stylized, illustrated water rather than photo-real: flat color bands by depth (turquoise
+        // shallows, teal, blue, deep blue) with crisp edges that wobble slowly, see-through over the
+        // reef and denser offshore, with a thin light contour where two bands meet.
+        float dw = depth + (vnoise(p * 0.045 + vec2(t * 0.02, 0.0)) - 0.5) * 1.6;
+        float aa = fwidth(dw) + 0.03;
+        float b1 = smoothstep(2.5 - aa, 2.5 + aa, dw), b2 = smoothstep(7.0 - aa, 7.0 + aa, dw), b3 = smoothstep(16.0 - aa, 16.0 + aa, dw);
+        vec3 col = mix(vec3(0.42, 0.90, 0.84), vec3(0.16, 0.74, 0.78), b1);
+        col = mix(col, vec3(0.07, 0.55, 0.70), b2);
+        col = mix(col, vec3(0.04, 0.36, 0.60), b3);
+        float a = mix(mix(0.3, 0.46, b1), mix(0.62, 0.88, b3), b2);
+        float edge = max(max(1.0 - abs(dw - 2.5) / (aa * 1.6), 1.0 - abs(dw - 7.0) / (aa * 1.6)), 1.0 - abs(dw - 16.0) / (aa * 1.6));
+        edge = clamp(edge, 0.0, 1.0) * (1.0 - smoothstep(120.0, 400.0, vDist));
+        col = mix(col, vec3(0.85, 0.98, 1.0), edge * 0.45);
+        a = max(a, edge * 0.5);
+        // Sky in the water toward the horizon.
+        col = mix(col, uSky * 1.08, smoothstep(0.25, 0.9, fres) * 0.6);
+        a = mix(a, 0.95, smoothstep(0.3, 0.95, fres));
+${LITE ? "" : `        // Ripples: a drifting cell pattern whose seams catch the light, faded out with distance before
+        // it can shimmer (skipped on the weakest devices).
+        if (near > 0.0) {
+          vec2 q = p * 0.11 + vec2(t * 0.05, t * 0.03);
+          vec2 ip = floor(q), fp = fract(q);
+          float d1 = 8.0, d2 = 8.0;
+          for (int j = -1; j <= 1; j++)
+            for (int i = -1; i <= 1; i++) {
+              vec2 o = vec2(float(i), float(j));
+              vec2 h = vec2(hash2(ip + o), hash2(ip + o + 31.7));
+              vec2 c = o + 0.5 + 0.4 * sin(t * 0.6 + 6.2831 * h) - fp;
+              float d = dot(c, c);
+              if (d < d1) { d2 = d1; d1 = d; } else if (d < d2) d2 = d;
+            }
+          float seam = 1.0 - smoothstep(0.0, 0.045 + fwidth(q.x) * 1.5, sqrt(d2) - sqrt(d1));
+          seam *= smoothstep(0.3, 0.65, vnoise(p * 0.025 + vec2(0.0, t * 0.015))) * near; // in patches, not a tiled net
+          col = mix(col, vec3(0.9, 1.0, 1.0), seam * 0.3);
+          a = max(a, seam * 0.28);
         }
-        col = mix(col, vec3(0.93, 0.97, 0.98), f * 0.7);
-        a = max(a, f * 0.65);
-        col += vec3(1.0, 0.95, 0.85) * spec;
-        a = min(1.0, a + spec);
+`}        // Shore foam: white stripes rolling in toward beaches and reef crests, broken up by noise,
+        // and a solid line where the water meets the sand.
+        float shore = 1.0 - smoothstep(0.2, 1.6, depth);
+        if (shore > 0.0 && depth > 0.02) {
+          float roll = fract(depth * 1.3 + t * 0.35);
+          float w = fwidth(roll) + 0.01;
+          float stripe = smoothstep(0.7 - w, 0.7 + w, roll) * (1.0 - smoothstep(0.82 - w, 0.82 + w, roll));
+          float br = smoothstep(0.35, 0.6, vnoise(p * 0.6 + t * 0.2));
+          float fo = max(stripe * br, 1.0 - smoothstep(0.08, 0.3, depth)) * shore;
+          col = mix(col, vec3(0.97, 0.99, 1.0), fo * 0.9);
+          a = max(a, fo * 0.85);
+        }
+        // Sun: a hard-edged toon highlight, and little glints that twinkle around it.
+        float spec = smoothstep(0.86, 0.9, pow(sunDot, 60.0));
+        col = mix(col, vec3(1.0, 0.98, 0.92), spec * 0.85);
+        a = max(a, spec * 0.85);
+        vec2 gc = p * 1.3;
+        float glint = step(0.985, hash2(floor(gc) + floor(t * 2.5))) * (1.0 - smoothstep(0.08, 0.28, length(fract(gc) - 0.5))) * smoothstep(0.2, 0.8, pow(sunDot, 10.0)) * near; // round sparkles
+        col += vec3(1.0) * glint;
+        a = max(a, glint);
         col = mix(col, vec3(1.0), grid * 0.22);
         a = max(a, grid * 0.16);
-        // Open ocean beyond the shallows: less see-through.
-        a = mix(a, max(a, 0.55), smoothstep(15.0, 40.0, depth));
         gl_FragColor = vec4(haze(col, vDist), a);
       }
     `,

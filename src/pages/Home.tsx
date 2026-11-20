@@ -3,6 +3,7 @@ import { accent, fmtDate, fmtNum, useLang, useT } from "../i18n";
 import { levelFor, rampCSS } from "../lib/alert";
 import { loadLatest, type Latest } from "../lib/data";
 import { ISLAND_ORDER as ORDER, SCENE_ISLANDS as AVAILABLE } from "../lib/islands";
+import { LITE } from "../lib/device";
 import { href } from "../lib/router";
 import { AlertChip } from "../ui/AlertChip";
 import { ArchipelagoMap } from "../ui/ArchipelagoMap";
@@ -12,8 +13,12 @@ import { IconArrow } from "../ui/Icons";
 import { Sparkline } from "../ui/Sparkline";
 import { HAS_WEBGL } from "../webgl";
 
-// The braille drone view (and the drawille library) load after the first paint.
-const BrailleSea = lazy(() => import("../ui/BrailleSea"));
+// The dotted sea (hero background) loads after the first paint.
+const DottedSea = lazy(() => import("../ui/DottedSea"));
+// The metal ring on the main button (metal-fx) also loads after the first paint.
+const MetalRing = lazy(() => import("../ui/MetalRing"));
+// The headline's wave (floodtext) too: a plain headline with the same text shows until it loads.
+const FloodText = lazy(() => import("@overpunch/floodtext").then((m) => ({ default: m.FloodText })));
 
 export function Home() {
   const t = useT();
@@ -24,34 +29,71 @@ export function Home() {
   }, []);
   const date = latest ? fmtDate(latest.date, lang, { day: "numeric", month: "long", year: "numeric" }) : "…";
   const [isl, setIsl] = useState("roatan");
+  // floodtext locks the headline's line breaks while it runs and re-reads them only when its
+  // container's width changes; the headline's size follows the window, so re-measure on any
+  // change of window width (not height: phones change it while scrolling).
+  const [fit, setFit] = useState(0);
+  useEffect(() => {
+    let last = window.innerWidth, timer = 0;
+    const on = () => {
+      if (window.innerWidth === last) return;
+      last = window.innerWidth;
+      clearTimeout(timer);
+      timer = window.setTimeout(() => setFit((k) => k + 1), 200);
+    };
+    addEventListener("resize", on);
+    return () => {
+      removeEventListener("resize", on);
+      clearTimeout(timer);
+    };
+  }, []);
 
 
   return (
-    <>
+    <div className="home">
       <section className="hero-wrap">
         <div className="hero-frame">
           <Suspense fallback={null}>
-            <BrailleSea />
+            <DottedSea />
           </Suspense>
           <div className="hero-guides" aria-hidden="true" />
           <div className="hero-content">
-            {latest && (
-              <p className="hero-badge">
-                <Laurel />
-                {t("home.badge").replace("{a}", String(latest.years[0])).replace("{b}", String(latest.years[latest.years.length - 1]))}
-                <Laurel flip />
-              </p>
-            )}
-            <h1>{accent(t("home.title"))}</h1>
+            <p className="hero-badge">
+              <Laurel />
+              {/* Each half stays whole on phones ("Arrecife Mesoamericano" never splits). */}
+              <span>
+                {t("home.badge")
+                  .split(" · ")
+                  .map((part, i) => (
+                    <span key={i}>
+                      {i > 0 && " · "}
+                      <span className="nw">{part}</span>
+                    </span>
+                  ))}
+              </span>
+              <Laurel flip />
+            </p>
+            {/* The headline breathes: a slow wave of weight (Inter is a variable font) and opacity
+                runs through it letter by letter (floodtext, Tulio's pick). Remounted per language and
+                window width, since the library rewraps the letters and locks the lines. Static with reduced motion. */}
+            <Suspense fallback={<h1>{accent(t("home.title"))}</h1>}>
+              <FloodText as="h1" key={`${lang}-${fit}`} effect={["wght", "opacity"]} amplitudes={{ wght: 120, opacity: 0.28 }} period={5} density={1.4} direction="diagonal-down">
+                {accent(t("home.title"))}
+              </FloodText>
+            </Suspense>
             <p className="hero-sub">{t("home.sub")}</p>
             <div className="hero-actions">
-              {HAS_WEBGL && (
-                <a className="btn primary" href={href.island("roatan")}>
-                  {t("home.ctaRoatan")}
-                </a>
-              )}
-              <a className="btn light" href={href.heat}>
-                {t("nav.heat")} <IconArrow />
+              {HAS_WEBGL &&
+                (() => {
+                  const cta = (
+                    <a className="btn light hero-cta" href={href.islands}>
+                      {t("home.ctaIslands")} <IconArrow />
+                    </a>
+                  );
+                  return LITE ? cta : <Suspense fallback={cta}><MetalRing>{cta}</MetalRing></Suspense>;
+                })()}
+              <a className="btn primary" href={href.learn}>
+                {t("home.ctaLearn")} <IconArrow />
               </a>
             </div>
           </div>
@@ -117,7 +159,6 @@ export function Home() {
               </div>
             </div>
           )}
-          <span className="art-credit">{t("home.artCredit")}</span>
         </div>
       </section>
     <main className="page">
@@ -128,7 +169,7 @@ export function Home() {
       )}
 
       <section className="section">
-        <figure className="figure">
+        <figure className="figure window">
           <p className="fig-title">
             <span className="fig-n">{t("fig")} 1</span> {t("home.fig1Title")}
           </p>
@@ -142,7 +183,7 @@ export function Home() {
         </figure>
       </section>
 
-      <section className="section">
+      <section className="section window">
         <div className="section-head">
           <h2>{accent(t("home.cardsTitle"))}</h2>
           <p>{t("home.cardsLead")}</p>
@@ -206,7 +247,7 @@ export function Home() {
 
       {latest && (
         <section className="section">
-          <figure className="figure">
+          <figure className="figure window">
             <p className="fig-title">
               <span className="fig-n">{t("fig")} 2</span> {t("home.stripesTitle")}
             </p>
@@ -226,7 +267,7 @@ export function Home() {
         </p>
       </section>
     </main>
-    </>
+    </div>
   );
 }
 

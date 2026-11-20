@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="1.7 0.9 28.6 28.6" role="img" aria-label="ReefQuest"><title>ReefQuest</title>
+<g transform="translate(0 0) scale(1)">
+    <path d="M3 24.5c3.2-1.7 6.3-1.7 9.5 0s6.3 1.7 9.5 0 6.3-1.7 7 0" fill="none" stroke="#0b1f3f" stroke-width="1.8" stroke-linecap="round"/>
+    <g fill="none" stroke="#0b1f3f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M16 22V9.5"/><path d="M16 17l-5.2-4.4V7.5"/><path d="M16 13.5l4.6-3.9V5"/><path d="M10.8 12.6l-3.1-1.6"/><path d="M20.6 9.6l2.6-1.2"/>
+    </g>
+  </g>
+</svg>

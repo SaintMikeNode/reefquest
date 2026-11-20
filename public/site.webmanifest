@@ -1,0 +1,28 @@
+{
+  "name": "ReefQuest",
+  "short_name": "ReefQuest",
+  "lang": "es",
+  "description": "Los arrecifes de coral de las Islas de la Bahía, Honduras, en 3D.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#061d44",
+  "theme_color": "#072352",
+  "icons": [
+    {
+      "src": "/app-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/app-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/maskable-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

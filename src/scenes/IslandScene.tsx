@@ -6,6 +6,7 @@ import type { MapControls as MapControlsImpl } from "three-stdlib";
 import { useLang, useT } from "../i18n";
 import { rampTable } from "../lib/alert";
 import { navGuard } from "../lib/router";
+import { transition } from "../ui/SceneTransition";
 import { loadHeatIndex, loadLatest, loadSceneMeta, loadYearGrid, type HeatIndex } from "../lib/data";
 import { MOBILE, pick, REDUCED_MOTION } from "../lib/device";
 import { AdaptiveQuality, DPR, FrameCap } from "./AdaptiveQuality";
@@ -16,10 +17,11 @@ import { FOG_CALM, FOG_SEVERE, SCENE_FOG, terrainMaterial, waterMaterial } from 
 import { clearLabels, LabelProjector, labelRef, setLabelAnchor } from "./labels";
 import { CANOPY_GREENS, canopyGeometry, h01, PALM_GREENS, palmGeometry, vegetationMaterial } from "./nature";
 import { heatRef, useScene } from "./sceneStore";
-import { openSite, pinList, SiteBoats } from "./siteBoats";
+import { openSite, SiteBoats, usePlaces } from "./siteBoats";
 import { buildGeometry, displayY, homeDistance, homeOffset, habitatAt, heightAt, loadTerrain, pickHeightfield, uvToLonLat, type TerrainData } from "./terrain";
 
 const RAMP = rampTable();
+const ISLAND_LABEL: Record<string, string> = { roatan: "Roatán", utila: "Utila", guanaja: "Guanaja", "cayos-cochinos": "Cayos Cochinos" };
 // The boat mode (detailed zone tiles, boat, reef props) loads only when someone sets sail.
 const BoatWorld = lazy(() => import("../boat/BoatWorld"));
 
@@ -28,11 +30,27 @@ export default function IslandScene({ island }: { island: string }) {
   const [td, setTd] = useState<TerrainData | null>(null);
   const [index, setIndex] = useState<HeatIndex | null>(null);
   const [err, setErr] = useState<string | null>(null);
-  const boat = useScene((s) => s.boat);
+  // The boat on screen follows the store through a transition: a water line rising when boarding, falling when
+  // coming back to the island (the curtain closes, the scene switches, it opens again).
+  const boatWanted = useScene((s) => s.boat);
+  const [boat, setShownBoat] = useState(boatWanted);
+  useEffect(() => {
+    if (boatWanted === boat) return;
+    const next = boatWanted;
+    transition(
+      next && !boat
+        ? { kind: "board", label: "R/V Arrecife", apply: () => setShownBoat(next) }
+        : !next
+          ? { kind: "leave", label: ISLAND_LABEL[island] ?? island, apply: () => setShownBoat(null) }
+          : { kind: "board", label: "R/V Arrecife", apply: () => setShownBoat(next) },
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [boatWanted]);
   const [zoneEntry, setZoneEntry] = useState<ZoneIndexEntry | null>(null);
   const lang = useLang((s) => s.lang);
 
   useMouseGuards();
+
   const [glKey, setGlKey] = useState(0); // bumped to rebuild the 3D view after a lost GPU context
 
   // Zone display name for the boat HUD.
@@ -368,7 +386,7 @@ function InstrumentGrid({ td }: { td: TerrainData }) {
 }
 
 function Pins({ td }: { td: TerrainData }) {
-  const sites = useMemo(() => pinList(td), [td]);
+  const sites = usePlaces(td);
   useEffect(() => {
     for (const s of sites) setLabelAnchor(`pin:${s.id}`, s.x, s.y, s.z);
     return () => clearLabels("pin:");
@@ -387,17 +405,19 @@ function Pins({ td }: { td: TerrainData }) {
 
 /** HTML pins positioned by LabelProjector. */
 function PinOverlay({ td }: { td: TerrainData }) {
+  const t = useT();
   const site = useScene((s) => s.site);
   const hover = useScene((s) => s.hover);
   const show = useScene((s) => s.layers.sites);
-  const sites = useMemo(() => pinList(td), [td]);
+  const sites = usePlaces(td);
   if (!show) return null;
   return (
     <div className="label-layer" aria-label="Sites">
       {sites.map((s) => (
         <div key={s.id} className="label-anchor" ref={labelRef(`pin:${s.id}`)}>
           <button
-            className={[site === s.id ? "pin on" : "pin", s.kind === "dive" ? "dive" : "", hover === s.id ? "hover" : ""].join(" ")}
+            className={[site === s.id ? "pin on" : "pin", s.kind === "story" ? "" : s.kind, hover === s.id ? "hover" : ""].join(" ")}
+            title={s.kind === "zone" ? t("boat.explore") : undefined}
             onClick={() => openSite(s)}
           >
             <span>{s.name}</span>
@@ -508,6 +528,9 @@ function CameraRig({ td }: { td: TerrainData }) {
       minDistance={12}
       maxDistance={Math.max(half * 1.6, homeDistance(td) * 1.15)}
       maxPolarAngle={Math.PI * 0.46}
+      // Mouse: drag moves, Shift (or Ctrl/Cmd) + drag rotates, wheel zooms. The right button does
+      // nothing: browsers with mouse gestures read a right-drag as Back. Touch is unchanged.
+      mouseButtons={{ LEFT: THREE.MOUSE.PAN, MIDDLE: THREE.MOUSE.DOLLY }}
       onChange={() => invalidate()}
     />
   );

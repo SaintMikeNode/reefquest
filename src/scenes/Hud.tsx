@@ -16,6 +16,7 @@ import { useScene } from "./sceneStore";
 import { fmtLat, fmtLon, SiteCard } from "./SiteCard";
 import { homeDistance, uvToLonLat, xzToUV, type TerrainData } from "./terrain";
 import { Timeline } from "./Timeline";
+import { useBottomInset } from "./useBottomInset";
 
 /** The boat zone containing a lon/lat, if any. */
 export function zoneFor(zones: ZoneIndexEntry[], lon: number, lat: number): ZoneIndexEntry | undefined {
@@ -42,7 +43,7 @@ export function Hud({ td, index }: { td: TerrainData; index: HeatIndex }) {
   const setBoat = useScene((s) => s.setBoat);
   const areaDhw = useScene((s) => s.areaDhw);
   const [showLayers, setShowLayers] = useState(false);
-  const [open, setOpen] = useState<SectionId>("layers");
+  const [open, setOpen] = useState<SectionId | null>("layers");
   const [zones, setZones] = useState<ZoneIndexEntry[]>([]);
   const [hint, setHint] = useState(() => {
     try {
@@ -144,7 +145,19 @@ export function Hud({ td, index }: { td: TerrainData; index: HeatIndex }) {
       </div>
 
       <aside className={showLayers ? "hud hud-left panel" : "hud hud-left panel collapsed"}>
-        <Section id="layers" title={t("scene.layers")} open={open} setOpen={setOpen}>
+        {/* Two tabs that are always visible: opening one closes the other; the open one closes on a second tap. */}
+        <div className="panel-tabs" role="tablist">
+          <button role="tab" aria-selected={open === "layers"} onClick={() => setOpen(open === "layers" ? null : "layers")}>
+            <IconLayers /> {t("scene.layers")}
+          </button>
+          {zones.length > 0 && (
+            <button role="tab" aria-selected={open === "boat"} onClick={() => setOpen(open === "boat" ? null : "boat")}>
+              <IconShip /> {t("boat.zones")}
+            </button>
+          )}
+        </div>
+        {open === "layers" && (
+          <div className="acc-body" role="tabpanel">
           {rows.map((r) => (
             <div key={r.k}>
               <button className="layer" aria-pressed={layers[r.k]} onClick={() => toggle(r.k)}>
@@ -162,9 +175,10 @@ export function Hud({ td, index }: { td: TerrainData; index: HeatIndex }) {
             {t("scene.modelNote")} {t("scene.exaggeration")} {td.meta.bathymetry_source !== "aca-bathymetry" && t("scene.depthModel")}{" "}
             <a href={href.about}>{t("scene.aboutData")}</a>
           </p>
-        </Section>
-        {zones.length > 0 && (
-          <Section id="boat" title={t("boat.zones")} open={open} setOpen={setOpen}>
+          </div>
+        )}
+        {open === "boat" && zones.length > 0 && (
+          <div className="acc-body" role="tabpanel">
             <p className="notes" style={{ margin: "0 0 4px" }}>
               {t("boat.zonesLead")}
             </p>
@@ -176,7 +190,7 @@ export function Hud({ td, index }: { td: TerrainData; index: HeatIndex }) {
                 </span>
               </button>
             ))}
-          </Section>
+          </div>
         )}
       </aside>
 
@@ -238,8 +252,10 @@ export function Hud({ td, index }: { td: TerrainData; index: HeatIndex }) {
         </aside>
       )}
 
+      {/* First-visit guide: above every other panel, on a dim backdrop (a click on it closes the guide). */}
+      {hint && <div className="hud hint-scrim" onClick={closeHint} aria-hidden="true" />}
       {hint && (
-        <div className="hud hint panel" role="dialog" aria-labelledby="guide-title">
+        <div className="hud hint panel" role="dialog" aria-modal="true" aria-labelledby="guide-title">
           <div>
             <div className="kicker">{td.meta.name}</div>
             <h2 id="guide-title">{t("scene.guideTitle")}</h2>
@@ -259,11 +275,12 @@ export function Hud({ td, index }: { td: TerrainData; index: HeatIndex }) {
         </div>
       )}
 
-      {!siteId && (
+      {/* The mouse controls card waits until the first-visit guide is closed (it covered the guide). */}
+      {!siteId && !hint && (
         <MouseGuide
           items={[
             { part: "left", label: t("scene.mouse.move"), how: t("scene.mouse.moveHow") },
-            { part: "right", label: t("scene.mouse.rotate"), how: t("scene.mouse.rotateHow") },
+            { part: "left", key: "Shift", label: t("scene.mouse.rotate"), how: t("scene.mouse.rotateHow") },
             { part: "wheel", label: t("scene.mouse.zoom"), how: t("scene.mouse.zoomHow") },
           ]}
         />
@@ -281,19 +298,7 @@ export function Hud({ td, index }: { td: TerrainData; index: HeatIndex }) {
  * as --tb on the scene, so the layers panel, site card and credits always stop above it. */
 function TimeBar({ children }: { children: ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const el = ref.current, root = el?.parentElement;
-    if (!el || !root) return;
-    const update = () => root.style.setProperty("--tb", `${Math.ceil(root.getBoundingClientRect().bottom - el.getBoundingClientRect().top)}px`);
-    const ro = new ResizeObserver(update);
-    ro.observe(el);
-    ro.observe(root);
-    update();
-    return () => {
-      ro.disconnect();
-      root.style.removeProperty("--tb");
-    };
-  }, []);
+  useBottomInset(ref, "--tb");
   return (
     <div ref={ref} className="hud timebar panel">
       {children}
@@ -313,7 +318,7 @@ export function HeatStatus({ dhw, prefix }: { dhw: number | null; prefix?: strin
       <i />
       <span>
         {prefix && <span className="pre">{prefix} · </span>}
-        <b>{t(`alert.${lv.key}`)}</b> · {fmtNum(dhw, lang)} {t("unit.dhw")}
+        <b>{t(`alert.${lv.key}`)}</b> · <span className="nw">{fmtNum(dhw, lang)} {t("unit.dhw")}</span>
         <span className="desc">{t(`alert.${lv.key}.desc`)}</span>
       </span>
     </div>
@@ -331,17 +336,3 @@ function Swatch({ colors }: { colors: string[] }) {
 }
 
 type SectionId = "layers" | "boat";
-function Section({ id, title, open, setOpen, children }: { id: SectionId; title: string; open: SectionId; setOpen: (s: SectionId) => void; children: ReactNode }) {
-  const isOpen = open === id;
-  return (
-    <div className="acc">
-      <button className="acc-head" aria-expanded={isOpen} onClick={() => setOpen(id)}>
-        <span className="kicker">{title}</span>
-        <svg viewBox="0 0 24 24" className="icon" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6" style={{ transform: isOpen ? "rotate(180deg)" : undefined }}>
-          <path d="M6 9l6 6 6-6" />
-        </svg>
-      </button>
-      {isOpen && <div className="acc-body">{children}</div>}
-    </div>
-  );
-}

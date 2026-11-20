@@ -1,8 +1,10 @@
 import { useFrame, useThree } from "@react-three/fiber";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
+import { loadZoneIndex, zoneName, type ZoneIndexEntry } from "../boat/zone";
 import { SITES } from "../content/sites";
+import { useLang } from "../i18n";
 import { useScene } from "./sceneStore";
 import { displayY, heightAt, lonLatToUV, uvToXZ, type TerrainData } from "./terrain";
 
@@ -14,20 +16,64 @@ import { displayY, heightAt, lonLatToUV, uvToXZ, type TerrainData } from "./terr
 // anchor (heave, pitch, roll, slow swing), lights up when the mouse is over it, and clicking it
 // opens the place like its pin does. Each stays about the same size on screen at any zoom.
 
-export type Pin = ReturnType<typeof pinList>[number];
-
-/** Dive-site anchor points for the pins (screen-space overlay) and the boats. */
-export function pinList(td: TerrainData) {
-  return SITES.filter((s) => s.island === td.meta.island).map((s) => {
-    const { u, v } = lonLatToUV(td, s.lon, s.lat);
-    const { x, z } = uvToXZ(td, u, v);
-    return { ...s, x, z, y: Math.max(displayY(heightAt(td, u, v)), 0) + (s.kind === "story" ? 9 : 4) };
-  });
+/**
+ * A clickable place on the island: a story or dive site (content/sites.ts), or a boat zone that has
+ * no site in it (every zone in pipeline/zones.json gets a place, so Utila and Guanaja have theirs).
+ */
+export interface Pin {
+  id: string;
+  name: string;
+  kind: "story" | "dive" | "zone";
+  lon: number;
+  lat: number;
+  date?: string;
+  x: number;
+  y: number;
+  z: number;
 }
 
-/** What clicking a pin or its boat does: select the place, fly there, jump to its date. */
+/** Story and dive-site anchor points for the pins (screen-space overlay) and the boats. */
+export function pinList(td: TerrainData): Pin[] {
+  return SITES.filter((s) => s.island === td.meta.island).map((s) => anchor(td, { ...s }));
+}
+function anchor(td: TerrainData, p: Omit<Pin, "x" | "y" | "z">): Pin {
+  const { u, v } = lonLatToUV(td, p.lon, p.lat);
+  const { x, z } = uvToXZ(td, u, v);
+  return { ...p, x, z, y: Math.max(displayY(heightAt(td, u, v)), 0) + (p.kind === "story" ? 9 : 4) };
+}
+
+const zoneCache = new Map<string, Promise<ZoneIndexEntry[]>>();
+const inZone = (z: ZoneIndexEntry, lon: number, lat: number) =>
+  Math.abs((lon - z.lon) * 111320 * Math.cos((lat * Math.PI) / 180)) < z.size_m[0] / 2 && Math.abs((lat - z.lat) * 110570) < z.size_m[1] / 2;
+
+/** All clickable places on this island: its sites, plus a place for each boat zone without one. */
+export function usePlaces(td: TerrainData): Pin[] {
+  const lang = useLang((s) => s.lang);
+  const island = td.meta.island;
+  const [zones, setZones] = useState<ZoneIndexEntry[]>([]);
+  useEffect(() => {
+    let alive = true;
+    if (!zoneCache.has(island)) zoneCache.set(island, loadZoneIndex(island).catch(() => []));
+    zoneCache.get(island)!.then((z) => alive && setZones(z));
+    return () => {
+      alive = false;
+    };
+  }, [island]);
+  return useMemo(() => {
+    const sites = pinList(td);
+    const empty = zones.filter((z) => !sites.some((s) => inZone(z, s.lon, s.lat)));
+    return [...sites, ...empty.map((z) => anchor(td, { id: `zone:${z.id}`, name: zoneName(z, lang), kind: "zone", lon: z.lon, lat: z.lat }))];
+  }, [td, zones, lang]);
+}
+
+/** What clicking a pin or its boat does: open the place (fly there, jump to its date), or, for a
+ * boat zone, head out on the research boat. */
 export function openSite(s: Pin) {
   const st = useScene.getState();
+  if (s.kind === "zone") {
+    st.setBoat({ zone: s.id.slice(5), lon: s.lon, lat: s.lat });
+    return;
+  }
   st.setSite(s.id);
   st.fly(s.x, s.z, s.kind === "story" ? 70 : 50);
   if (s.date) {
@@ -180,8 +226,8 @@ function bodyMaterial(color: string) {
 
 // Dev only: window.__rqBoatScale = 6 enlarges the boats to inspect them.
 const DEV_SCALE = () => (import.meta.env.DEV ? ((window as { __rqBoatScale?: number }).__rqBoatScale ?? 1) : 1);
-const COLORS = { story: "#ff9a7c", dive: "#5ff2ff" };
-const EDGE = { story: "#ffd2c2", dive: "#c8fbff" };
+const COLORS = { story: "#ff9a7c", dive: "#5ff2ff", zone: "#7dffb5" };
+const EDGE = { story: "#ffd2c2", dive: "#c8fbff", zone: "#d4ffe6" };
 const hash = (s: string) => {
   let h = 2166136261;
   for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619);
@@ -201,7 +247,7 @@ interface Parts {
 }
 
 export function SiteBoats({ td }: { td: TerrainData }) {
-  const sites = useMemo(() => pinList(td), [td]);
+  const sites = usePlaces(td);
   const geo = useMemo(() => {
     const hull = hullGeometry();
     return {
