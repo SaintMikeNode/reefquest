@@ -1,0 +1,16 @@
+{
+  "app.tagline": "Los arrecifes de coral de las Islas de la Bahía, Honduras",
+  "menu.prompt": "Toca una isla para explorar su arrecife.",
+  "menu.comingSoon": "Próximamente",
+  "menu.mainland": "Tierra firme de Honduras",
+  "menu.mapNote": "Mapa esquemático. Las costas reales llegarán pronto.",
+  "lang.switch": "English",
+  "lang.switchLabel": "Switch to English",
+  "scene.back": "Volver al mapa",
+  "scene.loading": "Cargando la isla…",
+  "scene.placeholder": "Escena 3D en construcción: pronto verás el terreno, el fondo marino y los hábitats del arrecife.",
+  "scene.modelNote": "Modelo basado en datos satelitales; no es una carta de navegación.",
+  "nowebgl.title": "Tu dispositivo no puede mostrar 3D",
+  "nowebgl.body": "Puedes seguir usando el mapa y las gráficas de estrés térmico.",
+  "footer.credits": "Datos y créditos (próximamente)"
+}

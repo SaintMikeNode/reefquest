@@ -1,0 +1,16 @@
+node_modules
+dist
+*.tsbuildinfo
+.DS_Store
+._*
+.wrangler
+.cloudflare/
+
+# Raw downloads for the data pipeline (NOAA CRW, Allen Coral Atlas, DEMs, source coral models).
+# Only the processed, compact outputs in public/data/ and public/models/ are committed.
+data/raw/
+
+# Python
+__pycache__/
+*.pyc
+.venv/

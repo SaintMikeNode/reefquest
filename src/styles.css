@@ -1,0 +1,57 @@
+:root {
+  --deep: #06324a;
+  --sea: #0b4a68;
+  --shallow: #1a7f9f;
+  --sand: #f2e3c6;
+  --coral: #ff7a5c;
+  --ink: #eaf6fb;
+  --muted: #a9cbd9;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: var(--ink);
+  background: var(--deep);
+}
+* { box-sizing: border-box; }
+html, body, #root { margin: 0; height: 100%; }
+button {
+  font: inherit;
+  color: var(--deep);
+  background: var(--sand);
+  border: 0;
+  border-radius: 999px;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+}
+button:focus-visible, .island:focus-visible { outline: 3px solid var(--coral); outline-offset: 2px; }
+
+.page { min-height: 100%; display: flex; flex-direction: column; max-width: 960px; margin: 0 auto; padding: 16px; }
+.top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+h1 { margin: 0; font-size: clamp(1.8rem, 6vw, 2.6rem); letter-spacing: -0.02em; }
+.tagline { margin: 4px 0 0; color: var(--muted); }
+.prompt { margin: 20px 0 10px; }
+.notice { background: var(--sea); border-left: 4px solid var(--coral); padding: 10px 14px; border-radius: 8px; margin-top: 16px; }
+.notice p { margin: 4px 0 0; }
+.foot { margin-top: auto; padding-top: 24px; color: var(--muted); font-size: 0.9rem; }
+
+.map { margin: 0; }
+.map svg { width: 100%; height: auto; display: block; }
+.map figcaption { color: var(--muted); font-size: 0.85rem; margin-top: 6px; }
+.map .sea { fill: var(--sea); }
+.map .mainland { fill: var(--muted); font-size: 18px; text-anchor: end; }
+.island { cursor: pointer; outline: none; }
+.island .halo { fill: var(--shallow); opacity: 0.55; transition: opacity 0.15s; }
+.island .dot { fill: var(--sand); }
+.island .name { fill: var(--ink); font-size: 24px; font-weight: 600; text-anchor: middle; }
+.island .badge { fill: var(--coral); font-size: 17px; text-anchor: middle; }
+.island:hover .halo { opacity: 0.9; }
+.island.soon { cursor: default; }
+.island.soon .halo { opacity: 0.25; }
+.island.soon .dot { fill: var(--muted); }
+
+.loading { height: 100%; display: grid; place-items: center; }
+.scene { position: fixed; inset: 0; }
+.scene-ui { position: absolute; top: 0; left: 0; right: 0; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 12px; pointer-events: none; }
+.scene-ui > * { pointer-events: auto; }
+.scene-ui h2 { margin: 0; text-shadow: 0 1px 4px #000a; }
+.scene-note { position: absolute; left: 12px; right: 12px; bottom: 12px; max-width: 520px; background: #06324acc; padding: 10px 14px; border-radius: 10px; }
+.scene-note p { margin: 0; }
+.scene-note .small { margin-top: 4px; font-size: 0.85rem; color: var(--muted); }

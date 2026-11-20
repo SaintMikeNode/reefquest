@@ -1,0 +1,16 @@
+{
+  "app.tagline": "The coral reefs of the Bay Islands, Honduras",
+  "menu.prompt": "Tap an island to explore its reef.",
+  "menu.comingSoon": "Coming soon",
+  "menu.mainland": "Honduran mainland",
+  "menu.mapNote": "Schematic map. Real coastlines are coming soon.",
+  "lang.switch": "Español",
+  "lang.switchLabel": "Cambiar a español",
+  "scene.back": "Back to the map",
+  "scene.loading": "Loading the island…",
+  "scene.placeholder": "3D scene under construction: soon you'll see the land, the seafloor and the reef habitats.",
+  "scene.modelNote": "Model based on satellite data; not a navigation chart.",
+  "nowebgl.title": "Your device can't show 3D",
+  "nowebgl.body": "You can still use the map and the heat-stress charts.",
+  "footer.credits": "Data and credits (coming soon)"
+}
