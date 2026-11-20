@@ -231,7 +231,7 @@ function YearChart({ series, index, year, on, names }: { series: IslandSeries; i
       const g = c.getContext("2d")!;
       g.scale(dpr, dpr);
       // Right margin fits the end-of-line island labels (short names on narrow screens).
-      g.font = "600 12.5px 'Source Sans 3 Variable', sans-serif";
+      g.font = "600 12.5px 'Inter Variable', sans-serif";
       const label = (id: string) => {
         const n = names.islands[id]?.name ?? id;
         return W < 520 ? n.replace(/^Cayos /, "C. ") : n;
@@ -242,7 +242,7 @@ function YearChart({ series, index, year, on, names }: { series: IslandSeries; i
       const ymax = Math.ceil((top * 1.1) / 4) * 4;
       const y = (v: number) => T + (1 - v / ymax) * (H - T - B);
       g.clearRect(0, 0, W, H);
-      g.font = "12.5px 'Source Sans 3 Variable', sans-serif";
+      g.font = "12.5px 'Inter Variable', sans-serif";
       // Bleaching season.
       const s0 = dayDiff(yi.first, `${year}-08-01`), s1 = dayDiff(yi.first, `${year}-10-31`);
       if (s1 > 0 && s0 < yi.days) {
@@ -293,7 +293,7 @@ function YearChart({ series, index, year, on, names }: { series: IslandSeries; i
       }
       ends.sort((a, b) => a.y - b.y);
       for (let i = 1; i < ends.length; i++) if (ends[i].y - ends[i - 1].y < 14) ends[i].y = ends[i - 1].y + 14;
-      g.font = "600 12.5px 'Source Sans 3 Variable', sans-serif";
+      g.font = "600 12.5px 'Inter Variable', sans-serif";
       for (const e of ends) {
         g.fillStyle = ISLAND_COLORS[e.id];
         g.fillText(label(e.id), W - R + 6, e.y + 4);

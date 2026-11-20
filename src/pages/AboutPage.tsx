@@ -127,7 +127,7 @@ export function AboutPage() {
           <h2>{accent(t("about.softwareTitle"))}</h2>
         </div>
         <p className="measure muted">
-          three.js, React, React Three Fiber, drei, zustand, Vite (MIT). Source Serif 4, Source Sans 3, IBM Plex Mono (SIL Open Font License). Google Earth Engine (noncommercial use). Python: xarray, rasterio, NumPy, SciPy. ReefQuest © 2026, MIT License.
+          three.js, React, React Three Fiber, drei, zustand, Vite (MIT). Inter, Instrument Serif, IBM Plex Mono (SIL Open Font License). Google Earth Engine (noncommercial use). Python: xarray, rasterio, NumPy, SciPy. ReefQuest © 2026, MIT License.
         </p>
       </section>
     </main>

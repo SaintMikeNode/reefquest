@@ -79,7 +79,7 @@ export function Timeline({ index, island }: { index: HeatIndex; island: string }
       g.fillStyle = "rgba(255,255,255,0.05)";
       g.fillRect(x(Math.max(s0, 0)), 0, x(Math.min(s1, days - 1)) - x(Math.max(s0, 0)), H - 13);
     }
-    g.font = "11px 'Source Sans 3 Variable', sans-serif";
+    g.font = "11px 'Inter Variable', sans-serif";
     for (const th of [4, 8, 12, 16]) {
       if (th > top) continue;
       g.fillStyle = "rgba(255,255,255,0.14)";

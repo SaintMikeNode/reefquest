@@ -58,7 +58,7 @@ export function Echogram() {
       }
       // Depth scale.
       g.fillStyle = "rgba(238,242,245,0.6)";
-      g.font = "10px 'Source Sans 3 Variable', sans-serif";
+      g.font = "10px 'Inter Variable', sans-serif";
       g.fillText("0", 3, 11);
       g.fillText(`${maxD} m`, 3, H - 3);
     };
