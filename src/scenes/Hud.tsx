@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { loadZoneIndex, zoneName, type ZoneIndexEntry } from "../boat/zone";
 import { SITES } from "../content/sites";
 import { fmtNum, rich, useL, useLang, useT } from "../i18n";
@@ -9,6 +9,7 @@ import { AlertChip } from "../ui/AlertChip";
 import { HeatKey } from "../ui/HeatKey";
 import { IconArrow, IconBack, IconCheck, IconHelp, IconHome, IconLayers, IconShip } from "../ui/Icons";
 import { LangToggle } from "../ui/LangToggle";
+import { MouseGuide } from "./MouseGuide";
 import { dhwAt } from "./heatLookup";
 import { BENTHIC, GEOMORPHIC } from "./materials";
 import { useScene } from "./sceneStore";
@@ -258,12 +259,45 @@ export function Hud({ td, index }: { td: TerrainData; index: HeatIndex }) {
         </div>
       )}
 
+      {!siteId && (
+        <MouseGuide
+          items={[
+            { part: "left", label: t("scene.mouse.move"), how: t("scene.mouse.moveHow") },
+            { part: "right", label: t("scene.mouse.rotate"), how: t("scene.mouse.rotateHow") },
+            { part: "wheel", label: t("scene.mouse.zoom"), how: t("scene.mouse.zoomHow") },
+          ]}
+        />
+      )}
       <div className="hud attribution">{t("scene.attribution")}</div>
 
-      <div className="hud timebar panel">
+      <TimeBar>
         <Timeline index={index} island={td.meta.island} />
-      </div>
+      </TimeBar>
     </>
+  );
+}
+
+/** The timeline panel. Its height (which changes with the window width and language) is published
+ * as --tb on the scene, so the layers panel, site card and credits always stop above it. */
+function TimeBar({ children }: { children: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = ref.current, root = el?.parentElement;
+    if (!el || !root) return;
+    const update = () => root.style.setProperty("--tb", `${Math.ceil(root.getBoundingClientRect().bottom - el.getBoundingClientRect().top)}px`);
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    ro.observe(root);
+    update();
+    return () => {
+      ro.disconnect();
+      root.style.removeProperty("--tb");
+    };
+  }, []);
+  return (
+    <div ref={ref} className="hud timebar panel">
+      {children}
+    </div>
   );
 }
 

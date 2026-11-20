@@ -6,6 +6,7 @@ import type { MapControls as MapControlsImpl } from "three-stdlib";
 import { SITES } from "../content/sites";
 import { useLang, useT } from "../i18n";
 import { rampTable } from "../lib/alert";
+import { navGuard } from "../lib/router";
 import { loadHeatIndex, loadLatest, loadSceneMeta, loadYearGrid, type HeatIndex } from "../lib/data";
 import { MOBILE, pick, REDUCED_MOTION } from "../lib/device";
 import { AdaptiveQuality, DPR, FrameCap } from "./AdaptiveQuality";
@@ -30,6 +31,8 @@ export default function IslandScene({ island }: { island: string }) {
   const boat = useScene((s) => s.boat);
   const [zoneEntry, setZoneEntry] = useState<ZoneIndexEntry | null>(null);
   const lang = useLang((s) => s.lang);
+
+  useMouseGuards();
 
   // Zone display name for the boat HUD.
   useEffect(() => {
@@ -93,6 +96,84 @@ export default function IslandScene({ island }: { island: string }) {
       {boat ? <BoatHud index={index} zoneName={zoneEntry ? zoneName(zoneEntry, lang) : ""} islandName={td.meta.name} /> : <Hud td={td} index={index} />}
     </div>
   );
+}
+
+/**
+ * Keeps the mouse from leaving the 3D view by accident.
+ * - Right-drag turns the camera, so the browser's context menu (whose first item is "Back") never
+ *   opens anywhere over the scene, panels included (links and text fields keep theirs).
+ * - A mouse's side "back" button pressed while dragging is ignored.
+ * - The boat is a history step: Back (button, gesture or key) returns from the boat to the island
+ *   instead of leaving the page, and leaving the boat with its own button consumes that step.
+ * - Some browsers (Edge with mouse gestures on, Opera, Vivaldi, gesture extensions) read "hold the
+ *   right button and drag left" as Back, and a page can't turn that off. A Back that arrives during
+ *   or just after a right-drag over the scene is undone (history.go(1)), and the router ignores the
+ *   hash change in between, so the view stays as it was.
+ */
+function useMouseGuards() {
+  useEffect(() => {
+    const inScene = (e: Event) => e.target instanceof Element && !!e.target.closest(".scene-root");
+    const menu = (e: MouseEvent) => {
+      if (inScene(e) && !(e.target as Element).closest("a, input, textarea, select")) e.preventDefault();
+    };
+    const side = (e: MouseEvent) => {
+      if ((e.button === 3 || e.button === 4) && e.buttons & 3 && inScene(e)) e.preventDefault();
+    };
+    const sideEvents = ["mousedown", "mouseup", "pointerdown", "pointerup", "auxclick"] as const;
+    document.addEventListener("contextmenu", menu, true);
+    for (const t of sideEvents) document.addEventListener(t, side, true);
+
+    // Right-drags over the scene: when the last one ended (ms), and whether one is under way.
+    let rightDown = false, moved = false, rightUpAt = -1e9, downX = 0, downY = 0;
+    const rDown = (e: PointerEvent) => {
+      if (e.button !== 2 || !inScene(e)) return;
+      rightDown = true;
+      moved = false;
+      downX = e.clientX;
+      downY = e.clientY;
+    };
+    const rMove = (e: PointerEvent) => {
+      if (rightDown && Math.hypot(e.clientX - downX, e.clientY - downY) > 8) moved = true;
+    };
+    const rUp = (e: PointerEvent) => {
+      if (e.button !== 2 || !rightDown) return;
+      rightDown = false;
+      if (moved) rightUpAt = performance.now();
+    };
+    const rightEvents = [["pointerdown", rDown], ["pointermove", rMove], ["pointerup", rUp]] as const;
+    for (const [t, fn] of rightEvents) window.addEventListener(t, fn, true);
+    const sceneHash = location.hash;
+
+    let pushed = false;
+    const unsub = useScene.subscribe((s, prev) => {
+      if (s.boat && !prev.boat && !pushed) {
+        history.pushState({ rqBoat: true }, "");
+        pushed = true;
+      } else if (!s.boat && prev.boat && pushed) {
+        pushed = false;
+        if ((history.state as { rqBoat?: boolean } | null)?.rqBoat) history.back();
+      }
+    });
+    const pop = (e: PopStateEvent) => {
+      if ((rightDown && moved) || performance.now() - rightUpAt < 1500) {
+        rightUpAt = -1e9;
+        if (location.hash !== sceneHash) navGuard.skip = 1;
+        history.go(1);
+        return;
+      }
+      if (!pushed || (e.state as { rqBoat?: boolean } | null)?.rqBoat) return;
+      pushed = false;
+      useScene.getState().setBoat(null);
+    };
+    window.addEventListener("popstate", pop);
+    return () => {
+      document.removeEventListener("contextmenu", menu, true);
+      for (const t of sideEvents) document.removeEventListener(t, side, true);
+      window.removeEventListener("popstate", pop);
+      for (const [t, fn] of rightEvents) window.removeEventListener(t, fn, true);
+      unsub();
+    };
+  }, []);
 }
 
 function World({ td, index }: { td: TerrainData; index: HeatIndex }) {

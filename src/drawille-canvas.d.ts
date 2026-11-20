@@ -12,5 +12,7 @@ declare module "drawille-canvas/index.js" {
     fill(): void;
     /** The frame as text: braille characters (U+2800–U+28FF), spaces for empty cells, rows ending in "\n". */
     toString(): string;
+    /** The underlying drawille canvas: one byte of braille bits per cell, cells row by row (width / 2 per row). */
+    _canvas: { set(x: number, y: number): void; clear(): void; content: Uint8Array };
   }
 }

@@ -18,10 +18,17 @@ export function parse(hash: string): Route {
   return { page: "home" };
 }
 
+/** Hash changes to ignore: set by the 3D view when it undoes an accidental Back (see IslandScene). */
+export const navGuard = { skip: 0 };
+
 export function useRoute(): Route {
   const [route, setRoute] = useState(() => parse(location.hash));
   useEffect(() => {
     const on = () => {
+      if (navGuard.skip > 0) {
+        navGuard.skip--;
+        return;
+      }
       setRoute(parse(location.hash));
       window.scrollTo(0, 0);
     };

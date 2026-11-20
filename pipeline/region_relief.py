@@ -9,7 +9,7 @@ Output: public/data/region.json
     "mainland": [[[lon, lat], ...], ...], "relief": {file, w, h, west, north, step} }
 and public/data/relief.bin (coarse elevation grid, int16 meters, rows north to south).
 
-Usage: ~/.venvs/reefquest/bin/python -W ignore region_relief.py   (needs Earth Engine auth)
+Usage: python -W ignore region_relief.py   (needs Earth Engine auth)
 """
 import json
 

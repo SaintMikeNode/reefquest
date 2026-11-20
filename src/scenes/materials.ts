@@ -81,6 +81,7 @@ export function terrainMaterial(habitatTex: THREE.Texture, heatTex: THREE.Textur
     uniforms: {
       ...heatUniforms(heatTex, geo, grid),
       uHabitat: { value: habitatTex },
+      uHabSize: { value: new THREE.Vector2((habitatTex.image as { width: number }).width, (habitatTex.image as { height: number }).height) },
       uBenthic: { value: benthicLUT },
       uShowHabitat: { value: 1 },
       uShowContours: { value: 1 },
@@ -149,6 +150,71 @@ export function terrainMaterial(habitatTex: THREE.Texture, heatTex: THREE.Textur
         b = mix(b, vec3(0.74, 0.58, 0.32), smoothstep(0.66, 0.78, n3) * 0.6);
         return b * (0.75 + 0.35 * smoothstep(0.3, 0.7, vn(p * 7.0 + 3.1)));
       }
+      // Habitat map as a chart rather than pixels. The Atlas classes (~34 m cells) can't be blended
+      // like colors, so the 3 × 3 cells around each point vote with smooth quadratic B-spline
+      // weights and the class with the most weight wins: boundaries become rounded curves instead
+      // of staircases. A slight noise warp keeps them from following the grid. "margin" is the
+      // winner's lead over the runner-up (0 on a boundary), used to antialias and outline edges.
+      uniform vec2 uHabSize;
+      float habAt(vec2 cell) { return floor(texture2D(uHabitat, (cell + 0.5) / uHabSize).r * 255.0 + 0.5); }
+      void habSmooth(vec2 uv, out float best, out float second, out float margin) {
+        vec2 t = uv * uHabSize - 0.5;
+        t += (vec2(vn(t * 0.45), vn(t * 0.45 + 17.3)) - 0.5) * 0.8;
+        vec2 c = floor(t + 0.5), f = t - c;
+        vec3 wx = vec3(0.5 * (0.5 - f.x) * (0.5 - f.x), 0.75 - f.x * f.x, 0.5 * (0.5 + f.x) * (0.5 + f.x));
+        vec3 wy = vec3(0.5 * (0.5 - f.y) * (0.5 - f.y), 0.75 - f.y * f.y, 0.5 * (0.5 + f.y) * (0.5 + f.y));
+        float cls[9];
+        float w[9];
+        for (int j = 0; j < 3; j++)
+          for (int i = 0; i < 3; i++) {
+            cls[j * 3 + i] = habAt(c + vec2(float(i - 1), float(j - 1)));
+            w[j * 3 + i] = wx[i] * wy[j];
+          }
+        best = cls[4];
+        second = -1.0;
+        float bw = -1.0, sw = 0.0;
+        for (int k = 0; k < 9; k++) {
+          float s = 0.0;
+          for (int m = 0; m < 9; m++) s += abs(cls[m] - cls[k]) < 0.5 ? w[m] : 0.0;
+          if (s > bw + 1e-5) {
+            if (abs(cls[k] - best) > 0.5) { second = best; sw = max(bw, 0.0); }
+            best = cls[k];
+            bw = s;
+          } else if (abs(cls[k] - best) > 0.5 && s > sw) {
+            second = cls[k];
+            sw = s;
+          }
+        }
+        margin = second < 0.0 ? 1.0 : bw - sw;
+      }
+      vec3 habColor(float cls, vec3 water) { return cls < 0.5 ? water : texture2D(uBenthic, vec2((cls + 0.5) / 32.0, 0.5)).rgb * 0.95; }
+      // Chart patterns per class in world space (scene units are 100 m), antialiased and faded out
+      // with distance before they can shimmer: stipple on coral, hatching on seagrass, cross-hatch
+      // on rock, scattered dots on rubble, a fine grain on sand, mottling on microalgal mats.
+      float habPattern(float cls, vec2 p) {
+        vec2 q = p * 7.0;
+        float fw = max(fwidth(q.x), 1e-4);
+        float fade = 1.0 - smoothstep(0.12, 0.38, fw);
+        if (fade <= 0.0) return 0.0;
+        float ink = 0.0;
+        if (cls > 14.5 && cls < 15.5) {
+          vec2 g = q + vec2(0.5 * floor(q.y), 0.0);
+          ink = 1.0 - smoothstep(0.17, 0.17 + fw * 1.5, length(fract(g) - 0.5));
+        } else if (cls > 13.5 && cls < 14.5) {
+          ink = 1.0 - smoothstep(0.08, 0.08 + fw * 1.5, abs(fract((q.x + q.y) * 0.8) - 0.5));
+        } else if (cls > 12.5 && cls < 13.5) {
+          ink = max(1.0 - smoothstep(0.06, 0.06 + fw * 1.5, abs(fract((q.x + q.y) * 0.6) - 0.5)),
+                    1.0 - smoothstep(0.06, 0.06 + fw * 1.5, abs(fract((q.x - q.y) * 0.6) - 0.5)));
+        } else if (cls > 11.5 && cls < 12.5) {
+          vec2 i = floor(q * 0.8);
+          ink = step(0.62, h21(i)) * (1.0 - smoothstep(0.14, 0.14 + fw * 1.5, length(fract(q * 0.8) - 0.5)));
+        } else if (cls > 17.5) {
+          ink = smoothstep(0.55, 0.75, vn(q * 0.7)) * 0.7;
+        } else if (cls > 10.5) {
+          ink = step(0.86, h21(floor(q * 2.2))) * 0.5;
+        }
+        return ink * fade;
+      }
       float caustic(vec2 p, float t) {
         vec2 q = p * 0.9;
         float a = sin(q.x * 1.7 + sin(q.y * 1.3 + t * 0.7) * 1.4 + t);
@@ -183,10 +249,22 @@ export function terrainMaterial(habitatTex: THREE.Texture, heatTex: THREE.Textur
           vec4 hab = texture2D(uHabitat, vUv);
           float benthic = floor(hab.r * 255.0 + 0.5);
           float geo = floor(hab.g * 255.0 + 0.5);
-          if (uShowHabitat > 0.5 && benthic > 0.5) {
-            // Classified map: Allen Coral Atlas legend colors, dimmer with depth.
-            vec3 hc = texture2D(uBenthic, vec2((benthic + 0.5) / 32.0, 0.5)).rgb;
-            base = mix(base, hc * 0.95, 0.78 * (1.0 - smoothstep(4.0, 22.0, d) * 0.45));
+          if (uShowHabitat > 0.5 && d < 60.0) {
+            // Classified map: Allen Coral Atlas legend colors on smooth shapes, dimmer with depth,
+            // with a fine darker line where two habitats meet and a light pattern inside each.
+            float best, second, margin;
+            habSmooth(vUv, best, second, margin);
+            if (best > 0.5 || second > 0.5) {
+              float aa = max(fwidth(margin), 1e-4);
+              vec3 c1 = habColor(best, base), c2 = habColor(second < 0.0 ? best : second, base);
+              vec3 hc = mix(mix(c1, c2, 0.5), c1, smoothstep(0.0, aa * 1.5, margin));
+              if (best > 0.5) hc *= 1.0 - 0.16 * habPattern(best, vWorld.xz);
+              float line = (1.0 - smoothstep(aa * 0.6, aa * 2.2, margin)) * step(-0.5, second);
+              hc = mix(hc, hc * 0.55, line * 0.7);
+              // (Where the Atlas has no class, habColor is the water itself, so the map's outer edge
+              // blends into the sea.)
+              base = mix(base, hc, 0.82 * (1.0 - smoothstep(4.0, 22.0, d) * 0.45));
+            }
           } else if (benthic > 0.5 && d < 30.0) {
             // Natural view: the bottom through clear water (more water color with depth).
             vec3 nb = naturalBottom(benthic, vWorld.xz);

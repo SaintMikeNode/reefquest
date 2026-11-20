@@ -13,6 +13,7 @@ import { fmtLat, fmtLon, SiteCard } from "../scenes/SiteCard";
 import { AlertChip } from "../ui/AlertChip";
 import { IconBack, IconCast, IconCheck, IconDive, IconSurface } from "../ui/Icons";
 import { LangToggle } from "../ui/LangToggle";
+import { MouseGuide } from "../scenes/MouseGuide";
 import { useBoat } from "./boatStore";
 import { Echogram } from "./Echogram";
 
@@ -327,7 +328,19 @@ export function BoatHud({ index, zoneName, islandName }: { index: HeatIndex; zon
           )}
         </div>
         )}
-        <div className="controls-hint">{under ? "" : TOUCH ? t("boat.hintTouch") : t("boat.hintKeys")}</div>
+        <div className="controls-hint">
+          {!under && !TOUCH && (
+            <MouseGuide
+              inline
+              items={[
+                { part: "left", label: t("boat.mouse.look"), how: t("boat.mouse.lookHow") },
+                { part: "left", label: t("boat.mouse.sail"), how: t("boat.mouse.sailHow") },
+                { part: "wheel", label: t("scene.mouse.zoom"), how: t("scene.mouse.zoomHow") },
+              ]}
+            />
+          )}
+          {under ? "" : TOUCH ? t("boat.hintTouch") : t("boat.hintKeys")}
+        </div>
         <div className="boat-actions">
         <button className="hbtn cast-btn" aria-pressed={under} onClick={() => useBoat.setState({ under: !under })}>
           {under ? <IconSurface /> : <IconDive />}

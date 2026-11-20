@@ -297,7 +297,7 @@ ol.caveats li { margin: 0 0 12px; padding-left: 4px; }
 .tools { top: 18px; right: 18px; display: flex; gap: 6px; align-items: center; }
 
 /* Left column: map layers */
-.hud-left { top: 262px; left: 22px; width: 288px; max-height: calc(100% - 262px - 160px); overflow-y: auto; overflow-x: hidden; padding: 4px 16px 6px; display: flex; flex-direction: column; }
+.hud-left { top: 262px; left: 22px; width: 288px; max-height: calc(100% - 262px - var(--tb, 160px) - 14px); overflow-y: auto; overflow-x: hidden; padding: 4px 16px 6px; display: flex; flex-direction: column; }
 .acc + .acc { border-top: 1px solid var(--hair); }
 .acc-head { width: 100%; display: flex; justify-content: space-between; align-items: center; background: none; border: 0; color: var(--hud-text); padding: 12px 0 10px; }
 .acc-head .kicker { color: var(--hud-text); }
@@ -347,7 +347,7 @@ ol.caveats li { margin: 0 0 12px; padding-left: 4px; }
 .notes { font-size: 12px; line-height: 1.45; color: var(--hud-faint); }
 
 /* Site / story card */
-.site-card { top: 72px; right: 18px; width: min(392px, calc(100% - 36px)); padding: 18px 20px 16px; max-height: calc(100% - 290px); overflow-y: auto; overflow-x: hidden; background: var(--glass-solid); }
+.site-card { top: 72px; right: 18px; width: min(392px, calc(100% - 36px)); padding: 18px 20px 16px; max-height: calc(100% - 72px - var(--tb, 160px) - 14px); overflow-y: auto; overflow-x: hidden; background: var(--glass-solid); }
 .site-card h2 { color: var(--white); font-size: 24px; line-height: 1.12; margin: 6px 0 12px; letter-spacing: -0.03em; }
 .site-card p { color: #d5dee6; line-height: 1.6; font-size: 15px; margin: 0 0 10px; }
 .site-card .card-head { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
@@ -398,7 +398,7 @@ div.pin { pointer-events: none; }
 
 .scalebar { display: flex; align-items: flex-end; gap: 6px; font-size: 11.5px; color: var(--hud-muted); font-variant-numeric: tabular-nums; }
 .scalebar i { display: block; height: 5px; border: 1px solid var(--hud-text); border-top: 0; }
-.attribution { right: 22px; bottom: 166px; font-size: 11px; color: rgba(238, 242, 245, 0.62); text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6); pointer-events: none; text-align: right; }
+.attribution { right: 22px; bottom: calc(var(--tb, 160px) + 8px); font-size: 11px; color: rgba(238, 242, 245, 0.62); text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6); pointer-events: none; text-align: right; }
 
 /* ---------- Boat HUD ---------- */
 .heading-tape { top: 18px; left: 50%; transform: translateX(-50%); width: 340px; display: grid; justify-items: center; gap: 4px; pointer-events: none; }
@@ -451,10 +451,10 @@ div.pin { pointer-events: none; }
   .back-btn { margin-top: 8px; padding: 6px 11px 6px 8px; font-size: 13.5px; }
   .tools { top: 10px; right: 10px; gap: 4px; }
   .hide-sm { display: none !important; }
-  .hud-left { top: auto; bottom: 156px; left: 8px; right: 8px; width: auto; max-height: 46vh; }
+  .hud-left { top: auto; bottom: calc(var(--tb, 148px) + 8px); left: 8px; right: 8px; width: auto; max-height: min(46vh, calc(100% - var(--tb, 148px) - 120px)); }
   .hud-left.collapsed { display: none; }
   .hud-right.readout-panel { display: none; }
-  .site-card { top: auto; bottom: 156px; right: 8px; left: 8px; width: auto; max-height: 52vh; }
+  .site-card { top: auto; bottom: calc(var(--tb, 148px) + 8px); right: 8px; left: 8px; width: auto; max-height: min(52vh, calc(100% - var(--tb, 148px) - 120px)); }
   .timebar { left: 8px; right: 8px; bottom: 8px; grid-template-columns: minmax(0, 1fr); padding: 8px 10px; }
   .timebar .now { justify-content: flex-start; }
   .timebar .date { font-size: 17px; }
@@ -587,3 +587,22 @@ div.pin { pointer-events: none; }
 .page-band-head { position: relative; isolation: isolate; }
 .page-band-head::before { content: ""; position: absolute; inset: 0 calc(50% - 50vw); background: linear-gradient(180deg, var(--brand) 0%, #0a4fc0 46%, var(--deep) 100%); z-index: -1; }
 .page-band-head .eyebrow { color: #d6e6ff; }
+
+/* Mouse controls guide (computers only), bottom right above the timeline or the boat's controls. */
+.mouse-guide { right: 22px; bottom: calc(var(--tb, 70px) + 30px); padding: 10px 36px 10px 14px; }
+.mouse-guide ul { list-style: none; margin: 0; padding: 0; display: flex; gap: 18px; }
+.mouse-guide li { display: flex; align-items: center; gap: 8px; font-size: 12px; line-height: 1.3; color: var(--hud-muted); }
+.mouse-guide li span { max-width: 118px; }
+.mouse-guide li b { display: block; color: var(--hud-text); font-size: 13px; font-weight: 600; }
+.mouse-guide svg { color: var(--hud-text); flex: none; }
+.mg-close { position: absolute; top: 6px; right: 6px; width: 24px; height: 24px; display: grid; place-items: center; padding: 0; background: none; border: 0; border-radius: 999px; color: var(--hud-faint); cursor: pointer; }
+.mg-close:hover, .mg-close:focus-visible { color: var(--hud-text); background: rgba(255, 255, 255, 0.1); }
+.mg-close svg { width: 13px; height: 13px; }
+@media (max-width: 760px), (pointer: coarse) { .mouse-guide { display: none; } }
+.mouse-guide.inline { position: relative; right: auto; bottom: auto; display: inline-block; margin: 0 auto 8px; text-align: left; text-shadow: none; }
+
+/* Panels catch the pointer as a whole (not just their text), so the map under their gaps doesn't
+   react. The cursor readout is the exception: it is display only and lets the pointer through
+   entirely, so it keeps reading the map beneath instead of flickering as it resizes. */
+.hud.panel { pointer-events: auto; }
+.hud.readout-panel, .hud.readout-panel * { pointer-events: none; }

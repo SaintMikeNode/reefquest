@@ -32,10 +32,11 @@ dive shops, visitors. **The full spec is `docs/HANDOFF.md`; read it before plann
 - `npm run build`: typecheck + production build (`.cloudflare/output/v0/`)
 - `npm run typecheck`
 
-Node 24 (`.nvmrc` / `.node-version` / `engines`, matches Workers Builds). On this Mac it is keg-only
-from Homebrew: prefix commands with `PATH="/opt/homebrew/opt/node@24/bin:$PATH"`. npm 11 install
-scripts are allow-listed in `package.json` (`allowScripts`). The repo lives on an exFAT drive, so macOS
-writes `._*` files; they are git-ignored and `scripts/clean-appledouble.mjs` strips them from builds.
+Node 24 (`.nvmrc` / `.node-version` / `engines`, matches Workers Builds); `node` and `npm` must be
+on the PATH. npm 11+ install scripts are allow-listed in `package.json` (`allowScripts`).
+The repo must work on any computer (Tulio uses both a Mac and a Windows PC): no absolute paths,
+no OS-specific tools or scripts in the build, and `.gitattributes` keeps text files LF everywhere.
+Machine setup (Node install, Python env location) belongs outside the repo.
 
 ## Stack
 
@@ -55,15 +56,21 @@ island, the 42-year heat strip). Data sections and the 3D views stay on deep blu
 `--abyss`) so figures keep contrast; figures are rounded cards (`.figure`, `--card` radius); inner
 pages open with a blue title band (`.page-band-head`). History: beige/light pages were rejected
 ("this is a sea project"), and everything must stay consistent across pages and HUDs.
-The hero background is ours, not the reference's: `src/ui/BrailleSea.tsx` draws the real terrain
-(GEBCO, `public/data/relief.bin`) as a ridgeline landscape in braille dots, looking north from the
-shelf south of the islands, so Roatán is a white skyline with Guanaja's peak to the right. Lines
+The hero background is ours, not the reference's: `src/ui/BrailleSea.tsx` is a 3D drone view of
+Roatán in braille dots (Tulio asked for a "3D drone visualization"; a first braille version, a still
+ridgeline skyline with a satellite crossing, was rejected as not making sense). The model is
+Roatán's own heightmap (`public/data/roatan/terrain.png`, the island scene's file, so the visit to
+the island is cached) set into the regional GEBCO grid (`public/data/relief.bin`), drawn as
+east–west transects every 500 m (white land, cyan reef shelf, blue slope and deep, sun-shaded) plus
+OSM coastlines. A perspective camera slides along Roatán's south side and swings from side to
+side; each frame is projected, hidden lines are removed with a per-column depth buffer, and lines
 are rasterized into braille cells by `drawille-canvas` (Tulio asked for this library; import
 `drawille-canvas/index.js`, because the package's `browser` entry is a plain DOM canvas, and keep
-the `Buffer.alloc` shim) and the cells are painted as dots on a `<canvas>` so no device depends on
-braille fonts. A satellite crosses the sky and lights the strip under it; weak devices and
-reduced-motion get a still frame. The skyline is anchored to the gap between `.hero-actions` and
-the cards. A first version with a painted sky-and-reef illustration was rejected as too close to
+the `Buffer.alloc` shim); the cells are painted as dots on a `<canvas>` so no device depends on
+braille fonts. ~6–8 ms a frame on a desktop (30 fps; phones 15 fps, sparser transects); lite
+devices skip the detailed heightmap and, like reduced motion, get a still frame. The camera target
+is anchored to the gap between `.hero-actions` and the cards. Dev: `window.__rqHeroT = <s>` holds
+the flight at a moment, `window.__rqHeroMs` is the last frame's cost. A first version with a painted sky-and-reef illustration was rejected as too close to
 the reference: don't bring back painted scenery.
 Tokens and all CSS in `src/styles.css`. Fonts, self-hosted via @fontsource:
 Inter (text, headlines), Instrument Serif (italic accents, big numerals), IBM Plex Mono (data).
@@ -97,11 +104,16 @@ place name gives NOAA's alert wording. All of it follows the selected date and i
 - `src/scenes/`: the 3D island scene. `terrain.ts` (decode heightmap, mesh, display scale: relief
   ×4 and depths beyond 40 m compressed; heightfield ray-march picking; lat/lon via the pipeline's
   affine fit), `materials.ts` (terrain shader: hillshade, natural seafloor colors by habitat with surf
-  on the reef crest, or the Atlas classification when the "Habitat map" layer is on; contours,
+  on the reef crest, or the Atlas classification when the "Habitat map" layer is on, drawn as a chart rather than pixels: the 3 × 3 cells around each point vote with B-spline weights so class edges are rounded curves, with fine outlines and per-class patterns that fade with distance; contours,
   caustics; water shader: NOAA 5 km cells with hairline edges), `IslandScene.tsx` (Canvas with `frameloop="demand"`, pins, camera
   fly-to), `nature.ts` (instanced palms and forest canopy on land, by elevation and habitat),
   `Hud.tsx` (title plate, layers with inline keys, boat zones, readout, numbered first-visit guide
-  `rq-guide-1`), `SiteCard.tsx`, `Timeline.tsx` (year chips, DHW chart, scrubber,
+  `rq-guide-1`, the timeline whose height is published as `--tb` so panels stop above it),
+  `MouseGuide.tsx` (computers only: mouse controls card, closable, `rq-mouse-guide`; inline in the
+  boat bar), mouse guards in `IslandScene.tsx` (no context menu over the 3D view, side buttons
+  ignored mid-drag, the boat is a history step so Back leaves the boat, not the page, and a Back
+  that arrives during or right after a right-drag (browser mouse gestures) is undone via `navGuard`
+  in `router.ts`; the cursor readout panel is click-through so it doesn't flicker), `SiteCard.tsx`, `Timeline.tsx` (year chips, DHW chart, scrubber,
   playback), `sceneStore.ts`.
 - `src/boat/`: the research-boat mode (lazy chunk, ~21 KB gz). `zone.ts` (detailed zone tiles: 10 m
   relief, 5 m habitat, meters as scene units, depths beyond 60 m compressed), `boatMaterials.ts`
@@ -135,9 +147,9 @@ place name gives NOAA's alert wording. All of it follows the selected date and i
   `guanaja/`, `cayos-cochinos/`: terrain.png, habitat.png, meta.json, `zones/` for boat tiles).
   To refresh heat: `crw_download.py --all` (skips years already downloaded; PacIOOS is slow, ~3–6 min
   a year) → `heat_products.py` → restart the dev server.
-- `pipeline/`: Python data scripts (see `pipeline/README.md`). Python env is `~/.venvs/reefquest`
-  (internal disk; the exFAT drive breaks installs), managed with `uv`. Raw downloads go to
-  `data/raw/` (git-ignored). Heat data comes from the PacIOOS ERDDAP (`dhw_5km`; CoastWatch
+- `pipeline/`: Python data scripts (see `pipeline/README.md`). The committed `public/data/` is
+  complete; the site never needs the pipeline or the raw downloads. Raw downloads go to
+  `data/raw/` (git-ignored, not kept: a script that needs them downloads them again). Heat data comes from the PacIOOS ERDDAP (`dhw_5km`; CoastWatch
   redirects there). Earth Engine project: `reefquest`.
 - `docs/`: the handoff/spec and phase reports (`docs/phase0/REPORT.md`, `docs/phase1/REPORT.md`
   with the boat, the two redesign passes and screenshots).
@@ -187,6 +199,6 @@ assets via `cloudflare.config.ts` (SPA fallback). Code is on GitHub at `saintmik
 other branch only uploads a preview version with the branch name as its alias (trigger "Deploy
 non-production branches"); production is unchanged. Check builds with `npx cf builds list
 --external-script-id <worker tag>` (tag from `npx cf workers scripts search --name reefquest`).
-Manual fallback, only if a build is broken or Tulio asks: `npm run build` (it strips the `._*` files
-macOS writes on this drive), then `npx cf deploy --prebuilt`.
+Manual fallback, only if a build is broken or Tulio asks: `npm run build`, then
+`npx cf deploy --prebuilt`.
 Never push (and so never deploy) unless Tulio says so in that moment.

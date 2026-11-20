@@ -12,7 +12,7 @@ import { IconArrow } from "../ui/Icons";
 import { Sparkline } from "../ui/Sparkline";
 import { HAS_WEBGL } from "../webgl";
 
-// The braille seafloor (and the drawille library) load after the first paint.
+// The braille drone view (and the drawille library) load after the first paint.
 const BrailleSea = lazy(() => import("../ui/BrailleSea"));
 
 export function Home() {

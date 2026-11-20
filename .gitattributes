@@ -1,0 +1,7 @@
+# Same line endings on every computer: text files are stored and checked out with LF.
+* text=auto eol=lf
+
+# Binary data and images: never touch them.
+*.png binary
+*.jpg binary
+*.bin binary

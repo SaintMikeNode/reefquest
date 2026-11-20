@@ -4,19 +4,25 @@ Python scripts that turn open datasets into the compact files the site serves fr
 and `public/models/`. Raw downloads go to `data/raw/` (git-ignored). Phase 0 findings:
 `docs/phase0/REPORT.md`.
 
+**You don't need this to run or build the site.** Everything the site uses is already committed in
+`public/data/`. The pipeline is only for refreshing or adding data. Raw downloads aren't kept: a
+script that needs them downloads them again into `data/raw/`. Scripts that read an Allen Coral Atlas
+package (`terrain.py`, `zone_tiles.py` for Atlas bathymetry) need that package downloaded again from the
+Atlas portal first.
+
 ## Setup
 
-The Python environment lives on the Mac's internal disk, not in the repo: the repo is on an exFAT
-drive, where macOS writes `._*` files that break package installs.
+Python 3.12 in a virtual environment (any location; `.venv/` in the repo root is git-ignored). With
+[uv](https://docs.astral.sh/uv/), from the repo root:
 
 ```bash
-brew install uv
-uv venv ~/.venvs/reefquest --python 3.12
-uv pip install --python ~/.venvs/reefquest/bin/python -r pipeline/requirements.txt
+uv venv .venv --python 3.12
+uv pip install --python .venv -r pipeline/requirements.txt
 ```
 
-Run scripts from the `pipeline/` folder with `~/.venvs/reefquest/bin/python <script>.py`.
-Earth Engine needs a one-time `~/.venvs/reefquest/bin/earthengine authenticate` (Cloud project `reefquest`).
+Activate it (`source .venv/bin/activate` on macOS/Linux, `.venv\Scripts\activate` on Windows), then
+run scripts from the `pipeline/` folder with `python <script>.py`.
+Earth Engine needs a one-time `earthengine authenticate` (Cloud project `reefquest`).
 
 ## Scripts
 
