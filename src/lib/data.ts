@@ -69,8 +69,12 @@ export interface Region {
   levels: number[];
   contours: Record<string, number[][][]>;
   mainland: number[][][];
+  /** Coarse elevation grid (land and seafloor), rows north to south: see loadRelief(). */
+  relief?: { file: string; w: number; h: number; west: number; north: number; step: number };
 }
 export const loadRegion = () => get<Region>("/data/region.json");
+/** Elevation in meters (int16) for the grid described by Region.relief. */
+export const loadRelief = () => get<Uint8Array>("/data/relief.bin", "bin").then((b) => new Int16Array(b.buffer, b.byteOffset, b.byteLength >> 1));
 export const loadSceneMeta = (id: string) => get<SceneMeta>(`/data/${id}/meta.json`);
 
 export interface GeoJSON {

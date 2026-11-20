@@ -46,8 +46,8 @@ Chunks: `index` (top bar, home map, cards; keep it small, ~80 KB gz) → `engine
 `#/island/roatan`, `#/heat`, `#/learn`, `#/about` (`src/lib/router.ts`).
 
 Design (third direction, from a reference Tulio chose: the FlowOS Framer template; he wants the
-site to stop looking AI-made). One confident ocean blue (`--brand`), a painted nature scene in a
-rounded white-bordered "window" for the home hero, headlines that pair bold Inter with an italic
+site to stop looking AI-made). One confident ocean blue (`--brand`), a rounded white-bordered
+"window" for the home hero, headlines that pair bold Inter with an italic
 Instrument Serif accent (mark the accent words with `*…*` in the i18n string and render with
 `accent()`), pill buttons (`.btn.primary` blue, `.btn.light` white), hairline guides with nodes,
 and white data cards (`.card`) sitting on the artwork that show real data (today's alert per
@@ -55,9 +55,17 @@ island, the 42-year heat strip). Data sections and the 3D views stay on deep blu
 `--abyss`) so figures keep contrast; figures are rounded cards (`.figure`, `--card` radius); inner
 pages open with a blue title band (`.page-band-head`). History: beige/light pages were rejected
 ("this is a sea project"), and everything must stay consistent across pages and HUDs.
-The hero artwork is original and procedural: `scripts/hero_art.py` paints it (sky, island,
-waterline, reef) into `public/img/hero-reef.webp` (+ `-1200`); rerun it to change the scene, never
-swap in third-party art. Tokens and all CSS in `src/styles.css`. Fonts, self-hosted via @fontsource:
+The hero background is ours, not the reference's: `src/ui/BrailleSea.tsx` draws the real terrain
+(GEBCO, `public/data/relief.bin`) as a ridgeline landscape in braille dots, looking north from the
+shelf south of the islands, so Roatán is a white skyline with Guanaja's peak to the right. Lines
+are rasterized into braille cells by `drawille-canvas` (Tulio asked for this library; import
+`drawille-canvas/index.js`, because the package's `browser` entry is a plain DOM canvas, and keep
+the `Buffer.alloc` shim) and the cells are painted as dots on a `<canvas>` so no device depends on
+braille fonts. A satellite crosses the sky and lights the strip under it; weak devices and
+reduced-motion get a still frame. The skyline is anchored to the gap between `.hero-actions` and
+the cards. A first version with a painted sky-and-reef illustration was rejected as too close to
+the reference: don't bring back painted scenery.
+Tokens and all CSS in `src/styles.css`. Fonts, self-hosted via @fontsource:
 Inter (text, headlines), Instrument Serif (italic accents, big numerals), IBM Plex Mono (data).
 Tables stack into label/value rows on phones; **no horizontally scrolling boxes** anywhere (check
 pages at 375 px). Heat colors follow NOAA's alert scale (`src/lib/alert.ts`); surveyed seafloor
@@ -122,7 +130,7 @@ place name gives NOAA's alert wording. All of it follows the selected date and i
 - `src/scenes/labels.tsx`: screen-space labels (one projector + plain DOM), used instead of drei
   `Html` (which threw removeChild errors on unmount with React 19).
 - `public/data/`: pipeline outputs (committed): `islands.json/.geojson`, `region.json` (GEBCO
-  contours + mainland coast), `heat/` (index, latest, per-island daily series, `grid/<year>.bin`;
+  contours + mainland coast) and `relief.bin` (coarse GEBCO elevation grid for the home hero), `heat/` (index, latest, per-island daily series, `grid/<year>.bin`;
   all 42 NOAA years, 1985 → 2026-11-18), and one folder per island (`roatan/`, `utila/`,
   `guanaja/`, `cayos-cochinos/`: terrain.png, habitat.png, meta.json, `zones/` for boat tiles).
   To refresh heat: `crw_download.py --all` (skips years already downloaded; PacIOOS is slow, ~3–6 min

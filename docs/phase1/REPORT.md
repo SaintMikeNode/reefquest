@@ -168,8 +168,11 @@ Tulio pointed to the FlowOS Framer template as the style to follow, to stop the 
 AI-made. What was taken from it, translated to ReefQuest:
 
 - one confident ocean blue as the brand color, framing the page;
-- a painted scene in a rounded, white-bordered window: an original over/under-water view of a Bay
-  Island and its reef, painted by our own script (`scripts/hero_art.py`), no borrowed artwork;
+- a rounded, white-bordered window for the hero. Its background is our own idea, after a first
+  painted sky-and-reef scene felt too close to the reference: the real terrain of the Bay Islands
+  drawn as a landscape of braille dots (the `drawille-canvas` library Tulio picked). Lines of
+  seafloor run toward Roatán's ridge, a white skyline, with Guanaja's peak to the right; a small
+  satellite crosses the sky and the strip of sea under it lights up as it scans;
 - headlines that pair a bold sans line with an italic serif line;
 - pill buttons, thin guide lines with nodes, and white data cards on the artwork showing real
   data (today's alert per island, 42 years of peak heat with an island switch).

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { accent, fmtDate, fmtNum, useLang, useT } from "../i18n";
 import { levelFor, rampCSS } from "../lib/alert";
 import { loadLatest, type Latest } from "../lib/data";
@@ -11,6 +11,9 @@ import { HeatStripes } from "../ui/HeatStripes";
 import { IconArrow } from "../ui/Icons";
 import { Sparkline } from "../ui/Sparkline";
 import { HAS_WEBGL } from "../webgl";
+
+// The braille seafloor (and the drawille library) load after the first paint.
+const BrailleSea = lazy(() => import("../ui/BrailleSea"));
 
 export function Home() {
   const t = useT();
@@ -27,10 +30,9 @@ export function Home() {
     <>
       <section className="hero-wrap">
         <div className="hero-frame">
-          <picture>
-            <source media="(max-width: 700px)" srcSet="/img/hero-reef-1200.webp" />
-            <img className="hero-art" src="/img/hero-reef.webp" alt="" width={2400} height={1500} decoding="async" fetchPriority="high" />
-          </picture>
+          <Suspense fallback={null}>
+            <BrailleSea />
+          </Suspense>
           <div className="hero-guides" aria-hidden="true" />
           <div className="hero-content">
             {latest && (

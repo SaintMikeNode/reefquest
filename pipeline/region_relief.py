@@ -6,7 +6,8 @@ OpenStreetMap, which is far more detailed). Contours are simplified for a small 
 
 Output: public/data/region.json
   { "source", "bbox", "levels": [...], "contours": {"<level>": [[[lon, lat], ...], ...]},
-    "mainland": [[[lon, lat], ...], ...] }
+    "mainland": [[[lon, lat], ...], ...], "relief": {file, w, h, west, north, step} }
+and public/data/relief.bin (coarse elevation grid, int16 meters, rows north to south).
 
 Usage: ~/.venvs/reefquest/bin/python -W ignore region_relief.py   (needs Earth Engine auth)
 """
@@ -64,8 +65,16 @@ def main() -> None:
         mainland.append([[round(x, 4), round(y, 4)] for x, y in s.exterior.coords])
     print(f"  mainland polygons: {len(mainland)}")
 
+    # Coarse elevation grid (land and seafloor, meters) for the home page's braille ridgeline scene:
+    # 2 × 2 block means of the GEBCO grid (~860 m cells), int16 little-endian, rows north to south.
+    rw, rh = w // 2, h // 2
+    relief = z[: rh * 2, : rw * 2].reshape(rh, 2, rw, 2).mean(axis=(1, 3))
+    (PUBLIC_DATA / "relief.bin").write_bytes(np.round(relief).astype("<i2").tobytes())
+    print(f"  relief.bin: {rw}×{rh}, {relief.min():.0f}..{relief.max():.0f} m, {rw * rh * 2 / 1024:.0f} KB")
+
     out = {
         "source": "GEBCO Compilation Group (2023) GEBCO 2023 Grid, doi:10.5285/f98b053b-0cbc-6c23-e053-6c86abc0af7b",
+        "relief": {"file": "relief.bin", "w": rw, "h": rh, "west": BBOX["west"], "north": BBOX["north"], "step": STEP * 2},
         "bbox": BBOX,
         "levels": LEVELS,
         "contours": contours,
