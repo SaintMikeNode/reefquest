@@ -68,7 +68,7 @@ export default function IslandScene({ island }: { island: string }) {
       .then(([terrain, idx]) => {
         if (!alive) return;
         const last = idx.years[idx.years.length - 1];
-        useScene.setState({ year: last.year, day: last.days - 1, site: null, playing: false, readout: null, boat: null });
+        useScene.setState({ year: last.year, day: last.days - 1, site: null, playing: false, intro: false, introPending: true, readout: null, boat: null });
         setIndex(idx);
         setTd(terrain);
       })

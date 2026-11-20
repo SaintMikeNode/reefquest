@@ -3,7 +3,8 @@ import { loadZoneIndex, zoneName, type ZoneIndexEntry } from "../boat/zone";
 import { SITES } from "../content/sites";
 import { fmtNum, rich, useL, useLang, useT } from "../i18n";
 import { levelFor, rampCSS } from "../lib/alert";
-import type { HeatIndex } from "../lib/data";
+import { loadYearGrid, type HeatIndex } from "../lib/data";
+import { REDUCED_MOTION } from "../lib/device";
 import { href } from "../lib/router";
 import { AlertChip } from "../ui/AlertChip";
 import { HeatKey } from "../ui/HeatKey";
@@ -63,6 +64,35 @@ export function Hud({ td, index }: { td: TerrainData; index: HeatIndex }) {
       /* storage blocked */
     }
   };
+  // Intro: on entering an island, sweep the heat from three years back to today (~5 s, ending on
+  // the latest day), so the timeline and the heat on the map are seen moving at once. It waits for
+  // the transition curtain and the first-visit guide, preloads those years' grids, and doesn't start
+  // if the visitor has already moved the timeline. Skipped with reduced motion.
+  useEffect(() => {
+    if (hint || REDUCED_MOTION || !useScene.getState().introPending) return;
+    const last = index.years[index.years.length - 1];
+    const years = index.years.filter((y) => y.year >= last.year - 3);
+    let live = true, raf = 0;
+    const untouched = () => {
+      const s = useScene.getState();
+      return s.year === last.year && s.day === last.days - 1 && !s.playing && !s.boat;
+    };
+    const start = () => {
+      if (!live) return;
+      if (document.querySelector(".curtain, .loading-screen")) {
+        raf = requestAnimationFrame(start);
+        return;
+      }
+      useScene.setState(untouched() ? { year: years[0].year, day: 0, playing: true, intro: true, introPending: false } : { introPending: false });
+    };
+    Promise.all(years.map((y) => loadYearGrid(y.year).catch(() => {}))).then(() => {
+      if (live) raf = requestAnimationFrame(start);
+    });
+    return () => {
+      live = false;
+      cancelAnimationFrame(raf);
+    };
+  }, [hint, index]);
   const site = SITES.find((s) => s.id === siteId);
   const siteZone = site ? zoneFor(zones, site.lon, site.lat) : undefined;
   const dhw = readout ? dhwAt(index, readout.lon, readout.lat, day) : null;

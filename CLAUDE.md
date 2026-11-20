@@ -130,7 +130,11 @@ place name gives NOAA's alert wording. All of it follows the selected date and i
   in `router.ts`; the cursor readout panel is click-through so it doesn't flicker; a press whose release never
   arrives is finished with a synthetic pointerup on the next button-less move or window blur, so
   the camera can't get stuck; a lost WebGL context rebuilds the Canvas via `glKey`), `SiteCard.tsx` (its action, "Explore by boat", is a compact tinted chip (`.card-chip`, not a solid button: the title stays the loudest) right after the place name (16 px semibold), the two wrapping together on narrow cards, the close button pinned to the corner, 18 px before the title; on computers the card stops above the data credits line), `Timeline.tsx` (year chips, DHW chart, scrubber,
-  playback), `sceneStore.ts`.
+  playback; on entering an island an intro sweeps from three years back to today at ~3× speed, ~5 s,
+  ending on the latest day (Tulio: so people see the visualizer at once). It starts after the curtain
+  and the first-visit guide, with those years' grids preloaded; `introPending` in the store makes it
+  play once per visit, not again after the boat; any play/pause or scrub ends it; reduced motion
+  skips it), `sceneStore.ts`.
 - `src/boat/`: the research-boat mode (lazy chunk, ~21 KB gz). `zone.ts` (detailed zone tiles: 10 m
   relief, 5 m habitat, meters as scene units, depths beyond 60 m compressed), `boatMaterials.ts`
   (seafloor with natural habitat colors + line-of-sight water attenuation + caustics, land in toon

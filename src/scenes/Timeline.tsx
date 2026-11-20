@@ -4,6 +4,7 @@ import { rampCSS } from "../lib/alert";
 import { addDays, dayDiff, loadLatest, loadSeries, loadYearGrid, type HeatIndex, type IslandSeries, type Latest } from "../lib/data";
 import { AlertChip } from "../ui/AlertChip";
 import { IconPause, IconPlay } from "../ui/Icons";
+import { LITE } from "../lib/device";
 import { useScene } from "./sceneStore";
 
 /** Timebar: date and play on the left; the selected year's heat curve with a scrubber; and a
@@ -38,24 +39,29 @@ export function Timeline({ index, island }: { index: HeatIndex; island: string }
     if (playing) loadYearGrid(year + 1).catch(() => {});
   }, [playing, year]);
 
-  // Playback: ~3 days per step at 30 fps; continues into the next year.
+  // Playback: ~3 days per step at 30 fps; continues into the next year. The intro on entering an
+  // island runs ~3× faster (9 days a step; lite devices 18 days every other frame).
   useEffect(() => {
     if (!playing) return;
     let raf = 0;
     let last = 0;
     const tick = (now: number) => {
       raf = requestAnimationFrame(tick);
-      if (now - last < 33) return;
-      last = now;
       const s = useScene.getState();
+      const slow = s.intro && LITE;
+      if (now - last < (slow ? 66 : 33)) return;
+      last = now;
       const cur = index.years.find((y) => y.year === s.year);
       if (!cur) return;
-      const next = s.day + 3;
+      const next = s.day + (s.intro ? (slow ? 18 : 9) : 3);
       if (next < cur.days) s.setDay(next);
       else {
         const ny = index.years.find((y) => y.year === s.year + 1);
         if (ny) s.setYear(ny.year, 0);
-        else s.setPlaying(false);
+        else {
+          s.setDay(cur.days - 1); // stop on the latest day
+          s.setPlaying(false);
+        }
       }
     };
     raf = requestAnimationFrame(tick);
