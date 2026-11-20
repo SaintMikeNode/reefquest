@@ -1,25 +1,42 @@
-import { Html, MapControls } from "@react-three/drei";
+import { MapControls } from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import type { MapControls as MapControlsImpl } from "three-stdlib";
 import { SITES } from "../content/sites";
-import { useT } from "../i18n";
+import { useLang, useT } from "../i18n";
 import { rampTable } from "../lib/alert";
 import { loadHeatIndex, loadLatest, loadSceneMeta, loadYearGrid, type HeatIndex } from "../lib/data";
 import { LITE, REDUCED_MOTION } from "../lib/device";
+import { BoatHud } from "../boat/BoatHud";
+import { zoneName, type ZoneIndexEntry } from "../boat/zone";
 import { Hud } from "./Hud";
 import { terrainMaterial, waterMaterial } from "./materials";
+import { clearLabels, LabelProjector, labelRef, setLabelAnchor } from "./labels";
 import { heatRef, useScene } from "./sceneStore";
 import { buildGeometry, displayY, homeDistance, homeOffset, habitatAt, heightAt, loadTerrain, lonLatToUV, pickHeightfield, uvToLonLat, uvToXZ, type TerrainData } from "./terrain";
 
 const RAMP = rampTable();
+// The boat mode (detailed zone tiles, boat, reef props) loads only when someone sets sail.
+const BoatWorld = lazy(() => import("../boat/BoatWorld"));
 
 export default function IslandScene({ island }: { island: string }) {
   const t = useT();
   const [td, setTd] = useState<TerrainData | null>(null);
   const [index, setIndex] = useState<HeatIndex | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const boat = useScene((s) => s.boat);
+  const [zoneEntry, setZoneEntry] = useState<ZoneIndexEntry | null>(null);
+  const lang = useLang((s) => s.lang);
+
+  // Zone display name for the boat HUD.
+  useEffect(() => {
+    if (!boat) return;
+    fetch(`/data/${island}/zones/index.json`)
+      .then((r) => r.json())
+      .then((zs: ZoneIndexEntry[]) => setZoneEntry(zs.find((z) => z.id === boat.zone) ?? null))
+      .catch(() => {});
+  }, [boat, island]);
 
   useEffect(() => {
     let alive = true;
@@ -27,7 +44,7 @@ export default function IslandScene({ island }: { island: string }) {
       .then(([terrain, idx]) => {
         if (!alive) return;
         const last = idx.years[idx.years.length - 1];
-        useScene.setState({ year: last.year, day: last.days - 1, site: null, playing: false, readout: null });
+        useScene.setState({ year: last.year, day: last.days - 1, site: null, playing: false, readout: null, boat: null });
         setIndex(idx);
         setTd(terrain);
       })
@@ -54,12 +71,19 @@ export default function IslandScene({ island }: { island: string }) {
         dpr={LITE ? 1 : [1, 1.75]}
         gl={{ antialias: !LITE, powerPreference: "high-performance" }}
         camera={{ position: homeCamera(td), fov: 42, near: 0.5, far: 4000 }}
-        frameloop="demand"
+        frameloop={boat ? "always" : "demand"}
       >
         <color attach="background" args={["#020d16"]} />
-        <World td={td} index={index} />
+        {boat ? (
+          <Suspense fallback={null}>
+            <BoatWorld key={boat.zone + boat.lon} island={island} zoneId={boat.zone} start={boat} />
+          </Suspense>
+        ) : (
+          <World td={td} index={index} />
+        )}
       </Canvas>
-      <Hud td={td} index={index} />
+      {!boat && <PinOverlay td={td} />}
+      {boat ? <BoatHud index={index} zoneName={zoneEntry ? zoneName(zoneEntry, lang) : ""} /> : <Hud td={td} index={index} />}
     </div>
   );
 }
@@ -158,6 +182,7 @@ function World({ td, index }: { td: TerrainData; index: HeatIndex }) {
       {layers.sites && <Pins td={td} />}
       <Picker td={td} />
       <CameraRig td={td} />
+      <LabelProjector />
     </>
   );
 }
@@ -185,50 +210,63 @@ function InstrumentGrid({ td }: { td: TerrainData }) {
   );
 }
 
+/** Dive-site anchor points for the screen-space pin overlay (rendered outside the Canvas). */
+export function pinList(td: TerrainData) {
+  return SITES.filter((s) => s.island === td.meta.island).map((s) => {
+    const { u, v } = lonLatToUV(td, s.lon, s.lat);
+    const { x, z } = uvToXZ(td, u, v);
+    return { ...s, x, z, y: Math.max(displayY(heightAt(td, u, v)), 0) + (s.kind === "story" ? 9 : 4) };
+  });
+}
+
 function Pins({ td }: { td: TerrainData }) {
-  const site = useScene((s) => s.site);
-  const setSite = useScene((s) => s.setSite);
-  const fly = useScene((s) => s.fly);
-  const sites = useMemo(
-    () =>
-      SITES.filter((s) => s.island === td.meta.island).map((s) => {
-        const { u, v } = lonLatToUV(td, s.lon, s.lat);
-        const { x, z } = uvToXZ(td, u, v);
-        return { ...s, x, z, y: Math.max(displayY(heightAt(td, u, v)), 0) + (s.kind === "story" ? 9 : 4) };
-      }),
-    [td],
-  );
+  const sites = useMemo(() => pinList(td), [td]);
+  useEffect(() => {
+    for (const s of sites) setLabelAnchor(`pin:${s.id}`, s.x, s.y, s.z);
+    return () => clearLabels("pin:");
+  }, [sites]);
   return (
     <>
       {sites.map((s) => (
-        <group key={s.id} position={[s.x, s.y, s.z]}>
-          <mesh position-y={-(s.y - 0.1) / 2}>
-            <cylinderGeometry args={[0.12, 0.12, s.y, 6]} />
-            <meshBasicMaterial color={s.kind === "story" ? "#ff6f5e" : "#5ff2ff"} transparent opacity={0.6} />
-          </mesh>
-          <Html center={false} zIndexRange={[4, 0]} style={{ pointerEvents: "none" }}>
-            <button
-              className={site === s.id ? "pin on" : "pin"}
-              style={s.kind === "dive" ? { opacity: 0.85 } : undefined}
-              onClick={() => {
-                setSite(s.id);
-                fly(s.x, s.z, s.kind === "story" ? 70 : 50);
-                if (s.date) {
-                  const st = useScene.getState();
-                  const y = Number(s.date.slice(0, 4));
-                  const start = Date.parse(`${y}-01-01T12:00:00Z`);
-                  const d = Math.round((Date.parse(s.date + "T12:00:00Z") - start) / 864e5);
-                  st.setYear(y, d);
-                }
-              }}
-            >
-              <span>{s.name}</span>
-              <i style={s.kind === "dive" ? { background: "#5ff2ff", boxShadow: "0 0 10px #5ff2ff", width: 8, height: 8 } : undefined} />
-            </button>
-          </Html>
-        </group>
+        <mesh key={s.id} position={[s.x, (s.y - 0.1) / 2, s.z]}>
+          <cylinderGeometry args={[0.12, 0.12, s.y, 6]} />
+          <meshBasicMaterial color={s.kind === "story" ? "#ff6f5e" : "#5ff2ff"} transparent opacity={0.6} />
+        </mesh>
       ))}
     </>
+  );
+}
+
+/** HTML pins positioned by LabelProjector. */
+function PinOverlay({ td }: { td: TerrainData }) {
+  const site = useScene((s) => s.site);
+  const show = useScene((s) => s.layers.sites);
+  const sites = useMemo(() => pinList(td), [td]);
+  if (!show) return null;
+  return (
+    <div className="label-layer" aria-label="Sites">
+      {sites.map((s) => (
+        <div key={s.id} className="label-anchor" ref={labelRef(`pin:${s.id}`)}>
+          <button
+            className={site === s.id ? "pin on" : "pin"}
+            style={s.kind === "dive" ? { opacity: 0.85 } : undefined}
+            onClick={() => {
+              const st = useScene.getState();
+              st.setSite(s.id);
+              st.fly(s.x, s.z, s.kind === "story" ? 70 : 50);
+              if (s.date) {
+                const y = Number(s.date.slice(0, 4));
+                const d = Math.round((Date.parse(s.date + "T12:00:00Z") - Date.parse(`${y}-01-01T12:00:00Z`)) / 864e5);
+                st.setYear(y, d);
+              }
+            }}
+          >
+            <span>{s.name}</span>
+            <i style={s.kind === "dive" ? { background: "#5ff2ff", boxShadow: "0 0 10px #5ff2ff", width: 8, height: 8 } : undefined} />
+          </button>
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -281,13 +319,19 @@ function CameraRig({ td }: { td: TerrainData }) {
   useEffect(() => {
     const c = controls.current;
     if (!c) return;
+    const cam = camera as THREE.PerspectiveCamera;
+    cam.near = 0.5;
+    cam.far = 4000;
+    cam.fov = 42;
+    cam.updateProjectionMatrix();
+    cam.position.set(...homeCamera(td));
     c.target.set(td.center.x, 0, td.center.z);
     c.update();
     // Demand rendering: draw again once controls, textures and the heat grid are in place.
     invalidate();
     const t1 = setTimeout(invalidate, 300);
     return () => clearTimeout(t1);
-  }, [invalidate, td]);
+  }, [invalidate, td, camera]);
 
   useEffect(() => {
     if (!flyTo || !controls.current) return;

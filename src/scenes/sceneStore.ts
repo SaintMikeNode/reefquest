@@ -17,6 +17,8 @@ interface SceneState {
   site: string | null;
   readout: Readout | null;
   flyTo: { x: number; z: number; dist: number; key: number; home?: boolean } | null;
+  boat: { zone: string; lon: number; lat: number } | null;
+  setBoat: (b: SceneState["boat"]) => void;
   toggle: (k: keyof SceneState["layers"]) => void;
   setYear: (y: number, day?: number) => void;
   setDay: (d: number) => void;
@@ -34,6 +36,8 @@ export const useScene = create<SceneState>((set) => ({
   site: null,
   readout: null,
   flyTo: null,
+  boat: null,
+  setBoat: (boat) => set({ boat, site: null, readout: null, playing: false }),
   toggle: (k) => set((s) => ({ layers: { ...s.layers, [k]: !s.layers[k] } })),
   setYear: (year, day = 0) => set({ year, day }),
   setDay: (day) => set({ day }),

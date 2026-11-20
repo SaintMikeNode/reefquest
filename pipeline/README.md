@@ -29,6 +29,7 @@ Earth Engine needs a one-time `~/.venvs/reefquest/bin/earthengine authenticate` 
 | `aca_areas.py` | `islands.json` | `pipeline/areas/*.geojson` to upload to the Allen Coral Atlas |
 | `aca_habitat.py <island> [--scale m]` | Earth Engine `ACA/reef_habitat/v2_0` | `data/raw/aca/<island>_habitat_<m>m.tif` + class areas |
 | `heat_products.py` | `data/raw/crw/*.nc` + `islands.json` | `public/data/heat/`: `index.json`, `latest.json`, `islands.json` (daily series), `grid/<year>.bin` |
+| `zone_tiles.py [zone…]` | `zones.json` + same sources as terrain.py, habitat at native 5 m | `public/data/<island>/zones/<zone>/` (height.png, habitat.png, meta.json) + `zones/index.json` |
 | `terrain.py <island>` | Copernicus DEM GLO-30 2024 + GEBCO 2023 (Earth Engine), Atlas bathymetry (`data/raw/aca/atlas_<island>/`), habitat GeoTIFF, OSM outline | `public/data/<island>/terrain.png`, `habitat.png`, `meta.json` |
 
 Order for a new island: `islands.py` → `aca_habitat.py <id>` → (Atlas download unzipped to

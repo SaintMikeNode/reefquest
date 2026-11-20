@@ -1,0 +1,24 @@
+[
+ {
+  "id": "guanaja-sw",
+  "name": "Southwest reef",
+  "name_es": "Arrecife del suroeste",
+  "lat": 16.4151,
+  "lon": -85.9461,
+  "size_m": [
+   4500,
+   4500
+  ]
+ },
+ {
+  "id": "guanaja-ne",
+  "name": "Northeast barrier reef",
+  "name_es": "Barrera del noreste",
+  "lat": 16.5058,
+  "lon": -85.83,
+  "size_m": [
+   4500,
+   4500
+  ]
+ }
+]

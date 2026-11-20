@@ -1,0 +1,8 @@
+[
+  {"id": "west-end", "island": "roatan", "name": "West End · Sandy Bay", "lat": 16.313, "lon": -86.584, "size_m": [6500, 7000]},
+  {"id": "cordelia", "island": "roatan", "name": "Cordelia Banks", "lat": 16.300, "lon": -86.520, "size_m": [4000, 4000]},
+  {"id": "marys-place", "island": "roatan", "name": "Mary's Place", "lat": 16.3377, "lon": -86.4686, "size_m": [4000, 4000]},
+  {"id": "utila-sw", "island": "utila", "name": "Southwest reef", "name_es": "Arrecife del suroeste", "lat": 16.0786, "lon": -86.9977, "size_m": [4500, 4500], "auto": "most mapped coral in a 4 km window"},
+  {"id": "guanaja-sw", "island": "guanaja", "name": "Southwest reef", "name_es": "Arrecife del suroeste", "lat": 16.4151, "lon": -85.9461, "size_m": [4500, 4500], "auto": "most mapped coral in a 4 km window"},
+  {"id": "guanaja-ne", "island": "guanaja", "name": "Northeast barrier reef", "name_es": "Barrera del noreste", "lat": 16.5058, "lon": -85.8300, "size_m": [4500, 4500], "auto": "second most mapped coral, 5 km+ from the first"}
+]

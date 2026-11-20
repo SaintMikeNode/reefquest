@@ -41,6 +41,22 @@ the reef zones until we download their Atlas bathymetry (the scene says so). No 
 
 ![Guanaja in 3D](guanaja-3d.jpg)
 
+**Research boat (new)**: from a story card ("Explore by boat") or the layers panel, you sail a
+procedural research vessel over detailed tiles of the reef: West End · Sandy Bay, Cordelia Banks and
+Mary's Place on Roatán (real Atlas bathymetry), plus the richest coral areas of Utila and Guanaja
+(picked automatically from the habitat map; depths estimated). Tap the water (phones) or use
+WASD / arrows; the camera follows and can orbit. You see the reef through clear water (shallows
+turquoise, depth fading to blue along the line of sight), foam on the reef crest, illustrative
+corals, sponges, seagrass and fish placed by the real habitat map, and buoys at the real moorings
+(arriving at a story buoy opens its story). A sounder shows depth, habitat, reef zone and heat
+stress under the boat; "Take sample" fills a logbook, and sampling every habitat in the zone
+completes the mission. It runs aground in water shallower than ~1 m. Boat code is a 9 KB lazy chunk;
+each zone tile is 100–420 KB.
+
+![Research boat under way, West End](boat-cordelia.jpg)
+
+![Guanaja northeast barrier reef](boat-guanaja.jpg)
+
 **Heat stress (`#/heat`)**: our island-level comparison (NOAA doesn't publish one): a chart of
 all four islands for any year, the worst years per island (peak DHW, days ≥ 4, days ≥ 8), heat
 stripes, and NOAA's full alert scale with its official impact wording.

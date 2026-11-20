@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { SITES } from "../content/sites";
 import { fmtNum, useL, useLang, useT } from "../i18n";
 import { levelFor } from "../lib/alert";
@@ -7,23 +7,21 @@ import { href } from "../lib/router";
 import { AlertChip } from "../ui/AlertChip";
 import { LangToggle } from "../ui/LangToggle";
 import { BENTHIC, GEOMORPHIC } from "./materials";
-import { heatRef, useScene } from "./sceneStore";
+import { dhwAt } from "./heatLookup";
+import { useScene } from "./sceneStore";
 import { homeDistance, type TerrainData } from "./terrain";
+import { loadZoneIndex, zoneName, type ZoneIndexEntry } from "../boat/zone";
+import { fmtLat, fmtLon, SiteCard } from "./SiteCard";
 import { Timeline } from "./Timeline";
 
-function dhwAt(index: HeatIndex, lon: number, lat: number, day: number): number | null {
-  const g = heatRef.grid;
-  if (!g) return null;
-  const col = Math.round((lon - index.lon[0]) / index.cell_deg);
-  const row = Math.round((index.lat[0] - lat) / index.cell_deg);
-  if (col < 0 || row < 0 || col >= index.cols || row >= index.rows) return null;
-  const n = index.cols * index.rows;
-  const v = g[Math.min(day, g.length / n - 1) * n + row * index.cols + col];
-  return v === 255 ? null : v / 10;
+/** The boat zone containing a lon/lat, if any. */
+export function zoneFor(zones: ZoneIndexEntry[], lon: number, lat: number): ZoneIndexEntry | undefined {
+  return zones.find((z) => {
+    const dx = (lon - z.lon) * 111320 * Math.cos((lat * Math.PI) / 180);
+    const dy = (lat - z.lat) * 110570;
+    return Math.abs(dx) < z.size_m[0] / 2 - 120 && Math.abs(dy) < z.size_m[1] / 2 - 120;
+  });
 }
-
-const fmtLat = (v: number) => `${Math.abs(v).toFixed(4)}°${v >= 0 ? "N" : "S"}`;
-const fmtLon = (v: number) => `${Math.abs(v).toFixed(4)}°${v >= 0 ? "E" : "W"}`;
 
 export function Hud({ td, index }: { td: TerrainData; index: HeatIndex }) {
   const t = useT();
@@ -52,7 +50,13 @@ export function Hud({ td, index }: { td: TerrainData; index: HeatIndex }) {
       /* storage blocked */
     }
   };
+  const setBoat = useScene((s) => s.setBoat);
+  const [zones, setZones] = useState<ZoneIndexEntry[]>([]);
+  useEffect(() => {
+    loadZoneIndex(td.meta.island).then(setZones).catch(() => setZones([]));
+  }, [td.meta.island]);
   const site = SITES.find((s) => s.id === siteId);
+  const siteZone = site ? zoneFor(zones, site.lon, site.lat) : undefined;
   const b = td.meta.bounds_lonlat;
 
   const layerRows: { k: keyof typeof layers; label: string; sw: string }[] = [
@@ -107,6 +111,17 @@ export function Hud({ td, index }: { td: TerrainData; index: HeatIndex }) {
             ))}
           </div>
         )}
+        {zones.length > 0 && (
+          <>
+            <div className="label">{t("boat.zones")}</div>
+            {zones.map((z) => (
+              <button key={z.id} className="layer" aria-pressed="true" onClick={() => setBoat({ zone: z.id, lon: z.lon, lat: z.lat })}>
+                <span className="sw" style={{ display: "grid", placeItems: "center", fontSize: 12 }}>⛴</span>
+                {zoneName(z, lang)}
+              </button>
+            ))}
+          </>
+        )}
         <div className="label" style={{ textTransform: "none", letterSpacing: 0, lineHeight: 1.5, fontSize: 11 }}>
           {t("scene.modelNote")} {t("scene.exaggeration")} {td.meta.bathymetry_source !== "aca-bathymetry" && t("scene.depthModel")} {layers.heat && t("scene.heatNote")}
         </div>
@@ -116,33 +131,17 @@ export function Hud({ td, index }: { td: TerrainData; index: HeatIndex }) {
       </aside>
 
       {site ? (
-        <aside className="hud site-card panel" aria-live="polite">
-          <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center" }}>
-            <span className="label">
-              {site.name}
-              {site.depth_m ? ` · ${site.depth_m} m` : ""}
-            </span>
-            <button className="btn ghost" onClick={() => setSite(null)} aria-label={t("scene.close")}>
-              ✕
-            </button>
-          </div>
-          {site.title && <h2>{L(site.title)}</h2>}
-          {site.body && L(site.body).map((p, i) => <p key={i}>{p}</p>)}
-          <p className="mono faint" style={{ fontSize: 11.5 }}>
-            {fmtLat(site.lat)} · {fmtLon(site.lon)}
-            {site.approx ? ` · ${t("scene.approx")}` : ""}
-          </p>
-          <div className="label" style={{ marginTop: 8 }}>{t("scene.sources")}</div>
-          <ul style={{ margin: "6px 0 0", paddingLeft: 18, fontSize: 12.5, lineHeight: 1.5 }}>
-            {site.sources.map((s) => (
-              <li key={s.url}>
-                <a href={s.url} target="_blank" rel="noreferrer">
-                  {s.label}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </aside>
+        <SiteCard
+          site={site}
+          onClose={() => setSite(null)}
+          actions={
+            siteZone && (
+              <button className="btn primary" onClick={() => setBoat({ zone: siteZone.id, lon: site.lon, lat: site.lat })}>
+                ⛴ {t("boat.explore")}
+              </button>
+            )
+          }
+        />
       ) : (
         <aside className="hud hud-readout panel" aria-live="off">
           <div className="label" style={{ marginBottom: 4 }}>{t("scene.readout")}</div>

@@ -1,0 +1,13 @@
+[
+ {
+  "id": "utila-sw",
+  "name": "Southwest reef",
+  "name_es": "Arrecife del suroeste",
+  "lat": 16.0786,
+  "lon": -86.9977,
+  "size_m": [
+   4500,
+   4500
+  ]
+ }
+]

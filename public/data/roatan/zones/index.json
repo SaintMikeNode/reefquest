@@ -1,0 +1,35 @@
+[
+ {
+  "id": "west-end",
+  "name": "West End · Sandy Bay",
+  "name_es": "West End · Sandy Bay",
+  "lat": 16.313,
+  "lon": -86.584,
+  "size_m": [
+   6500,
+   7000
+  ]
+ },
+ {
+  "id": "cordelia",
+  "name": "Cordelia Banks",
+  "name_es": "Cordelia Banks",
+  "lat": 16.3,
+  "lon": -86.52,
+  "size_m": [
+   4000,
+   4000
+  ]
+ },
+ {
+  "id": "marys-place",
+  "name": "Mary's Place",
+  "name_es": "Mary's Place",
+  "lat": 16.3377,
+  "lon": -86.4686,
+  "size_m": [
+   4000,
+   4000
+  ]
+ }
+]

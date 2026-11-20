@@ -67,6 +67,18 @@ both self-hosted via @fontsource). Heat colors follow NOAA's alert scale (`src/l
   shader: NOAA 5 km cells), `IslandScene.tsx` (Canvas with `frameloop="demand"`, pins, camera
   fly-to), `Hud.tsx` (layers, readout, site card), `Timeline.tsx` (year chips, DHW chart, scrubber,
   playback), `sceneStore.ts`.
+- `src/boat/`: the research-boat mode (lazy chunk, ~9 KB gz). `zone.ts` (detailed zone tiles: 10 m
+  relief, 5 m habitat, meters as scene units, depths beyond 60 m compressed), `boatMaterials.ts`
+  (seafloor with natural habitat colors + line-of-sight water attenuation + caustics; sea surface
+  with ripples, fresnel, foam on very shallow water; sky; abyss floor), `boatModel.ts` (procedural
+  vessel), `props.ts` (instanced illustrative corals/sponges/seagrass placed by habitat, within
+  350 m of the boat), `BoatWorld.tsx` (physics: throttle/drag/turn, grounding by depth ahead of the
+  bow, tap-to-go, WASD/arrows, chase camera, wake, buoys at real moorings, fish schools),
+  `BoatHud.tsx` (compass, sounder, sample/logbook mission saved in localStorage `rq-log-<zone>`).
+  Entered from a story card ("Explore by boat") or the zone list in the layers panel; zones are
+  listed in `pipeline/zones.json` and built by `pipeline/zone_tiles.py`.
+- `src/scenes/labels.tsx`: screen-space labels (one projector + plain DOM), used instead of drei
+  `Html` (which threw removeChild errors on unmount with React 19).
 - `public/data/`: pipeline outputs (committed): `islands.json/.geojson`, `heat/` (index, latest,
   per-island daily series, `grid/<year>.bin`), `roatan/` (terrain.png, habitat.png, meta.json).
 - `pipeline/`: Python data scripts (see `pipeline/README.md`). Python env is `~/.venvs/reefquest`

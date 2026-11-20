@@ -76,6 +76,84 @@ def resize_nearest(a: np.ndarray, w: int) -> np.ndarray:
     return np.asarray(Image.fromarray(a).resize((w, h), Image.NEAREST))
 
 
+
+def build_heights(island: str, crs, tf: rasterio.Affine, cell: float, W: int, H: int, geo: np.ndarray, feature: dict):
+    """Heights (m) on a grid: Copernicus DEM on land (inside the OSM outline), Atlas bathymetry (or
+    nominal zone depths) over the mapped reef, faded into GEBCO beyond. Needs ee.Initialize first.
+    Returns (height, land mask, mapped-reef mask, bathymetry source)."""
+    print("downloading Copernicus DEM and GEBCO from Earth Engine…")
+    # A mosaic forgets its source projection; without setDefaultProjection, "bilinear" resampling runs
+    # on a 1° default grid and flattens the island into a ramp.
+    dem_col = ee.ImageCollection("COPERNICUS/DEM/GLO30_2024_1").select("DEM")
+    dem = ee_grid(dem_col.mosaic().setDefaultProjection(dem_col.first().projection()), crs.to_string(), tf, W, H)
+    # GEBCO: fetch at ~400 m with nearest sampling (Earth Engine's bicubic resampling returns wrong
+    # values for this collection), then interpolate smoothly to the 40 m grid here.
+    f = max(1, round(400 / cell))
+    tf_c = rasterio.Affine(cell * f, 0, tf.c, 0, -cell * f, tf.f)
+    g = ee_grid(ee.ImageCollection("projects/sat-io/open-datasets/gebco/gebco_grid").mosaic(), crs.to_string(), tf_c,
+                math.ceil(W / f) + 1, math.ceil(H / f) + 1, "nearest")
+    yy, xx = np.mgrid[0:H, 0:W]
+    gebco = ndimage.map_coordinates(g, [(yy + .5) / f - .5, (xx + .5) / f - .5], order=3, mode="nearest").astype(np.float32)
+    print(f"  DEM {dem.min():.1f}..{dem.max():.1f} m, GEBCO {gebco.min():.0f}..{gebco.max():.0f} m")
+
+    # Land mask from OSM outlines (more reliable at the shore than DEM noise over water).
+    geom = transform_geom("EPSG:4326", crs, feature["geometry"])
+    land = rasterize([(geom, 1)], out_shape=(H, W), transform=tf, all_touched=False, dtype=np.uint8).astype(bool)
+
+    # Ocean depths: GEBCO, forced below the reef edge depth (its 450 m cells smear islands into the sea).
+    deep = np.minimum(gebco, REEF_EDGE_DEPTH)
+    mapped = (geo > 0) & ~land
+    shallow = np.zeros_like(dem)
+    for c, d in NOMINAL_DEPTH.items():
+        shallow[geo == c] = d
+    # Real shallow depths: the Allen Coral Atlas satellite-derived bathymetry (cm, positive down,
+    # 10 m), when its file is present. Over open water it saturates into noise (the bottom isn't
+    # visible), so it is trusted only inside the mapped reef habitat. Median filtering removes speckle.
+    bathy_files = sorted(p for p in (RAW / "aca").glob(f"atlas_{island}/Bathymetry*/*.tif") if not p.name.startswith("._"))
+    source = "nominal-by-zone"
+    if bathy_files:
+        from rasterio.warp import Resampling, reproject
+        with rasterio.open(bathy_files[0]) as bs:
+            raw = bs.read(1).astype(np.float32)
+            raw[raw <= 0] = np.nan
+            raw = ndimage.median_filter(np.nan_to_num(raw, nan=0), 5)
+            raw[raw <= 0] = np.nan
+            bathy = np.full((H, W), np.nan, np.float32)
+            reproject(raw, bathy, src_transform=bs.transform, src_crs=bs.crs, dst_transform=tf, dst_crs=crs,
+                      resampling=Resampling.average, src_nodata=np.nan, dst_nodata=np.nan)
+        bathy = -bathy / 100.0  # cm → m, negative down
+        ok = mapped & np.isfinite(bathy)
+        print(f"  Atlas bathymetry: {ok.sum()} of {mapped.sum()} mapped cells, depth {np.nanmin(bathy[ok]):.1f}..{np.nanmax(bathy[ok]):.1f} m")
+        shallow = np.where(ok, bathy, shallow)
+        source = "aca-bathymetry"
+
+    # Smooth inside the mapped reef so zones blend instead of terracing.
+    sig = 48.0 / cell  # ~48 m smoothing inside the reef, whatever the grid
+    wsum = ndimage.gaussian_filter(mapped.astype(np.float32), sig)
+    shallow_s = np.where(mapped, ndimage.gaussian_filter(shallow * mapped, sig) / np.maximum(wsum, 1e-3), 0)
+
+    # Unmapped water: fade from the nearest reef-edge depth (or shore) into GEBCO with distance.
+    near = mapped | land
+    dist, (iy, ix) = ndimage.distance_transform_edt(~near, return_indices=True)
+    dist = dist * cell
+    edge = np.where(land, -1.0, shallow_s)[iy, ix]
+    edge = np.minimum(edge, -1.0)
+    t = np.clip(dist / FADE_M, 0, 1)
+    t = t * t * (3 - 2 * t)
+    fade = edge * (1 - t) + np.minimum(deep, edge) * t
+    ocean = np.where(mapped, shallow_s, fade)
+    # Final gentle smoothing of the whole seafloor (keeps the land untouched).
+    sea = ~land
+    ocean_s = ndimage.gaussian_filter(np.where(sea, ocean, -0.5), 40.0 / cell)
+    ocean_s = np.minimum(ocean_s, -0.3)
+
+    land_h = np.maximum(ndimage.median_filter(dem, max(3, round(90 / cell) | 1)), 0.5)
+    height = np.where(land, land_h, ocean_s).astype(np.float32)
+    print(f"  height {height.min():.1f}..{height.max():.1f} m; land cells {land.sum()}, mapped reef cells {mapped.sum()}")
+
+    return height, land, mapped, source
+
+
 def main() -> None:
     p = argparse.ArgumentParser()
     p.add_argument("island")
@@ -98,73 +176,7 @@ def main() -> None:
 
     print("downloading Copernicus DEM and GEBCO from Earth Engine…")
     ee.Initialize(project=PROJECT)
-    # A mosaic forgets its source projection; without setDefaultProjection, "bilinear" resampling runs
-    # on a 1° default grid and flattens the island into a ramp.
-    dem_col = ee.ImageCollection("COPERNICUS/DEM/GLO30_2024_1").select("DEM")
-    dem = ee_grid(dem_col.mosaic().setDefaultProjection(dem_col.first().projection()), crs.to_string(), tf, W, H)
-    # GEBCO: fetch at ~400 m with nearest sampling (Earth Engine's bicubic resampling returns wrong
-    # values for this collection), then interpolate smoothly to the 40 m grid here.
-    f = 10
-    tf_c = rasterio.Affine(CELL * f, 0, tf.c, 0, -CELL * f, tf.f)
-    g = ee_grid(ee.ImageCollection("projects/sat-io/open-datasets/gebco/gebco_grid").mosaic(), crs.to_string(), tf_c,
-                math.ceil(W / f) + 1, math.ceil(H / f) + 1, "nearest")
-    yy, xx = np.mgrid[0:H, 0:W]
-    gebco = ndimage.map_coordinates(g, [(yy + .5) / f - .5, (xx + .5) / f - .5], order=3, mode="nearest").astype(np.float32)
-    print(f"  DEM {dem.min():.1f}..{dem.max():.1f} m, GEBCO {gebco.min():.0f}..{gebco.max():.0f} m")
-
-    # Land mask from OSM outlines (more reliable at the shore than DEM noise over water).
-    geom = transform_geom("EPSG:4326", crs, feature["geometry"])
-    land = rasterize([(geom, 1)], out_shape=(H, W), transform=tf, all_touched=False, dtype=np.uint8).astype(bool)
-
-    # Ocean depths: GEBCO, forced below the reef edge depth (its 450 m cells smear islands into the sea).
-    deep = np.minimum(gebco, REEF_EDGE_DEPTH)
-    mapped = (geo40 > 0) & ~land
-    shallow = np.zeros_like(dem)
-    for c, d in NOMINAL_DEPTH.items():
-        shallow[geo40 == c] = d
-    # Real shallow depths: the Allen Coral Atlas satellite-derived bathymetry (cm, positive down,
-    # 10 m), when its file is present. Over open water it saturates into noise (the bottom isn't
-    # visible), so it is trusted only inside the mapped reef habitat. Median filtering removes speckle.
-    bathy_files = sorted(p for p in (RAW / "aca").glob(f"atlas_{a.island}/Bathymetry*/*.tif") if not p.name.startswith("._"))
-    source = "nominal-by-zone"
-    if bathy_files:
-        from rasterio.warp import Resampling, reproject
-        with rasterio.open(bathy_files[0]) as bs:
-            raw = bs.read(1).astype(np.float32)
-            raw[raw <= 0] = np.nan
-            raw = ndimage.median_filter(np.nan_to_num(raw, nan=0), 5)
-            raw[raw <= 0] = np.nan
-            bathy = np.full((H, W), np.nan, np.float32)
-            reproject(raw, bathy, src_transform=bs.transform, src_crs=bs.crs, dst_transform=tf, dst_crs=crs,
-                      resampling=Resampling.average, src_nodata=np.nan, dst_nodata=np.nan)
-        bathy = -bathy / 100.0  # cm → m, negative down
-        ok = mapped & np.isfinite(bathy)
-        print(f"  Atlas bathymetry: {ok.sum()} of {mapped.sum()} mapped cells, depth {np.nanmin(bathy[ok]):.1f}..{np.nanmax(bathy[ok]):.1f} m")
-        shallow = np.where(ok, bathy, shallow)
-        source = "aca-bathymetry"
-
-    # Smooth inside the mapped reef so zones blend instead of terracing.
-    wsum = ndimage.gaussian_filter(mapped.astype(np.float32), 1.2)
-    shallow_s = np.where(mapped, ndimage.gaussian_filter(shallow * mapped, 1.2) / np.maximum(wsum, 1e-3), 0)
-
-    # Unmapped water: fade from the nearest reef-edge depth (or shore) into GEBCO with distance.
-    near = mapped | land
-    dist, (iy, ix) = ndimage.distance_transform_edt(~near, return_indices=True)
-    dist = dist * CELL
-    edge = np.where(land, -1.0, shallow_s)[iy, ix]
-    edge = np.minimum(edge, -1.0)
-    t = np.clip(dist / FADE_M, 0, 1)
-    t = t * t * (3 - 2 * t)
-    fade = edge * (1 - t) + np.minimum(deep, edge) * t
-    ocean = np.where(mapped, shallow_s, fade)
-    # Final gentle smoothing of the whole seafloor (keeps the land untouched).
-    sea = ~land
-    ocean_s = ndimage.gaussian_filter(np.where(sea, ocean, -0.5), 1.0)
-    ocean_s = np.minimum(ocean_s, -0.3)
-
-    land_h = np.maximum(ndimage.median_filter(dem, 3), 0.5)
-    height = np.where(land, land_h, ocean_s).astype(np.float32)
-    print(f"  height {height.min():.1f}..{height.max():.1f} m; land cells {land.sum()}, mapped reef cells {mapped.sum()}")
+    height, land, mapped, source = build_heights(a.island, crs, tf, CELL, W, H, geo40, feature)
 
     # Web outputs.
     out = PUBLIC_DATA / a.island
