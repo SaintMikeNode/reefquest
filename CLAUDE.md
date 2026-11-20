@@ -106,14 +106,21 @@ place name gives NOAA's alert wording. All of it follows the selected date and i
   affine fit), `materials.ts` (terrain shader: hillshade, natural seafloor colors by habitat with surf
   on the reef crest, or the Atlas classification when the "Habitat map" layer is on, drawn as a chart rather than pixels: the 3 × 3 cells around each point vote with B-spline weights so class edges are rounded curves, with fine outlines and per-class patterns that fade with distance; contours,
   caustics; water shader: NOAA 5 km cells with hairline edges), `IslandScene.tsx` (Canvas with `frameloop="demand"`, pins, camera
-  fly-to), `nature.ts` (instanced palms and forest canopy on land, by elevation and habitat),
+  fly-to), `siteBoats.tsx` (pin list, `openSite`, and a small survey boat at anchor at every clickable place,
+  tech/holographic style (rejected before: a chunky toy, then see-through hairlines too small): solid
+  faceted hull in dark navy with a glowing fresnel rim, scan lines, bright edges, spinning radar;
+  white waterline, mirrored reflection, a target reticle with a rotating dashed ring and a sonar
+  ping on the water; hover lights it and the pin label, click opens the place; ~40 px on a 1080 px
+  screen at any zoom; dev `window.__rqBoatScale` enlarges them), `nature.ts` (instanced palms and forest canopy on land, by elevation and habitat),
   `Hud.tsx` (title plate, layers with inline keys, boat zones, readout, numbered first-visit guide
   `rq-guide-1`, the timeline whose height is published as `--tb` so panels stop above it),
   `MouseGuide.tsx` (computers only: mouse controls card, closable, `rq-mouse-guide`; inline in the
   boat bar), mouse guards in `IslandScene.tsx` (no context menu over the 3D view, side buttons
   ignored mid-drag, the boat is a history step so Back leaves the boat, not the page, and a Back
   that arrives during or right after a right-drag (browser mouse gestures) is undone via `navGuard`
-  in `router.ts`; the cursor readout panel is click-through so it doesn't flicker), `SiteCard.tsx`, `Timeline.tsx` (year chips, DHW chart, scrubber,
+  in `router.ts`; the cursor readout panel is click-through so it doesn't flicker; a press whose release never
+  arrives is finished with a synthetic pointerup on the next button-less move or window blur, so
+  the camera can't get stuck; a lost WebGL context rebuilds the Canvas via `glKey`), `SiteCard.tsx`, `Timeline.tsx` (year chips, DHW chart, scrubber,
   playback), `sceneStore.ts`.
 - `src/boat/`: the research-boat mode (lazy chunk, ~21 KB gz). `zone.ts` (detailed zone tiles: 10 m
   relief, 5 m habitat, meters as scene units, depths beyond 60 m compressed), `boatMaterials.ts`
@@ -127,7 +134,9 @@ place name gives NOAA's alert wording. All of it follows the selected date and i
   out to 380 m, nearest kept when over budget), `props.ts` (shared water tint: from above along the
   line of sight, underwater by distance; `WATER` uniforms), `underwaterFx.ts` (light shafts, marine
   snow). Underwater view: `useBoat.under` (button or U); camera kept between seabed and surface,
-  Snell's window on the surface shader, survey overlay hidden. `BoatWorld.tsx` (physics: throttle/drag/turn, grounding by depth ahead of the
+  Snell's window on the surface shader, survey overlay hidden. `BoatWorld.tsx` (physics tuned for fun, not realism (Tulio: "a fun interactive experience"): ~31 kn
+  top speed in a few seconds, quick turns, bow lift and lean at speed, a bump back off the shallows,
+  and the chase camera swings behind the boat unless it is being dragged; throttle/drag/turn, grounding by depth ahead of the
   bow, tap-to-go, WASD/arrows, chase camera, wake, buoys at real moorings, fish schools),
   `BoatHud.tsx` (title plate with "Back to <island>", heading tape, sounder, survey %, depth key,
   CTD cast button/space bar, logbook mission saved in localStorage `rq-log-<zone>`, field guide of

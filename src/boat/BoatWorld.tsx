@@ -19,12 +19,14 @@ import { SCENE_FOG } from "../scenes/materials";
 import { COV_CELL, makeCoverage, resetCoverage, saveCoverage, SonarFan, stamp, type Coverage } from "./sonar";
 import { floorY, habitatAtXZ, hash, heightAtXZ, loadZone, lonLatToXZ, xzToLonLat, ZoneLod, type Zone } from "./zone";
 
-// Physics (m, s) for a ~24 m research vessel.
-const V_MAX = 6.5; // ~12.6 knots
-const V_REV = 2.2;
-const ACCEL = 1.6;
-const DRAG = 0.42;
-const YAW = 0.32; // rad/s at speed
+// Physics (m, s), tuned for fun rather than realism (a fun experience first: a real ~24 m research
+// vessel cruises at ~4 m/s and turns slowly). Top speed ~16 m/s (~31 knots) reached in a few
+// seconds, quick turns, bow lift and lean, and a bump back off the shallows.
+const V_MAX = 16;
+const V_REV = 5;
+const ACCEL = 7.5;
+const DRAG = 0.47; // terminal speed = ACCEL / DRAG; also how fast it coasts to a stop
+const YAW = 0.95; // rad/s at speed
 const DRAFT = 2.2; // keel depth: shallower water ahead stops the boat
 const BOW = 12.5;
 const STERN = -12;
@@ -192,6 +194,7 @@ function Boat({ zone, start, coverage }: { zone: Zone; start: { x: number; z: nu
   const { camera, gl } = useThree();
   const vessel = useMemo(() => makeVessel(), []);
   const controls = useRef<OrbitControlsImpl>(null);
+  const orbiting = useRef(false); // the person is dragging the camera: no auto chase
   const st = useRef({ x: start.x, z: start.z, a: Math.PI, v: 0, aground: false, lastTele: 0, sx: start.x, sz: start.z, lastTex: 0, under: false });
   const diving = useBoat((b) => b.under);
   const cast = useRef({ phase: "idle" as "idle" | "down" | "hold" | "up", L: 0, target: 0, t: 0, req: useBoat.getState().castReq });
@@ -308,18 +311,20 @@ function Boat({ zone, start, coverage }: { zone: Zone; start: { x: number; z: nu
     if (!casting && target && !throttle && !turn) {
       const dx = target.x - s.x, dz = target.z - s.z;
       const dist = Math.hypot(dx, dz);
-      if (dist < 14) setTarget(null);
+      if (dist < 18) setTarget(null);
       else {
         let diff = Math.atan2(dx, dz) - s.a;
         diff = Math.atan2(Math.sin(diff), Math.cos(diff));
         turn = Math.max(-1, Math.min(1, diff * 2));
-        throttle = Math.abs(diff) > 1.6 ? 0.25 : Math.min(1, Math.max(0.3, dist / 80));
+        throttle = Math.abs(diff) > 1.6 ? 0.25 : Math.min(1, Math.max(0.3, dist / 150));
       }
     }
-    s.v += (throttle * (throttle > 0 ? ACCEL : ACCEL * 0.6) - DRAG * s.v) * dt;
+    // Reversing against forward way (or the other way round) brakes hard.
+    const braking = throttle !== 0 && Math.sign(throttle) !== Math.sign(s.v) && Math.abs(s.v) > 0.5;
+    s.v += (throttle * (throttle > 0 ? ACCEL : ACCEL * 0.6) * (braking ? 1.8 : 1) - DRAG * s.v) * dt;
     if (casting) s.v *= 1 - Math.min(1, dt * 1.5);
     s.v = Math.max(-V_REV, Math.min(V_MAX, s.v));
-    const turnRate = YAW * Math.min(1, 0.25 + Math.abs(s.v) / 3);
+    const turnRate = YAW * Math.min(1, 0.3 + Math.abs(s.v) / 4);
     s.a += turn * turnRate * dt * (s.v < -0.1 ? -1 : 1);
     const dirx = Math.sin(s.a), dirz = Math.cos(s.a);
     const nx = s.x + dirx * s.v * dt, nz = s.z + dirz * s.v * dt;
@@ -329,7 +334,7 @@ function Boat({ zone, start, coverage }: { zone: Zone; start: { x: number; z: nu
     const inside = Math.abs(nx) < zone.sizeX / 2 - margin && Math.abs(nz) < zone.sizeZ / 2 - margin;
     if (ahead > -DRAFT || !inside) {
       s.aground = Math.abs(s.v) > 0.05 || s.aground;
-      s.v = 0;
+      s.v = Math.abs(s.v) > 2 ? -s.v * 0.3 : 0; // bounce back a little
       if (target) setTarget(null);
     } else {
       s.x = nx;
@@ -338,8 +343,11 @@ function Boat({ zone, start, coverage }: { zone: Zone; start: { x: number; z: nu
     }
 
     // ---- Pose: swell, pitch with speed, heel into turns.
-    vessel.group.position.set(s.x, Math.sin(t * 0.9) * 0.18 - 0.05, s.z);
-    vessel.group.rotation.set(Math.sin(t * 0.7) * 0.015 - s.v * 0.004, s.a, Math.sin(t * 0.8) * 0.02 - turn * s.v * 0.01, "YXZ");
+    // At speed she rises onto the plane (bow up), skips over the chop and leans into turns.
+    const fast = Math.max(0, s.v) / V_MAX;
+    const hop = Math.abs(Math.sin(t * 5.3)) * 0.35 * fast * fast;
+    vessel.group.position.set(s.x, Math.sin(t * 0.9) * 0.18 - 0.05 + fast * 0.5 + hop, s.z);
+    vessel.group.rotation.set(Math.sin(t * 0.7) * 0.015 - fast * 0.09 - hop * 0.08, s.a, Math.sin(t * 0.8) * 0.02 - turn * fast * 0.2, "YXZ");
     vessel.radar[0].rotation.y += dt * 2.2;
     vessel.radar[1].rotation.y -= dt * 3.1;
     const fp = vessel.flag.geometry.attributes.position as THREE.BufferAttribute;
@@ -375,6 +383,16 @@ function Boat({ zone, start, coverage }: { zone: Zone; start: { x: number; z: nu
       ctl.target.z += ddz;
       camera.position.x += ddx;
       camera.position.z += ddz;
+      if (!diving && !orbiting.current && fast > 0.15) {
+        // Under way and not being dragged: the camera swings round behind the boat, like a chase cam.
+        const ox = camera.position.x - ctl.target.x, oz = camera.position.z - ctl.target.z;
+        let diff = Math.atan2(-dirx, -dirz) - Math.atan2(ox, oz);
+        diff = Math.atan2(Math.sin(diff), Math.cos(diff));
+        const k = diff * Math.min(1, dt * 1.6 * fast);
+        const c = Math.cos(k), sn = Math.sin(k);
+        camera.position.x = ctl.target.x + ox * c + oz * sn;
+        camera.position.z = ctl.target.z - ox * sn + oz * c;
+      }
       if (diving) {
         // Follow the seafloor smoothly, and keep the camera in the water column.
         const dy = (Math.min(-1.5, bottom + 1.6) - ctl.target.y) * Math.min(1, dt * 2);
@@ -449,6 +467,8 @@ function Boat({ zone, start, coverage }: { zone: Zone; start: { x: number; z: nu
         minDistance={diving ? 2.5 : 22}
         maxDistance={diving ? 38 : 520}
         maxPolarAngle={diving ? Math.PI * 0.94 : Math.PI * 0.47}
+        onStart={() => (orbiting.current = true)}
+        onEnd={() => (orbiting.current = false)}
       />
     </>
   );

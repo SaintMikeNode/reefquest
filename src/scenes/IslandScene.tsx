@@ -3,7 +3,6 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import type { MapControls as MapControlsImpl } from "three-stdlib";
-import { SITES } from "../content/sites";
 import { useLang, useT } from "../i18n";
 import { rampTable } from "../lib/alert";
 import { navGuard } from "../lib/router";
@@ -17,7 +16,8 @@ import { FOG_CALM, FOG_SEVERE, SCENE_FOG, terrainMaterial, waterMaterial } from 
 import { clearLabels, LabelProjector, labelRef, setLabelAnchor } from "./labels";
 import { CANOPY_GREENS, canopyGeometry, h01, PALM_GREENS, palmGeometry, vegetationMaterial } from "./nature";
 import { heatRef, useScene } from "./sceneStore";
-import { buildGeometry, displayY, homeDistance, homeOffset, habitatAt, heightAt, loadTerrain, lonLatToUV, pickHeightfield, uvToLonLat, uvToXZ, type TerrainData } from "./terrain";
+import { openSite, pinList, SiteBoats } from "./siteBoats";
+import { buildGeometry, displayY, homeDistance, homeOffset, habitatAt, heightAt, loadTerrain, pickHeightfield, uvToLonLat, type TerrainData } from "./terrain";
 
 const RAMP = rampTable();
 // The boat mode (detailed zone tiles, boat, reef props) loads only when someone sets sail.
@@ -33,6 +33,7 @@ export default function IslandScene({ island }: { island: string }) {
   const lang = useLang((s) => s.lang);
 
   useMouseGuards();
+  const [glKey, setGlKey] = useState(0); // bumped to rebuild the 3D view after a lost GPU context
 
   // Zone display name for the boat HUD.
   useEffect(() => {
@@ -73,12 +74,26 @@ export default function IslandScene({ island }: { island: string }) {
   return (
     <div className="scene-root">
       <Canvas
+        key={glKey}
         dpr={DPR.start}
         gl={{ antialias: !MOBILE, powerPreference: "high-performance" }}
         camera={{ position: homeCamera(td), fov: 42, near: 0.5, far: 4000 }}
         frameloop={boat && !MOBILE ? "always" : "demand"}
         onCreated={(st) => {
           if (import.meta.env.DEV) Object.assign(window, { __rqGl: st.gl, __rqScene: st.scene }); // dev: renderer.info for perf checks
+          // If the GPU drops the 3D context (driver reset, memory pressure), the view would freeze
+          // and stop answering clicks. Rebuild it: when the browser restores the context, or after
+          // 2 s if it doesn't.
+          const el = st.gl.domElement;
+          let timer = 0;
+          el.addEventListener("webglcontextlost", (e) => {
+            e.preventDefault();
+            timer = window.setTimeout(() => setGlKey((k) => k + 1), 2000);
+          });
+          el.addEventListener("webglcontextrestored", () => {
+            clearTimeout(timer);
+            setGlKey((k) => k + 1);
+          });
         }}
       >
         <color attach="background" args={["#020d16"]} />
@@ -140,8 +155,30 @@ function useMouseGuards() {
       rightDown = false;
       if (moved) rightUpAt = performance.now();
     };
-    const rightEvents = [["pointerdown", rDown], ["pointermove", rMove], ["pointerup", rUp]] as const;
+    // Stuck camera: if a button's release never reaches the page (swallowed by a browser mouse
+    // gesture, released outside the window, an alert…), the camera controls keep "holding" it, so the
+    // view turns or pans on its own and clicks stop working. When the mouse moves with no button
+    // down, or the window loses focus, while a press is still open, finish it with a pointerup.
+    let held = 0, heldId = 1;
+    const release = (pointerId: number) => {
+      held = 0;
+      document.dispatchEvent(new PointerEvent("pointerup", { pointerId, pointerType: "mouse", bubbles: true }));
+    };
+    const hDown = (e: PointerEvent) => {
+      if (e.pointerType === "touch" || !inScene(e)) return;
+      held |= 1 << e.button;
+      heldId = e.pointerId;
+    };
+    const hMove = (e: PointerEvent) => {
+      if (held && e.pointerType !== "touch" && e.buttons === 0) release(e.pointerId);
+    };
+    const hUp = (e: PointerEvent) => {
+      if (e.pointerType !== "touch") held = 0;
+    };
+    const blur = () => held && release(heldId);
+    const rightEvents = [["pointerdown", rDown], ["pointermove", rMove], ["pointerup", rUp], ["pointerdown", hDown], ["pointermove", hMove], ["pointerup", hUp]] as const;
     for (const [t, fn] of rightEvents) window.addEventListener(t, fn, true);
+    window.addEventListener("blur", blur);
     const sceneHash = location.hash;
 
     let pushed = false;
@@ -157,7 +194,10 @@ function useMouseGuards() {
     const pop = (e: PopStateEvent) => {
       if ((rightDown && moved) || performance.now() - rightUpAt < 1500) {
         rightUpAt = -1e9;
-        if (location.hash !== sceneHash) navGuard.skip = 1;
+        if (location.hash !== sceneHash) {
+          navGuard.skip = 1;
+          setTimeout(() => (navGuard.skip = 0), 1000); // never leave the router ignoring a real link
+        }
         history.go(1);
         return;
       }
@@ -171,6 +211,7 @@ function useMouseGuards() {
       for (const t of sideEvents) document.removeEventListener(t, side, true);
       window.removeEventListener("popstate", pop);
       for (const [t, fn] of rightEvents) window.removeEventListener(t, fn, true);
+      window.removeEventListener("blur", blur);
       unsub();
     };
   }, []);
@@ -295,6 +336,7 @@ function World({ td, index }: { td: TerrainData; index: HeatIndex }) {
       <InstrumentGrid td={td} />
       <IslandVegetation td={td} />
       {layers.sites && <Pins td={td} />}
+      {layers.sites && <SiteBoats td={td} />}
       <Picker td={td} />
       <CameraRig td={td} />
       <LabelProjector />
@@ -325,15 +367,6 @@ function InstrumentGrid({ td }: { td: TerrainData }) {
   );
 }
 
-/** Dive-site anchor points for the screen-space pin overlay (rendered outside the Canvas). */
-export function pinList(td: TerrainData) {
-  return SITES.filter((s) => s.island === td.meta.island).map((s) => {
-    const { u, v } = lonLatToUV(td, s.lon, s.lat);
-    const { x, z } = uvToXZ(td, u, v);
-    return { ...s, x, z, y: Math.max(displayY(heightAt(td, u, v)), 0) + (s.kind === "story" ? 9 : 4) };
-  });
-}
-
 function Pins({ td }: { td: TerrainData }) {
   const sites = useMemo(() => pinList(td), [td]);
   useEffect(() => {
@@ -355,6 +388,7 @@ function Pins({ td }: { td: TerrainData }) {
 /** HTML pins positioned by LabelProjector. */
 function PinOverlay({ td }: { td: TerrainData }) {
   const site = useScene((s) => s.site);
+  const hover = useScene((s) => s.hover);
   const show = useScene((s) => s.layers.sites);
   const sites = useMemo(() => pinList(td), [td]);
   if (!show) return null;
@@ -363,17 +397,8 @@ function PinOverlay({ td }: { td: TerrainData }) {
       {sites.map((s) => (
         <div key={s.id} className="label-anchor" ref={labelRef(`pin:${s.id}`)}>
           <button
-            className={[site === s.id ? "pin on" : "pin", s.kind === "dive" ? "dive" : ""].join(" ")}
-            onClick={() => {
-              const st = useScene.getState();
-              st.setSite(s.id);
-              st.fly(s.x, s.z, s.kind === "story" ? 70 : 50);
-              if (s.date) {
-                const y = Number(s.date.slice(0, 4));
-                const d = Math.round((Date.parse(s.date + "T12:00:00Z") - Date.parse(`${y}-01-01T12:00:00Z`)) / 864e5);
-                st.setYear(y, d);
-              }
-            }}
+            className={[site === s.id ? "pin on" : "pin", s.kind === "dive" ? "dive" : "", hover === s.id ? "hover" : ""].join(" ")}
+            onClick={() => openSite(s)}
           >
             <span>{s.name}</span>
             <i />

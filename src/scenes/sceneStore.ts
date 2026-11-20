@@ -15,6 +15,8 @@ interface SceneState {
   day: number; // index within the year file
   playing: boolean;
   site: string | null;
+  /** The place whose boat the mouse is over (lights its pin). */
+  hover: string | null;
   readout: Readout | null;
   flyTo: { x: number; z: number; dist: number; key: number; home?: boolean } | null;
   boat: { zone: string; lon: number; lat: number } | null;
@@ -26,6 +28,7 @@ interface SceneState {
   setDay: (d: number) => void;
   setPlaying: (p: boolean) => void;
   setSite: (id: string | null) => void;
+  setHover: (id: string | null) => void;
   setReadout: (r: Readout | null) => void;
   fly: (x: number, z: number, dist: number, home?: boolean) => void;
 }
@@ -36,6 +39,7 @@ export const useScene = create<SceneState>((set) => ({
   day: 0,
   playing: false,
   site: null,
+  hover: null,
   readout: null,
   flyTo: null,
   boat: null,
@@ -46,6 +50,7 @@ export const useScene = create<SceneState>((set) => ({
   setDay: (day) => set({ day }),
   setPlaying: (playing) => set({ playing }),
   setSite: (site) => set({ site }),
+  setHover: (hover) => set({ hover }),
   setReadout: (readout) => set({ readout }),
   fly: (x, z, dist, home) => set((s) => ({ flyTo: { x, z, dist, home, key: (s.flyTo?.key ?? 0) + 1 } })),
 }));

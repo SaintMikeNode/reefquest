@@ -366,7 +366,7 @@ ol.caveats li { margin: 0 0 12px; padding-left: 4px; }
 .pin i { width: 9px; height: 9px; transform: rotate(45deg); background: var(--coral); box-shadow: 0 0 0 1.5px rgba(2, 10, 20, 0.7); }
 .pin.dive span { font-size: 12px; font-weight: 500; color: #d7e6f2; }
 .pin.dive i { width: 7px; height: 7px; transform: none; border-radius: 50%; background: #8fc3f0; }
-.pin:hover span, .pin.on span { background: var(--white); color: #04101d; text-shadow: none; }
+.pin:hover span, .pin.hover span, .pin.on span { background: var(--white); color: #04101d; text-shadow: none; }
 .pin.on i { background: var(--white); }
 div.pin { pointer-events: none; }
 
