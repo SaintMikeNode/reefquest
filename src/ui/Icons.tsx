@@ -49,6 +49,9 @@ export const IconBook = (p: SVGProps<SVGSVGElement>) => (
 export const IconCheck = (p: SVGProps<SVGSVGElement>) => (
   <svg {...base(p)} strokeWidth={2.4}><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
 );
+export const IconCamera = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base(p)}><path d="M4 8h3l1.6-2.2h6.8L17 8h3v11H4z" /><circle cx="12" cy="13.2" r="3.4" /></svg>
+);
 export const IconHelp = (p: SVGProps<SVGSVGElement>) => (
   <svg {...base(p)}><circle cx="12" cy="12" r="8.5" /><path d="M9.6 9.6a2.5 2.5 0 1 1 3.4 2.3c-.7.3-1 .8-1 1.5v.4" /><path d="M12 16.6v.4" /></svg>
 );

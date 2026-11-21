@@ -9,6 +9,8 @@ import { ISLAND_ORDER, SCENE_ISLANDS } from "../lib/islands";
 import { href } from "../lib/router";
 import { AlertChip } from "../ui/AlertChip";
 import { IconArrow } from "../ui/Icons";
+import { SpecularButton } from "../ui/SpecularButton";
+import { AllPhotosButton } from "../ui/AllPhotos";
 import { HAS_WEBGL } from "../webgl";
 
 // "Explore the islands in 3D": one card per island with a live 3D preview of its relief and reef
@@ -391,9 +393,9 @@ function IslandCard({ id, latest, meta }: { id: string; latest: Latest | null; m
           </p>
         )}
         {open ? (
-          <span className="btn primary small">
+          <SpecularButton as="span" className="btn primary small" lineColor="#ffffff" baseColor="#bfe0ff">
             {t("home.enter3d")} <IconArrow />
-          </span>
+          </SpecularButton>
         ) : (
           <span className="isle-soon">{t("home.soon3d")}</span>
         )}
@@ -446,7 +448,10 @@ export function IslandsPage() {
               <IslandCard key={id} id={id} latest={latest} meta={metas[id]} />
             ))}
           </div>
-          <p className="fig-source isle-note">{t("isles.note")}</p>
+          <div className="isle-foot">
+            <AllPhotosButton className="btn light" />
+            <p className="fig-source isle-note">{t("isles.note")}</p>
+          </div>
         </section>
       </main>
       {HAS_WEBGL && (

@@ -77,6 +77,28 @@ export const loadRegion = () => get<Region>("/data/region.json");
 export const loadRelief = () => get<Uint8Array>("/data/relief.bin", "bin").then((b) => new Int16Array(b.buffer, b.byteOffset, b.byteLength >> 1));
 export const loadSceneMeta = (id: string) => get<SceneMeta>(`/data/${id}/meta.json`);
 
+/** A photo from pipeline/photos.mjs (iNaturalist or Wikimedia Commons), served from /data/photos. */
+export interface Photo {
+  id: string;
+  src: { s: string; m: string };
+  ratio: number;
+  name: { es: string; en: string };
+  sci: string;
+  credit: string;
+  license: string;
+  licenseUrl: string;
+  source: string;
+  via: string;
+  date: string | null;
+  here: boolean; // taken at (or right by) the place it illustrates
+  where?: { es: string; en: string }; // where it was taken otherwise
+}
+export interface PhotoIndex {
+  places: Record<string, Photo[]>; // story/dive site ids and boat zone ids
+  species: Record<string, Photo>; // field-guide species keys
+}
+export const loadPhotos = () => get<PhotoIndex>("/data/photos/index.json");
+
 export interface GeoJSON {
   features: { properties: { id: string; name: string }; geometry: { type: "MultiPolygon"; coordinates: number[][][][] } }[];
 }

@@ -1,7 +1,10 @@
+import { motion } from "motion/react";
 import type { ReactNode } from "react";
+import { panelMotion } from "../ui/motionPresets";
 import type { Site } from "../content/sites";
 import { useL, useLang, useT } from "../i18n";
 import { IconClose } from "../ui/Icons";
+import { PhotoStrip, usePhotos } from "../ui/PhotoStrip";
 
 export const fmtLat = (v: number, _lang: "es" | "en" = "es") => `${Math.abs(v).toFixed(4)}° ${v >= 0 ? "N" : "S"}`;
 export const fmtLon = (v: number, lang: "es" | "en" = "es") => `${Math.abs(v).toFixed(4)}° ${v >= 0 ? "E" : lang === "es" ? "O" : "W"}`;
@@ -11,8 +14,9 @@ export function SiteCard({ site, onClose, actions }: { site: Site; onClose: () =
   const t = useT();
   const L = useL();
   const lang = useLang((s) => s.lang);
+  const photos = usePhotos()?.places[site.id];
   return (
-    <aside className="hud site-card panel" aria-live="polite">
+    <motion.aside className="hud site-card panel" aria-live="polite" {...panelMotion}>
       <div className="card-head">
         {/* The place name with its action (e.g. "Explore by boat") right after it; they wrap
             together when the name is long, and the close button stays in the corner. */}
@@ -28,6 +32,7 @@ export function SiteCard({ site, onClose, actions }: { site: Site; onClose: () =
         </button>
       </div>
       {site.title && <h2>{L(site.title)}</h2>}
+      {photos && photos.length > 0 && <PhotoStrip photos={photos} />}
       {site.body && L(site.body).map((p, i) => <p key={i}>{p}</p>)}
       <p className="hud-faint num" style={{ fontSize: 12.5, margin: "0 0 8px" }}>
         {fmtLat(site.lat, lang)}, {fmtLon(site.lon, lang)}
@@ -44,6 +49,6 @@ export function SiteCard({ site, onClose, actions }: { site: Site; onClose: () =
           </span>
         ))}
       </p>
-    </aside>
+    </motion.aside>
   );
 }

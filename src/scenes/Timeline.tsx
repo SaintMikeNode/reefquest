@@ -22,6 +22,23 @@ export function Timeline({ index, island }: { index: HeatIndex; island: string }
   const [series, setSeries] = useState<IslandSeries | null>(null);
   const [latest, setLatest] = useState<Latest | null>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
+  // The play button invites a first press (a pulsing sonar ring) until someone has pressed it once.
+  const [played, setPlayed] = useState(() => {
+    try {
+      return !!localStorage.getItem("rq-played");
+    } catch {
+      return false;
+    }
+  });
+  const markPlayed = () => {
+    if (played) return;
+    setPlayed(true);
+    try {
+      localStorage.setItem("rq-played", "1");
+    } catch {
+      /* storage blocked */
+    }
+  };
 
   useEffect(() => {
     loadSeries().then(setSeries).catch(() => {});
@@ -39,8 +56,9 @@ export function Timeline({ index, island }: { index: HeatIndex; island: string }
     if (playing) loadYearGrid(year + 1).catch(() => {});
   }, [playing, year]);
 
-  // Playback: ~3 days per step at 30 fps; continues into the next year. The intro on entering an
-  // island runs ~3× faster (9 days a step; lite devices 18 days every other frame).
+  // Playback: 6 days per step at 30 fps (about 2 s a year, Tulio: faster); continues into the next
+  // year. The intro on entering an island plays this year at 4 days a step (under 3 s; lite devices
+  // 8 days every other frame).
   useEffect(() => {
     if (!playing) return;
     let raf = 0;
@@ -53,7 +71,7 @@ export function Timeline({ index, island }: { index: HeatIndex; island: string }
       last = now;
       const cur = index.years.find((y) => y.year === s.year);
       if (!cur) return;
-      const next = s.day + (s.intro ? (slow ? 18 : 9) : 3);
+      const next = s.day + (s.intro ? (slow ? 8 : 4) : 6);
       if (next < cur.days) s.setDay(next);
       else {
         const ny = index.years.find((y) => y.year === s.year + 1);
@@ -154,11 +172,12 @@ export function Timeline({ index, island }: { index: HeatIndex; island: string }
     <>
       <div className="now">
         <button
-          className="play-btn"
+          className={played ? "play-btn" : "play-btn invite"}
           aria-pressed={playing}
           onClick={() => {
             if (!playing && day >= yi.days - 1 && year === lastY) setYear(first, 0);
             setPlaying(!playing);
+            markPlayed();
           }}
           aria-label={playing ? t("scene.pause") : t("scene.play")}
         >

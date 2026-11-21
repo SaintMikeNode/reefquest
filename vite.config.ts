@@ -12,7 +12,7 @@ export default defineConfig({
   server: { watch: { ignored: ["**/.cloudflare/**"] } },
   // Packages only reached through lazy chunks: pre-bundle them at startup, or the dev server finds
   // them mid-session, re-bundles, and the page ends up with two copies of React.
-  optimizeDeps: { include: ["metal-fx", "@overpunch/floodtext", "@react-three/drei", "@react-three/fiber", "three"] },
+  optimizeDeps: { include: ["@overpunch/floodtext", "@react-three/drei", "@react-three/fiber", "three"] },
   build: {
     target: "es2022",
     // Chunks: index (menu, i18n, 2D map — must stay small, it's the first thing phones load)

@@ -1,6 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { accent, fmtDate, useL, useLang, useT } from "../i18n";
+import { Credit } from "../ui/Credit";
 import { loadLatest } from "../lib/data";
+import { AllPhotosButton, allPhotos } from "../ui/AllPhotos";
+import { Lightbox } from "../ui/Lightbox";
+import { PhotoCredit, usePhotos } from "../ui/PhotoStrip";
 
 type T2 = { es: string; en: string };
 
@@ -85,6 +89,7 @@ export function AboutPage() {
       <header className="page-head page-band-head">
         <p className="eyebrow">{t("about.kicker")}</p>
         <h1>{accent(t("about.title"))}</h1>
+        <Credit className="about-credit" badge />
         <p className="standfirst">{t("about.lead")}</p>
       </header>
 
@@ -122,14 +127,65 @@ export function AboutPage() {
         </div>
       </section>
 
+      <PhotoCredits />
+
       <section className="section">
         <div className="section-head">
           <h2>{accent(t("about.softwareTitle"))}</h2>
         </div>
         <p className="measure muted">
-          three.js, React, React Three Fiber, drei, zustand, transition-style, floodtext, metal-fx, Vite (MIT; metal-fx includes Paper Shaders code, Apache-2.0). Inter, Instrument Serif, IBM Plex Mono (SIL Open Font License). Google Earth Engine (noncommercial use). Python: xarray, rasterio, NumPy, SciPy. ReefQuest © 2026, MIT License.
+          three.js, React, React Three Fiber, drei, zustand, Motion, transition-style, floodtext, Vite (MIT); Specular Button from React Bits (MIT + Commons Clause); designs after pinui's Liquid Tabs and Chips. Inter, Instrument Serif, IBM Plex Mono (SIL Open Font License). Google Earth Engine (noncommercial use). Python: xarray, rasterio, NumPy, SciPy. ReefQuest © 2026, MIT License.
         </p>
       </section>
     </main>
+  );
+}
+
+/**
+ * Every photo on the site, once each, as a masonry grid (after React Bits' "Masonry", Tulio's pick;
+ * CSS columns, no animation library): each keeps its own shape, springs up as it scrolls into view,
+ * and opens in the lightbox; the credit sits under each one. "See all the photos" opens the dome.
+ */
+function PhotoCredits() {
+  const t = useT();
+  const L = useL();
+  const index = usePhotos();
+  const [open, setOpen] = useState<number | null>(null);
+  const list = useRef<HTMLUListElement>(null);
+  useEffect(() => {
+    const ul = list.current;
+    if (!ul) return;
+    const io = new IntersectionObserver(
+      (entries) => entries.forEach((e) => e.isIntersecting && (e.target.classList.add("in"), io.unobserve(e.target))),
+      { rootMargin: "0px 0px -8% 0px" },
+    );
+    ul.querySelectorAll("li").forEach((li) => io.observe(li));
+    return () => io.disconnect();
+  }, [index]);
+  if (!index) return null;
+  const photos = allPhotos(index);
+  return (
+    <section className="section">
+      <div className="section-head">
+        <h2>{accent(t("photos.creditsTitle"))}</h2>
+        <p>{t("photos.creditsLead")}</p>
+        <AllPhotosButton className="btn light small" />
+      </div>
+      <ul ref={list} className="masonry">
+        {photos.map((p, i) => (
+          <li key={p.id} style={{ "--d": `${(i % 4) * 60}ms` } as React.CSSProperties}>
+            <button className="masonry-photo" onClick={() => setOpen(i)} style={{ aspectRatio: String(p.ratio) }} aria-label={L(p.name)}>
+              <img src={p.src.s} alt="" loading="lazy" decoding="async" />
+            </button>
+            <span className="masonry-cap">
+              <b>{L(p.name)}</b>
+              {p.sci && p.sci !== L(p.name) && <i> {p.sci}</i>}
+              <PhotoCredit p={p} />
+            </span>
+          </li>
+        ))}
+      </ul>
+      {open !== null && <Lightbox photos={photos} start={open} onClose={() => setOpen(null)} />}
+    </section>
   );
 }

@@ -1,0 +1,2037 @@
+{
+ "generated": "2026-11-20",
+ "places": {
+  "pillar-coral": [
+   {
+    "id": "inat-765177879",
+    "src": {
+     "s": "/data/photos/inat-765177879-s.jpg",
+     "m": "/data/photos/inat-765177879-m.jpg"
+    },
+    "ratio": 1.049,
+    "name": {
+     "es": "Coral pilar",
+     "en": "Pillar Coral"
+    },
+    "sci": "Dendrogyra cylindrus",
+    "credit": "© Jean H.",
+    "license": "CC BY-NC-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+    "source": "https://www.inaturalist.org/observations/415538206",
+    "via": "iNaturalist",
+    "date": "2008-06-17",
+    "here": false,
+    "where": {
+     "es": "las Islas de la Bahía",
+     "en": "the Bay Islands"
+    }
+   },
+   {
+    "id": "inat-471423393",
+    "src": {
+     "s": "/data/photos/inat-471423393-s.jpg",
+     "m": "/data/photos/inat-471423393-m.jpg"
+    },
+    "ratio": 0.714,
+    "name": {
+     "es": "Coral pilar",
+     "en": "Pillar Coral"
+    },
+    "sci": "Dendrogyra cylindrus",
+    "credit": "© Frank Krasovec",
+    "license": "CC BY-NC 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "source": "https://www.inaturalist.org/observations/262414559",
+    "via": "iNaturalist",
+    "date": "2021-04-19",
+    "here": false,
+    "where": {
+     "es": "las Islas de la Bahía",
+     "en": "the Bay Islands"
+    }
+   },
+   {
+    "id": "inat-261847903",
+    "src": {
+     "s": "/data/photos/inat-261847903-s.jpg",
+     "m": "/data/photos/inat-261847903-m.jpg"
+    },
+    "ratio": 1.333,
+    "name": {
+     "es": "Coral pilar",
+     "en": "Pillar Coral"
+    },
+    "sci": "Dendrogyra cylindrus",
+    "credit": "© Floyd E. Hayes",
+    "license": "CC BY-NC 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "source": "https://www.inaturalist.org/observations/151733894",
+    "via": "iNaturalist",
+    "date": "2017-08-28",
+    "here": false,
+    "where": {
+     "es": "las Islas de la Bahía",
+     "en": "the Bay Islands"
+    }
+   },
+   {
+    "id": "inat-292349558",
+    "src": {
+     "s": "/data/photos/inat-292349558-s.jpg",
+     "m": "/data/photos/inat-292349558-m.jpg"
+    },
+    "ratio": 1.333,
+    "name": {
+     "es": "Esponja gigante de barril",
+     "en": "Giant Barrel Sponge"
+    },
+    "sci": "Xestospongia muta",
+    "credit": "© Floyd E. Hayes",
+    "license": "CC BY-NC 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "source": "https://www.inaturalist.org/observations/168681896",
+    "via": "iNaturalist",
+    "date": "2017-08-31",
+    "here": true
+   }
+  ],
+  "flowers-bay": [
+   {
+    "id": "inat-181666903",
+    "src": {
+     "s": "/data/photos/inat-181666903-s.jpg",
+     "m": "/data/photos/inat-181666903-m.jpg"
+    },
+    "ratio": 1.5,
+    "name": {
+     "es": "Coral cerebro estriado",
+     "en": "Grooved Brain Coral"
+    },
+    "sci": "Diploria labyrinthiformis",
+    "credit": "© Pauline Walsh Jacobson",
+    "license": "CC BY 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+    "source": "https://www.inaturalist.org/observations/107956063",
+    "via": "iNaturalist",
+    "date": "1997-12-22",
+    "here": false,
+    "where": {
+     "es": "las Islas de la Bahía",
+     "en": "the Bay Islands"
+    }
+   },
+   {
+    "id": "inat-610162046",
+    "src": {
+     "s": "/data/photos/inat-610162046-s.jpg",
+     "m": "/data/photos/inat-610162046-m.jpg"
+    },
+    "ratio": 1.5,
+    "name": {
+     "es": "Pez loro",
+     "en": "Stoplight Parrotfish"
+    },
+    "sci": "Sparisoma viride",
+    "credit": "© cjmatheson",
+    "license": "CC BY-NC 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "source": "https://www.inaturalist.org/observations/335829325",
+    "via": "iNaturalist",
+    "date": "2026-01-22",
+    "here": true
+   },
+   {
+    "id": "inat-59616739",
+    "src": {
+     "s": "/data/photos/inat-59616739-s.jpg",
+     "m": "/data/photos/inat-59616739-m.jpg"
+    },
+    "ratio": 1.333,
+    "name": {
+     "es": "Camarón boxeador",
+     "en": "Banded Coral Shrimp"
+    },
+    "sci": "Stenopus hispidus",
+    "credit": "© Franco Colnago",
+    "license": "CC BY-NC 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "source": "https://www.inaturalist.org/observations/37588283",
+    "via": "iNaturalist",
+    "date": "2018-01-08",
+    "here": true
+   },
+   {
+    "id": "inat-59617601",
+    "src": {
+     "s": "/data/photos/inat-59617601-s.jpg",
+     "m": "/data/photos/inat-59617601-m.jpg"
+    },
+    "ratio": 1.054,
+    "name": {
+     "es": "Payasito punteado",
+     "en": "Spotted Drum"
+    },
+    "sci": "Eques punctatus",
+    "credit": "© Franco Colnago",
+    "license": "CC BY-NC 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "source": "https://www.inaturalist.org/observations/37588964",
+    "via": "iNaturalist",
+    "date": "2018-01-08",
+    "here": true
+   }
+  ],
+  "cordelia-banks": [
+   {
+    "id": "inat-177071293",
+    "src": {
+     "s": "/data/photos/inat-177071293-s.jpg",
+     "m": "/data/photos/inat-177071293-m.jpg"
+    },
+    "ratio": 1.333,
+    "name": {
+     "es": "Coral cuerno de ciervo",
+     "en": "Staghorn Coral"
+    },
+    "sci": "Acropora cervicornis",
+    "credit": "© Laura Zaldivar",
+    "license": "CC BY-NC 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "source": "https://www.inaturalist.org/observations/105522844",
+    "via": "iNaturalist",
+    "date": "2022-01-24",
+    "here": false,
+    "where": {
+     "es": "las Islas de la Bahía",
+     "en": "the Bay Islands"
+    }
+   },
+   {
+    "id": "inat-614301073",
+    "src": {
+     "s": "/data/photos/inat-614301073-s.jpg",
+     "m": "/data/photos/inat-614301073-m.jpg"
+    },
+    "ratio": 0.667,
+    "name": {
+     "es": "Coral cuerno de ciervo",
+     "en": "Staghorn Coral"
+    },
+    "sci": "Acropora cervicornis",
+    "credit": "© cjmatheson",
+    "license": "CC BY-NC 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "source": "https://www.inaturalist.org/observations/337870654",
+    "via": "iNaturalist",
+    "date": "2026-01-29",
+    "here": false,
+    "where": {
+     "es": "las Islas de la Bahía",
+     "en": "the Bay Islands"
+    }
+   },
+   {
+    "id": "inat-674921320",
+    "src": {
+     "s": "/data/photos/inat-674921320-s.jpg",
+     "m": "/data/photos/inat-674921320-m.jpg"
+    },
+    "ratio": 1.773,
+    "name": {
+     "es": "Raya pinta",
+     "en": "Spotted Eagle Ray"
+    },
+    "sci": "Aetobatus narinari",
+    "credit": "© kryolan",
+    "license": "CC BY-NC 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "source": "https://www.inaturalist.org/observations/369488678",
+    "via": "iNaturalist",
+    "date": "2025-05-25",
+    "here": false,
+    "where": {
+     "es": "las Islas de la Bahía",
+     "en": "the Bay Islands"
+    }
+   },
+   {
+    "id": "inat-603753496",
+    "src": {
+     "s": "/data/photos/inat-603753496-s.jpg",
+     "m": "/data/photos/inat-603753496-m.jpg"
+    },
+    "ratio": 1.333,
+    "name": {
+     "es": "Tortuga carey",
+     "en": "Hawksbill Sea Turtle"
+    },
+    "sci": "Eretmochelys imbricata",
+    "credit": "© Josh Noseworthy",
+    "license": "CC BY 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+    "source": "https://www.inaturalist.org/observations/332654070",
+    "via": "iNaturalist",
+    "date": "2025-12-29",
+    "here": false,
+    "where": {
+     "es": "las Islas de la Bahía",
+     "en": "the Bay Islands"
+    }
+   },
+   {
+    "id": "inat-67382384",
+    "src": {
+     "s": "/data/photos/inat-67382384-s.jpg",
+     "m": "/data/photos/inat-67382384-m.jpg"
+    },
+    "ratio": 1.432,
+    "name": {
+     "es": "Mero del Caribe",
+     "en": "Nassau Grouper"
+    },
+    "sci": "Epinephelus striatus",
+    "credit": "© mark-groeneveld",
+    "license": "CC BY 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+    "source": "https://www.inaturalist.org/observations/42437616",
+    "via": "iNaturalist",
+    "date": "2006-12-27",
+    "here": false,
+    "where": {
+     "es": "las Islas de la Bahía",
+     "en": "the Bay Islands"
+    }
+   }
+  ],
+  "el-aguila": [
+   {
+    "id": "wc-18288526",
+    "src": {
+     "s": "/data/photos/wc-18288526-s.jpg",
+     "m": "/data/photos/wc-18288526-m.jpg"
+    },
+    "ratio": 1.333,
+    "name": {
+     "es": "Buzo en el naufragio El Águila",
+     "en": "Diver on the El Aguila wreck"
+    },
+    "sci": "",
+    "credit": "© Aquaimages",
+    "license": "CC BY-SA 2.5",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.5",
+    "source": "https://commons.wikimedia.org/wiki/File:Diver_exploring_the_Aguila_wreck,_Roatan,_Honduras.jpg",
+    "via": "Wikimedia Commons",
+    "date": null,
+    "here": true
+   },
+   {
+    "id": "wc-18288744",
+    "src": {
+     "s": "/data/photos/wc-18288744-s.jpg",
+     "m": "/data/photos/wc-18288744-m.jpg"
+    },
+    "ratio": 0.75,
+    "name": {
+     "es": "Morena verde en el naufragio",
+     "en": "Green moray on the wreck"
+    },
+    "sci": "Gymnothorax funebris",
+    "credit": "© Aquaimages",
+    "license": "CC BY-SA 2.5",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.5",
+    "source": "https://commons.wikimedia.org/wiki/File:Large_Green_Moray_on_the_wreck_of_the_freighter_El_Aguila,_Roatan,_Honduras.jpg",
+    "via": "Wikimedia Commons",
+    "date": null,
+    "here": true
+   },
+   {
+    "id": "inat-549414488",
+    "src": {
+     "s": "/data/photos/inat-549414488-s.jpg",
+     "m": "/data/photos/inat-549414488-m.jpg"
+    },
+    "ratio": 1.5,
+    "name": {
+     "es": "Aiolochroia crassa",
+     "en": "Branching Tube Sponge"
+    },
+    "sci": "Aiolochroia crassa",
+    "credit": "© Brandon Postal",
+    "license": "CC BY-NC-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+    "source": "https://www.inaturalist.org/observations/304750856",
+    "via": "iNaturalist",
+    "date": "2025-07-26",
+    "here": true
+   },
+   {
+    "id": "inat-527779831",
+    "src": {
+     "s": "/data/photos/inat-527779831-s.jpg",
+     "m": "/data/photos/inat-527779831-m.jpg"
+    },
+    "ratio": 1.333,
+    "name": {
+     "es": "Loro medianoche",
+     "en": "Midnight Parrotfish"
+    },
+    "sci": "Scarus coelestinus",
+    "credit": "© tim h",
+    "license": "CC BY-NC 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "source": "https://www.inaturalist.org/observations/293239449",
+    "via": "iNaturalist",
+    "date": "2025-06-27",
+    "here": true
+   }
+  ],
+  "deep-seaquest": [
+   {
+    "id": "inat-551579728",
+    "src": {
+     "s": "/data/photos/inat-551579728-s.jpg",
+     "m": "/data/photos/inat-551579728-m.jpg"
+    },
+    "ratio": 0.897,
+    "name": {
+     "es": "Esponja vaso",
+     "en": "Azure Vase Sponge"
+    },
+    "sci": "Callyspongia plicifera",
+    "credit": "© tbuch79",
+    "license": "CC BY-NC 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "source": "https://www.inaturalist.org/observations/305894818",
+    "via": "iNaturalist",
+    "date": "2025-07-27",
+    "here": true
+   },
+   {
+    "id": "inat-57198203",
+    "src": {
+     "s": "/data/photos/inat-57198203-s.jpg",
+     "m": "/data/photos/inat-57198203-m.jpg"
+    },
+    "ratio": 1.333,
+    "name": {
+     "es": "Pez cofre",
+     "en": "Smooth Trunkfish"
+    },
+    "sci": "Lactophrys triqueter",
+    "credit": "© cyberkittyn",
+    "license": "CC BY-NC 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "source": "https://www.inaturalist.org/observations/36203319",
+    "via": "iNaturalist",
+    "date": "2019-11-27",
+    "here": true
+   },
+   {
+    "id": "inat-57198160",
+    "src": {
+     "s": "/data/photos/inat-57198160-s.jpg",
+     "m": "/data/photos/inat-57198160-m.jpg"
+    },
+    "ratio": 1.333,
+    "name": {
+     "es": "Mariposa rayada",
+     "en": "Banded Butterflyfish"
+    },
+    "sci": "Chaetodon striatus",
+    "credit": "© cyberkittyn",
+    "license": "CC BY-NC 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "source": "https://www.inaturalist.org/observations/36203303",
+    "via": "iNaturalist",
+    "date": "2019-11-27",
+    "here": true
+   },
+   {
+    "id": "inat-62866180",
+    "src": {
+     "s": "/data/photos/inat-62866180-s.jpg",
+     "m": "/data/photos/inat-62866180-m.jpg"
+    },
+    "ratio": 1.333,
+    "name": {
+     "es": "Ceratophyllidia papilligera",
+     "en": "Black Spotted Nudibranch"
+    },
+    "sci": "Ceratophyllidia papilligera",
+    "credit": "© csillam",
+    "license": "CC BY-NC-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+    "source": "https://www.inaturalist.org/observations/39614904",
+    "via": "iNaturalist",
+    "date": "2020-02-26",
+    "here": true
+   }
+  ],
+  "chiefs-quarters": [
+   {
+    "id": "inat-259170024",
+    "src": {
+     "s": "/data/photos/inat-259170024-s.jpg",
+     "m": "/data/photos/inat-259170024-m.jpg"
+    },
+    "ratio": 1.333,
+    "name": {
+     "es": "Esponja gigante de barril",
+     "en": "Giant Barrel Sponge"
+    },
+    "sci": "Xestospongia muta",
+    "credit": "© Floyd E. Hayes",
+    "license": "CC BY-NC 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "source": "https://www.inaturalist.org/observations/150317374",
+    "via": "iNaturalist",
+    "date": "2015-09-09",
+    "here": true
+   },
+   {
+    "id": "inat-62875341",
+    "src": {
+     "s": "/data/photos/inat-62875341-s.jpg",
+     "m": "/data/photos/inat-62875341-m.jpg"
+    },
+    "ratio": 1.337,
+    "name": {
+     "es": "Pez loro",
+     "en": "Stoplight Parrotfish"
+    },
+    "sci": "Sparisoma viride",
+    "credit": "© csillam",
+    "license": "CC BY-NC-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+    "source": "https://www.inaturalist.org/observations/39620386",
+    "via": "iNaturalist",
+    "date": "2020-02-26",
+    "here": true
+   },
+   {
+    "id": "inat-289415899",
+    "src": {
+     "s": "/data/photos/inat-289415899-s.jpg",
+     "m": "/data/photos/inat-289415899-m.jpg"
+    },
+    "ratio": 1.333,
+    "name": {
+     "es": "Pargo canchix",
+     "en": "Schoolmaster Snapper"
+    },
+    "sci": "Lutjanus apodus",
+    "credit": "© Floyd E. Hayes",
+    "license": "CC BY-NC 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "source": "https://www.inaturalist.org/observations/167093236",
+    "via": "iNaturalist",
+    "date": "2017-08-28",
+    "here": true
+   },
+   {
+    "id": "inat-527780936",
+    "src": {
+     "s": "/data/photos/inat-527780936-s.jpg",
+     "m": "/data/photos/inat-527780936-m.jpg"
+    },
+    "ratio": 1.333,
+    "name": {
+     "es": "Candil rufo",
+     "en": "Longspine Squirrelfish"
+    },
+    "sci": "Holocentrus rufus",
+    "credit": "© tim h",
+    "license": "CC BY-NC 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "source": "https://www.inaturalist.org/observations/293240131",
+    "via": "iNaturalist",
+    "date": "2025-06-27",
+    "here": true
+   }
+  ],
+  "hole-in-the-wall": [
+   {
+    "id": "inat-607817907",
+    "src": {
+     "s": "/data/photos/inat-607817907-s.jpg",
+     "m": "/data/photos/inat-607817907-m.jpg"
+    },
+    "ratio": 1.154,
+    "name": {
+     "es": "Abanico de mar",
+     "en": "Purple Sea Fan"
+    },
+    "sci": "Gorgonia ventalina",
+    "credit": "© Masumi Palhof",
+    "license": "CC BY-NC 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "source": "https://www.inaturalist.org/observations/334675803",
+    "via": "iNaturalist",
+    "date": "2025-12-18",
+    "here": true
+   },
+   {
+    "id": "inat-443637274",
+    "src": {
+     "s": "/data/photos/inat-443637274-s.jpg",
+     "m": "/data/photos/inat-443637274-m.jpg"
+    },
+    "ratio": 1.333,
+    "name": {
+     "es": "morena manchada",
+     "en": "Spotted Moray"
+    },
+    "sci": "Gymnothorax moringa",
+    "credit": "© Neil DeMaster",
+    "license": "CC BY-NC 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "source": "https://www.inaturalist.org/observations/248304878",
+    "via": "iNaturalist",
+    "date": "2024-08-20",
+    "here": true
+   },
+   {
+    "id": "inat-364331707",
+    "src": {
+     "s": "/data/photos/inat-364331707-s.jpg",
+     "m": "/data/photos/inat-364331707-m.jpg"
+    },
+    "ratio": 1.5,
+    "name": {
+     "es": "Cherna enjambre",
+     "en": "Graysby"
+    },
+    "sci": "Cephalopholis cruentata",
+    "credit": "© cello caruso-turiello",
+    "license": "CC BY 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+    "source": "https://www.inaturalist.org/observations/206011889",
+    "via": "iNaturalist",
+    "date": "2024-04-07",
+    "here": true
+   },
+   {
+    "id": "inat-340701652",
+    "src": {
+     "s": "/data/photos/inat-340701652-s.jpg",
+     "m": "/data/photos/inat-340701652-m.jpg"
+    },
+    "ratio": 1.333,
+    "name": {
+     "es": "Solmissus incisa",
+     "en": "Dinner Plate Jelly"
+    },
+    "sci": "Solmissus incisa",
+    "credit": "© GayleIsTired",
+    "license": "CC BY 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+    "source": "https://www.inaturalist.org/observations/193908179",
+    "via": "iNaturalist",
+    "date": "2023-07-26",
+    "here": true
+   }
+  ],
+  "spooky-channel": [
+   {
+    "id": "inat-181704464",
+    "src": {
+     "s": "/data/photos/inat-181704464-s.jpg",
+     "m": "/data/photos/inat-181704464-m.jpg"
+    },
+    "ratio": 1.5,
+    "name": {
+     "es": "Cangrejo de coral",
+     "en": "Batwing Coral Crab"
+    },
+    "sci": "Carpilius corallinus",
+    "credit": "© Pauline Walsh Jacobson",
+    "license": "CC BY 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+    "source": "https://www.inaturalist.org/observations/107977231",
+    "via": "iNaturalist",
+    "date": "1997-12-25",
+    "here": true
+   },
+   {
+    "id": "inat-607311920",
+    "src": {
+     "s": "/data/photos/inat-607311920-s.jpg",
+     "m": "/data/photos/inat-607311920-m.jpg"
+    },
+    "ratio": 1.333,
+    "name": {
+     "es": "Gran coral de estrellas",
+     "en": "Greater Star Coral"
+    },
+    "sci": "Montastraea cavernosa",
+    "credit": "© Masumi Palhof",
+    "license": "CC BY-NC 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "source": "https://www.inaturalist.org/observations/334425137",
+    "via": "iNaturalist",
+    "date": "2025-12-16",
+    "here": true
+   },
+   {
+    "id": "inat-181705692",
+    "src": {
+     "s": "/data/photos/inat-181705692-s.jpg",
+     "m": "/data/photos/inat-181705692-m.jpg"
+    },
+    "ratio": 0.667,
+    "name": {
+     "es": "Camarón de coral",
+     "en": "Pederson Cleaner Shrimp"
+    },
+    "sci": "Ancylomenes pedersoni",
+    "credit": "© Pauline Walsh Jacobson",
+    "license": "CC BY 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+    "source": "https://www.inaturalist.org/observations/107977724",
+    "via": "iNaturalist",
+    "date": "1997-12-25",
+    "here": true
+   },
+   {
+    "id": "inat-607334415",
+    "src": {
+     "s": "/data/photos/inat-607334415-s.jpg",
+     "m": "/data/photos/inat-607334415-m.jpg"
+    },
+    "ratio": 1.333,
+    "name": {
+     "es": "doncella arcoiris",
+     "en": "Rainbow Wrasse"
+    },
+    "sci": "Halichoeres pictus",
+    "credit": "© Masumi Palhof",
+    "license": "CC BY-NC 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "source": "https://www.inaturalist.org/observations/334438187",
+    "via": "iNaturalist",
+    "date": "2025-12-16",
+    "here": true
+   }
+  ],
+  "marys-place": [
+   {
+    "id": "inat-402182282",
+    "src": {
+     "s": "/data/photos/inat-402182282-s.jpg",
+     "m": "/data/photos/inat-402182282-m.jpg"
+    },
+    "ratio": 0.75,
+    "name": {
+     "es": "Gran coral de estrellas",
+     "en": "Greater Star Coral"
+    },
+    "sci": "Montastraea cavernosa",
+    "credit": "© Pauline Walsh Jacobson",
+    "license": "CC BY 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+    "source": "https://www.inaturalist.org/observations/226752584",
+    "via": "iNaturalist",
+    "date": "2022-07-27",
+    "here": true
+   },
+   {
+    "id": "inat-443517984",
+    "src": {
+     "s": "/data/photos/inat-443517984-s.jpg",
+     "m": "/data/photos/inat-443517984-m.jpg"
+    },
+    "ratio": 1.5,
+    "name": {
+     "es": "picudilla",
+     "en": "Northern Sennet"
+    },
+    "sci": "Sphyraena borealis",
+    "credit": "© Frank Krasovec",
+    "license": "CC BY-NC 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "source": "https://www.inaturalist.org/observations/248243109",
+    "via": "iNaturalist",
+    "date": "2023-02-24",
+    "here": true
+   },
+   {
+    "id": "inat-435301221",
+    "src": {
+     "s": "/data/photos/inat-435301221-s.jpg",
+     "m": "/data/photos/inat-435301221-m.jpg"
+    },
+    "ratio": 1.335,
+    "name": {
+     "es": "Gallineta café",
+     "en": "Grey Angelfish"
+    },
+    "sci": "Pomacanthus arcuatus",
+    "credit": "© Neil DeMaster",
+    "license": "CC BY-NC 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "source": "https://www.inaturalist.org/observations/244063313",
+    "via": "iNaturalist",
+    "date": "2024-08-13",
+    "here": true
+   },
+   {
+    "id": "inat-58686435",
+    "src": {
+     "s": "/data/photos/inat-58686435-s.jpg",
+     "m": "/data/photos/inat-58686435-m.jpg"
+    },
+    "ratio": 1.277,
+    "name": {
+     "es": "Ceratophyllidia papilligera",
+     "en": "Black Spotted Nudibranch"
+    },
+    "sci": "Ceratophyllidia papilligera",
+    "credit": "© Franco Colnago",
+    "license": "CC BY-NC 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "source": "https://www.inaturalist.org/observations/37059208",
+    "via": "iNaturalist",
+    "date": "2018-01-06",
+    "here": true
+   },
+   {
+    "id": "inat-177830095",
+    "src": {
+     "s": "/data/photos/inat-177830095-s.jpg",
+     "m": "/data/photos/inat-177830095-m.jpg"
+    },
+    "ratio": 2.073,
+    "name": {
+     "es": "mero índigo",
+     "en": "Indigo Hamlet"
+    },
+    "sci": "Hypoplectrus indigo",
+    "credit": "© craigjhowe",
+    "license": "CC BY-NC 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "source": "https://www.inaturalist.org/observations/105918844",
+    "via": "iNaturalist",
+    "date": "2022-01-16",
+    "here": true
+   }
+  ],
+  "zone:west-end": [
+   {
+    "id": "inat-607817907",
+    "src": {
+     "s": "/data/photos/inat-607817907-s.jpg",
+     "m": "/data/photos/inat-607817907-m.jpg"
+    },
+    "ratio": 1.154,
+    "name": {
+     "es": "Abanico de mar",
+     "en": "Purple Sea Fan"
+    },
+    "sci": "Gorgonia ventalina",
+    "credit": "© Masumi Palhof",
+    "license": "CC BY-NC 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "source": "https://www.inaturalist.org/observations/334675803",
+    "via": "iNaturalist",
+    "date": "2025-12-18",
+    "here": true
+   },
+   {
+    "id": "inat-181704464",
+    "src": {
+     "s": "/data/photos/inat-181704464-s.jpg",
+     "m": "/data/photos/inat-181704464-m.jpg"
+    },
+    "ratio": 1.5,
+    "name": {
+     "es": "Cangrejo de coral",
+     "en": "Batwing Coral Crab"
+    },
+    "sci": "Carpilius corallinus",
+    "credit": "© Pauline Walsh Jacobson",
+    "license": "CC BY 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+    "source": "https://www.inaturalist.org/observations/107977231",
+    "via": "iNaturalist",
+    "date": "1997-12-25",
+    "here": false,
+    "where": {
+     "es": "otro punto de Roatán",
+     "en": "elsewhere on Roatán"
+    }
+   },
+   {
+    "id": "inat-259170024",
+    "src": {
+     "s": "/data/photos/inat-259170024-s.jpg",
+     "m": "/data/photos/inat-259170024-m.jpg"
+    },
+    "ratio": 1.333,
+    "name": {
+     "es": "Esponja gigante de barril",
+     "en": "Giant Barrel Sponge"
+    },
+    "sci": "Xestospongia muta",
+    "credit": "© Floyd E. Hayes",
+    "license": "CC BY-NC 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "source": "https://www.inaturalist.org/observations/150317374",
+    "via": "iNaturalist",
+    "date": "2015-09-09",
+    "here": true
+   },
+   {
+    "id": "inat-551579728",
+    "src": {
+     "s": "/data/photos/inat-551579728-s.jpg",
+     "m": "/data/photos/inat-551579728-m.jpg"
+    },
+    "ratio": 0.897,
+    "name": {
+     "es": "Esponja vaso",
+     "en": "Azure Vase Sponge"
+    },
+    "sci": "Callyspongia plicifera",
+    "credit": "© tbuch79",
+    "license": "CC BY-NC 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "source": "https://www.inaturalist.org/observations/305894818",
+    "via": "iNaturalist",
+    "date": "2025-07-27",
+    "here": false,
+    "where": {
+     "es": "otro punto de Roatán",
+     "en": "elsewhere on Roatán"
+    }
+   },
+   {
+    "id": "inat-225236124",
+    "src": {
+     "s": "/data/photos/inat-225236124-s.jpg",
+     "m": "/data/photos/inat-225236124-m.jpg"
+    },
+    "ratio": 0.75,
+    "name": {
+     "es": "Pez erizo apache",
+     "en": "Longspined Porcupinefish"
+    },
+    "sci": "Diodon holocanthus",
+    "credit": "© Serena Stean",
+    "license": "CC BY-NC 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "source": "https://www.inaturalist.org/observations/132278778",
+    "via": "iNaturalist",
+    "date": "2017-01-12",
+    "here": true
+   }
+  ],
+  "zone:cordelia": [
+   {
+    "id": "inat-674921320",
+    "src": {
+     "s": "/data/photos/inat-674921320-s.jpg",
+     "m": "/data/photos/inat-674921320-m.jpg"
+    },
+    "ratio": 1.773,
+    "name": {
+     "es": "Raya pinta",
+     "en": "Spotted Eagle Ray"
+    },
+    "sci": "Aetobatus narinari",
+    "credit": "© kryolan",
+    "license": "CC BY-NC 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "source": "https://www.inaturalist.org/observations/369488678",
+    "via": "iNaturalist",
+    "date": "2025-05-25",
+    "here": false,
+    "where": {
+     "es": "las Islas de la Bahía",
+     "en": "the Bay Islands"
+    }
+   },
+   {
+    "id": "inat-603753496",
+    "src": {
+     "s": "/data/photos/inat-603753496-s.jpg",
+     "m": "/data/photos/inat-603753496-m.jpg"
+    },
+    "ratio": 1.333,
+    "name": {
+     "es": "Tortuga carey",
+     "en": "Hawksbill Sea Turtle"
+    },
+    "sci": "Eretmochelys imbricata",
+    "credit": "© Josh Noseworthy",
+    "license": "CC BY 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+    "source": "https://www.inaturalist.org/observations/332654070",
+    "via": "iNaturalist",
+    "date": "2025-12-29",
+    "here": false,
+    "where": {
+     "es": "las Islas de la Bahía",
+     "en": "the Bay Islands"
+    }
+   },
+   {
+    "id": "inat-67382384",
+    "src": {
+     "s": "/data/photos/inat-67382384-s.jpg",
+     "m": "/data/photos/inat-67382384-m.jpg"
+    },
+    "ratio": 1.432,
+    "name": {
+     "es": "Mero del Caribe",
+     "en": "Nassau Grouper"
+    },
+    "sci": "Epinephelus striatus",
+    "credit": "© mark-groeneveld",
+    "license": "CC BY 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+    "source": "https://www.inaturalist.org/observations/42437616",
+    "via": "iNaturalist",
+    "date": "2006-12-27",
+    "here": false,
+    "where": {
+     "es": "las Islas de la Bahía",
+     "en": "the Bay Islands"
+    }
+   },
+   {
+    "id": "inat-433012066",
+    "src": {
+     "s": "/data/photos/inat-433012066-s.jpg",
+     "m": "/data/photos/inat-433012066-m.jpg"
+    },
+    "ratio": 1.665,
+    "name": {
+     "es": "Langosta del Caribe",
+     "en": "Caribbean Spiny Lobster"
+    },
+    "sci": "Panulirus argus",
+    "credit": "© ktnt",
+    "license": "CC BY-NC 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "source": "https://www.inaturalist.org/observations/242788590",
+    "via": "iNaturalist",
+    "date": "2022-06-01",
+    "here": true
+   },
+   {
+    "id": "inat-177071293",
+    "src": {
+     "s": "/data/photos/inat-177071293-s.jpg",
+     "m": "/data/photos/inat-177071293-m.jpg"
+    },
+    "ratio": 1.333,
+    "name": {
+     "es": "Coral cuerno de ciervo",
+     "en": "Staghorn Coral"
+    },
+    "sci": "Acropora cervicornis",
+    "credit": "© Laura Zaldivar",
+    "license": "CC BY-NC 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "source": "https://www.inaturalist.org/observations/105522844",
+    "via": "iNaturalist",
+    "date": "2022-01-24",
+    "here": false,
+    "where": {
+     "es": "las Islas de la Bahía",
+     "en": "the Bay Islands"
+    }
+   }
+  ],
+  "zone:marys-place": [
+   {
+    "id": "inat-402182282",
+    "src": {
+     "s": "/data/photos/inat-402182282-s.jpg",
+     "m": "/data/photos/inat-402182282-m.jpg"
+    },
+    "ratio": 0.75,
+    "name": {
+     "es": "Gran coral de estrellas",
+     "en": "Greater Star Coral"
+    },
+    "sci": "Montastraea cavernosa",
+    "credit": "© Pauline Walsh Jacobson",
+    "license": "CC BY 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+    "source": "https://www.inaturalist.org/observations/226752584",
+    "via": "iNaturalist",
+    "date": "2022-07-27",
+    "here": true
+   },
+   {
+    "id": "inat-443517984",
+    "src": {
+     "s": "/data/photos/inat-443517984-s.jpg",
+     "m": "/data/photos/inat-443517984-m.jpg"
+    },
+    "ratio": 1.5,
+    "name": {
+     "es": "picudilla",
+     "en": "Northern Sennet"
+    },
+    "sci": "Sphyraena borealis",
+    "credit": "© Frank Krasovec",
+    "license": "CC BY-NC 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "source": "https://www.inaturalist.org/observations/248243109",
+    "via": "iNaturalist",
+    "date": "2023-02-24",
+    "here": true
+   },
+   {
+    "id": "inat-435301221",
+    "src": {
+     "s": "/data/photos/inat-435301221-s.jpg",
+     "m": "/data/photos/inat-435301221-m.jpg"
+    },
+    "ratio": 1.335,
+    "name": {
+     "es": "Gallineta café",
+     "en": "Grey Angelfish"
+    },
+    "sci": "Pomacanthus arcuatus",
+    "credit": "© Neil DeMaster",
+    "license": "CC BY-NC 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "source": "https://www.inaturalist.org/observations/244063313",
+    "via": "iNaturalist",
+    "date": "2024-08-13",
+    "here": true
+   },
+   {
+    "id": "inat-58686435",
+    "src": {
+     "s": "/data/photos/inat-58686435-s.jpg",
+     "m": "/data/photos/inat-58686435-m.jpg"
+    },
+    "ratio": 1.277,
+    "name": {
+     "es": "Ceratophyllidia papilligera",
+     "en": "Black Spotted Nudibranch"
+    },
+    "sci": "Ceratophyllidia papilligera",
+    "credit": "© Franco Colnago",
+    "license": "CC BY-NC 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "source": "https://www.inaturalist.org/observations/37059208",
+    "via": "iNaturalist",
+    "date": "2018-01-06",
+    "here": true
+   },
+   {
+    "id": "inat-177830095",
+    "src": {
+     "s": "/data/photos/inat-177830095-s.jpg",
+     "m": "/data/photos/inat-177830095-m.jpg"
+    },
+    "ratio": 2.073,
+    "name": {
+     "es": "mero índigo",
+     "en": "Indigo Hamlet"
+    },
+    "sci": "Hypoplectrus indigo",
+    "credit": "© craigjhowe",
+    "license": "CC BY-NC 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "source": "https://www.inaturalist.org/observations/105918844",
+    "via": "iNaturalist",
+    "date": "2022-01-16",
+    "here": true
+   }
+  ],
+  "zone:big-bight": [
+   {
+    "id": "inat-400717663",
+    "src": {
+     "s": "/data/photos/inat-400717663-s.jpg",
+     "m": "/data/photos/inat-400717663-m.jpg"
+    },
+    "ratio": 1.333,
+    "name": {
+     "es": "Gobio neón caribeño",
+     "en": "Caribbean Neon Goby"
+    },
+    "sci": "Elacatinus lobeli",
+    "credit": "© Pauline Walsh Jacobson",
+    "license": "CC BY 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+    "source": "https://www.inaturalist.org/observations/225982496",
+    "via": "iNaturalist",
+    "date": "2022-07-25",
+    "here": false,
+    "where": {
+     "es": "las Islas de la Bahía",
+     "en": "the Bay Islands"
+    }
+   },
+   {
+    "id": "inat-62806647",
+    "src": {
+     "s": "/data/photos/inat-62806647-s.jpg",
+     "m": "/data/photos/inat-62806647-m.jpg"
+    },
+    "ratio": 1.167,
+    "name": {
+     "es": "Pez mariposa de cuatro ojos",
+     "en": "Four-eyed Butterflyfish"
+    },
+    "sci": "Chaetodon capistratus",
+    "credit": "© csillam",
+    "license": "CC BY-NC-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+    "source": "https://www.inaturalist.org/observations/39579895",
+    "via": "iNaturalist",
+    "date": "2020-02-23",
+    "here": true
+   },
+   {
+    "id": "inat-341568893",
+    "src": {
+     "s": "/data/photos/inat-341568893-s.jpg",
+     "m": "/data/photos/inat-341568893-m.jpg"
+    },
+    "ratio": 1.333,
+    "name": {
+     "es": "Tortuga verde",
+     "en": "Green Sea Turtle"
+    },
+    "sci": "Chelonia mydas",
+    "credit": "© shaeleen",
+    "license": "CC BY-NC 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "source": "https://www.inaturalist.org/observations/194333028",
+    "via": "iNaturalist",
+    "date": "2019-07-08",
+    "here": false,
+    "where": {
+     "es": "las Islas de la Bahía",
+     "en": "the Bay Islands"
+    }
+   },
+   {
+    "id": "inat-555473959",
+    "src": {
+     "s": "/data/photos/inat-555473959-s.jpg",
+     "m": "/data/photos/inat-555473959-m.jpg"
+    },
+    "ratio": 1.333,
+    "name": {
+     "es": "Raya pinta",
+     "en": "Spotted Eagle Ray"
+    },
+    "sci": "Aetobatus narinari",
+    "credit": "© tbuch79",
+    "license": "CC BY-NC 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "source": "https://www.inaturalist.org/observations/307920634",
+    "via": "iNaturalist",
+    "date": "2025-07-30",
+    "here": false,
+    "where": {
+     "es": "las Islas de la Bahía",
+     "en": "the Bay Islands"
+    }
+   }
+  ],
+  "zone:diamond-rock": [
+   {
+    "id": "inat-5932078",
+    "src": {
+     "s": "/data/photos/inat-5932078-s.jpg",
+     "m": "/data/photos/inat-5932078-m.jpg"
+    },
+    "ratio": 1.333,
+    "name": {
+     "es": "Coral pilar",
+     "en": "Pillar Coral"
+    },
+    "sci": "Dendrogyra cylindrus",
+    "credit": "© Neil DeMaster",
+    "license": "CC BY-NC 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "source": "https://www.inaturalist.org/observations/4879809",
+    "via": "iNaturalist",
+    "date": "2014-04-08",
+    "here": false,
+    "where": {
+     "es": "las Islas de la Bahía",
+     "en": "the Bay Islands"
+    }
+   },
+   {
+    "id": "inat-359354599",
+    "src": {
+     "s": "/data/photos/inat-359354599-s.jpg",
+     "m": "/data/photos/inat-359354599-m.jpg"
+    },
+    "ratio": 1.426,
+    "name": {
+     "es": "Abanico de mar",
+     "en": "Purple Sea Fan"
+    },
+    "sci": "Gorgonia ventalina",
+    "credit": "© Leona Kustra",
+    "license": "CC BY-NC 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "source": "https://www.inaturalist.org/observations/203396840",
+    "via": "iNaturalist",
+    "date": "2024-03-19",
+    "here": true
+   },
+   {
+    "id": "inat-359354575",
+    "src": {
+     "s": "/data/photos/inat-359354575-s.jpg",
+     "m": "/data/photos/inat-359354575-m.jpg"
+    },
+    "ratio": 0.969,
+    "name": {
+     "es": "Esponja de cuerda con poros",
+     "en": "Scattered Pore Rope Sponge"
+    },
+    "sci": "Aplysina fulva",
+    "credit": "© Leona Kustra",
+    "license": "CC BY-NC 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "source": "https://www.inaturalist.org/observations/203396832",
+    "via": "iNaturalist",
+    "date": "2024-03-19",
+    "here": true
+   },
+   {
+    "id": "inat-359354692",
+    "src": {
+     "s": "/data/photos/inat-359354692-s.jpg",
+     "m": "/data/photos/inat-359354692-m.jpg"
+    },
+    "ratio": 1.195,
+    "name": {
+     "es": "Gran coral de estrellas",
+     "en": "Greater Star Coral"
+    },
+    "sci": "Montastraea cavernosa",
+    "credit": "© Leona Kustra",
+    "license": "CC BY-NC 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "source": "https://www.inaturalist.org/observations/203396868",
+    "via": "iNaturalist",
+    "date": "2024-03-19",
+    "here": true
+   }
+  ],
+  "zone:santa-elena": [
+   {
+    "id": "inat-757341086",
+    "src": {
+     "s": "/data/photos/inat-757341086-s.jpg",
+     "m": "/data/photos/inat-757341086-m.jpg"
+    },
+    "ratio": 1.259,
+    "name": {
+     "es": "Burro payaso",
+     "en": "Porkfish"
+    },
+    "sci": "Anisotremus virginicus",
+    "credit": "© Gak Stonn",
+    "license": "CC BY-NC 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "source": "https://www.inaturalist.org/observations/411660842",
+    "via": "iNaturalist",
+    "date": "2023-03-13",
+    "here": false,
+    "where": {
+     "es": "otro punto de Roatán",
+     "en": "elsewhere on Roatán"
+    }
+   },
+   {
+    "id": "inat-360283025",
+    "src": {
+     "s": "/data/photos/inat-360283025-s.jpg",
+     "m": "/data/photos/inat-360283025-m.jpg"
+    },
+    "ratio": 1.067,
+    "name": {
+     "es": "Abanico de mar",
+     "en": "Purple Sea Fan"
+    },
+    "sci": "Gorgonia ventalina",
+    "credit": "© Leona Kustra",
+    "license": "CC BY-NC 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "source": "https://www.inaturalist.org/observations/203879068",
+    "via": "iNaturalist",
+    "date": "2024-03-19",
+    "here": false,
+    "where": {
+     "es": "otro punto de Roatán",
+     "en": "elsewhere on Roatán"
+    }
+   },
+   {
+    "id": "inat-370578901",
+    "src": {
+     "s": "/data/photos/inat-370578901-s.jpg",
+     "m": "/data/photos/inat-370578901-m.jpg"
+    },
+    "ratio": 1.333,
+    "name": {
+     "es": "Tiburón gata",
+     "en": "Nurse Shark"
+    },
+    "sci": "Ginglymostoma cirratum",
+    "credit": "© gdbirdsnfish",
+    "license": "CC BY-NC 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "source": "https://www.inaturalist.org/observations/209404284",
+    "via": "iNaturalist",
+    "date": "2024-03-01",
+    "here": true
+   },
+   {
+    "id": "inat-360282974",
+    "src": {
+     "s": "/data/photos/inat-360282974-s.jpg",
+     "m": "/data/photos/inat-360282974-m.jpg"
+    },
+    "ratio": 1.25,
+    "name": {
+     "es": "Gallineta negra",
+     "en": "French Angelfish"
+    },
+    "sci": "Pomacanthus paru",
+    "credit": "© Leona Kustra",
+    "license": "CC BY-NC 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "source": "https://www.inaturalist.org/observations/203879053",
+    "via": "iNaturalist",
+    "date": "2024-03-19",
+    "here": false,
+    "where": {
+     "es": "otro punto de Roatán",
+     "en": "elsewhere on Roatán"
+    }
+   }
+  ],
+  "zone:pelican-point": [
+   {
+    "id": "inat-359075722",
+    "src": {
+     "s": "/data/photos/inat-359075722-s.jpg",
+     "m": "/data/photos/inat-359075722-m.jpg"
+    },
+    "ratio": 1.641,
+    "name": {
+     "es": "Tiburón gata",
+     "en": "Nurse Shark"
+    },
+    "sci": "Ginglymostoma cirratum",
+    "credit": "© Leona Kustra",
+    "license": "CC BY-NC 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "source": "https://www.inaturalist.org/observations/203249737",
+    "via": "iNaturalist",
+    "date": "2024-03-19",
+    "here": true
+   },
+   {
+    "id": "inat-744566469",
+    "src": {
+     "s": "/data/photos/inat-744566469-s.jpg",
+     "m": "/data/photos/inat-744566469-m.jpg"
+    },
+    "ratio": 1.333,
+    "name": {
+     "es": "Raya látigo",
+     "en": "Southern Stingray"
+    },
+    "sci": "Hypanus americanus",
+    "credit": "© Gak Stonn",
+    "license": "CC BY-NC 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "source": "https://www.inaturalist.org/observations/405365156",
+    "via": "iNaturalist",
+    "date": "2023-03-14",
+    "here": true
+   },
+   {
+    "id": "inat-359075737",
+    "src": {
+     "s": "/data/photos/inat-359075737-s.jpg",
+     "m": "/data/photos/inat-359075737-m.jpg"
+    },
+    "ratio": 1.363,
+    "name": {
+     "es": "Cirujano azul",
+     "en": "Atlantic Blue Tang"
+    },
+    "sci": "Acanthurus coeruleus",
+    "credit": "© Leona Kustra",
+    "license": "CC BY-NC 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "source": "https://www.inaturalist.org/observations/203249740",
+    "via": "iNaturalist",
+    "date": "2024-03-19",
+    "here": true
+   },
+   {
+    "id": "inat-359075768",
+    "src": {
+     "s": "/data/photos/inat-359075768-s.jpg",
+     "m": "/data/photos/inat-359075768-m.jpg"
+    },
+    "ratio": 1.247,
+    "name": {
+     "es": "Pez loro real",
+     "en": "Queen Parrotfish"
+    },
+    "sci": "Scarus vetula",
+    "credit": "© Leona Kustra",
+    "license": "CC BY-NC 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "source": "https://www.inaturalist.org/observations/203249755",
+    "via": "iNaturalist",
+    "date": "2024-03-19",
+    "here": true
+   }
+  ],
+  "zone:utila-sw": [
+   {
+    "id": "inat-616206710",
+    "src": {
+     "s": "/data/photos/inat-616206710-s.jpg",
+     "m": "/data/photos/inat-616206710-m.jpg"
+    },
+    "ratio": 1.5,
+    "name": {
+     "es": "Coral cuerno de alce",
+     "en": "Elkhorn Coral"
+    },
+    "sci": "Acropora palmata",
+    "credit": "© cjmatheson",
+    "license": "CC BY-NC 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "source": "https://www.inaturalist.org/observations/338805794",
+    "via": "iNaturalist",
+    "date": "2026-01-31",
+    "here": false,
+    "where": {
+     "es": "las Islas de la Bahía",
+     "en": "the Bay Islands"
+    }
+   },
+   {
+    "id": "inat-55846761",
+    "src": {
+     "s": "/data/photos/inat-55846761-s.jpg",
+     "m": "/data/photos/inat-55846761-m.jpg"
+    },
+    "ratio": 1.333,
+    "name": {
+     "es": "Chopa grisácea",
+     "en": "Highfin Chub"
+    },
+    "sci": "Kyphosus cinerascens",
+    "credit": "© Rafael de la Parra",
+    "license": "CC BY-NC 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "source": "https://www.inaturalist.org/observations/35418367",
+    "via": "iNaturalist",
+    "date": "2011-04-07",
+    "here": false,
+    "where": {
+     "es": "otro punto de Utila",
+     "en": "elsewhere on Utila"
+    }
+   },
+   {
+    "id": "inat-60058563",
+    "src": {
+     "s": "/data/photos/inat-60058563-s.jpg",
+     "m": "/data/photos/inat-60058563-m.jpg"
+    },
+    "ratio": 1.779,
+    "name": {
+     "es": "Tiburón gata",
+     "en": "Nurse Shark"
+    },
+    "sci": "Ginglymostoma cirratum",
+    "credit": "© Rafael de la Parra",
+    "license": "CC BY-NC 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "source": "https://www.inaturalist.org/observations/37835255",
+    "via": "iNaturalist",
+    "date": "2016-04-19",
+    "here": false,
+    "where": {
+     "es": "otro punto de Utila",
+     "en": "elsewhere on Utila"
+    }
+   },
+   {
+    "id": "inat-308247465",
+    "src": {
+     "s": "/data/photos/inat-308247465-s.jpg",
+     "m": "/data/photos/inat-308247465-m.jpg"
+    },
+    "ratio": 0.946,
+    "name": {
+     "es": "Raya látigo",
+     "en": "Southern Stingray"
+    },
+    "sci": "Hypanus americanus",
+    "credit": "© swg_critter",
+    "license": "CC BY-NC 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "source": "https://www.inaturalist.org/observations/177246936",
+    "via": "iNaturalist",
+    "date": "2023-08-07",
+    "here": false,
+    "where": {
+     "es": "otro punto de Utila",
+     "en": "elsewhere on Utila"
+    }
+   }
+  ],
+  "zone:guanaja-sw": [
+   {
+    "id": "inat-177128843",
+    "src": {
+     "s": "/data/photos/inat-177128843-s.jpg",
+     "m": "/data/photos/inat-177128843-m.jpg"
+    },
+    "ratio": 1.028,
+    "name": {
+     "es": "Coral pilar",
+     "en": "Pillar Coral"
+    },
+    "sci": "Dendrogyra cylindrus",
+    "credit": "© Laura Zaldivar",
+    "license": "CC BY-NC 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "source": "https://www.inaturalist.org/observations/105552619",
+    "via": "iNaturalist",
+    "date": "2022-01-12",
+    "here": false,
+    "where": {
+     "es": "las Islas de la Bahía",
+     "en": "the Bay Islands"
+    }
+   },
+   {
+    "id": "inat-622844877",
+    "src": {
+     "s": "/data/photos/inat-622844877-s.jpg",
+     "m": "/data/photos/inat-622844877-m.jpg"
+    },
+    "ratio": 1.234,
+    "name": {
+     "es": "Estrella cojín",
+     "en": "Red Cushion Sea Star"
+    },
+    "sci": "Oreaster reticulatus",
+    "credit": "© Jeff Garner",
+    "license": "CC BY-NC 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "source": "https://www.inaturalist.org/observations/342065531",
+    "via": "iNaturalist",
+    "date": "2026-02-12",
+    "here": true
+   },
+   {
+    "id": "inat-621045826",
+    "src": {
+     "s": "/data/photos/inat-621045826-s.jpg",
+     "m": "/data/photos/inat-621045826-m.jpg"
+    },
+    "ratio": 1.018,
+    "name": {
+     "es": "Coral flor suave",
+     "en": "Smooth Flower Coral"
+    },
+    "sci": "Eusmilia fastigiata",
+    "credit": "© Jeff Garner",
+    "license": "CC BY-NC 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "source": "https://www.inaturalist.org/observations/341183415",
+    "via": "iNaturalist",
+    "date": "2026-02-10",
+    "here": false,
+    "where": {
+     "es": "las Islas de la Bahía",
+     "en": "the Bay Islands"
+    }
+   },
+   {
+    "id": "inat-622217430",
+    "src": {
+     "s": "/data/photos/inat-622217430-s.jpg",
+     "m": "/data/photos/inat-622217430-m.jpg"
+    },
+    "ratio": 1.123,
+    "name": {
+     "es": "Coral cerebro estriado",
+     "en": "Grooved Brain Coral"
+    },
+    "sci": "Diploria labyrinthiformis",
+    "credit": "© Jeff Garner",
+    "license": "CC BY-NC 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "source": "https://www.inaturalist.org/observations/341756597",
+    "via": "iNaturalist",
+    "date": "2026-02-11",
+    "here": false,
+    "where": {
+     "es": "las Islas de la Bahía",
+     "en": "the Bay Islands"
+    }
+   }
+  ],
+  "zone:guanaja-ne": [
+   {
+    "id": "inat-620749866",
+    "src": {
+     "s": "/data/photos/inat-620749866-s.jpg",
+     "m": "/data/photos/inat-620749866-m.jpg"
+    },
+    "ratio": 1.243,
+    "name": {
+     "es": "Coral cerebro estriado",
+     "en": "Grooved Brain Coral"
+    },
+    "sci": "Diploria labyrinthiformis",
+    "credit": "© Jeff Garner",
+    "license": "CC BY-NC 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "source": "https://www.inaturalist.org/observations/341040916",
+    "via": "iNaturalist",
+    "date": "2026-02-10",
+    "here": false,
+    "where": {
+     "es": "las Islas de la Bahía",
+     "en": "the Bay Islands"
+    }
+   },
+   {
+    "id": "inat-325190085",
+    "src": {
+     "s": "/data/photos/inat-325190085-s.jpg",
+     "m": "/data/photos/inat-325190085-m.jpg"
+    },
+    "ratio": 1.5,
+    "name": {
+     "es": "Pez león asiático",
+     "en": "Common Lionfish"
+    },
+    "sci": "Pterois volitans",
+    "credit": "© Anuar Acosta",
+    "license": "CC BY-NC 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "source": "https://www.inaturalist.org/observations/186120106",
+    "via": "iNaturalist",
+    "date": "2023-10-03",
+    "here": false,
+    "where": {
+     "es": "otro punto de Guanaja",
+     "en": "elsewhere on Guanaja"
+    }
+   },
+   {
+    "id": "inat-620041685",
+    "src": {
+     "s": "/data/photos/inat-620041685-s.jpg",
+     "m": "/data/photos/inat-620041685-m.jpg"
+    },
+    "ratio": 1.033,
+    "name": {
+     "es": "Coral rocoso de estrellas",
+     "en": "Lobed Star Coral"
+    },
+    "sci": "Orbicella annularis",
+    "credit": "© Jeff Garner",
+    "license": "CC BY-NC 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "source": "https://www.inaturalist.org/observations/340695393",
+    "via": "iNaturalist",
+    "date": "2026-02-10",
+    "here": false,
+    "where": {
+     "es": "las Islas de la Bahía",
+     "en": "the Bay Islands"
+    }
+   }
+  ]
+ },
+ "species": {
+  "brain": {
+   "id": "inat-181666903",
+   "src": {
+    "s": "/data/photos/inat-181666903-s.jpg",
+    "m": "/data/photos/inat-181666903-m.jpg"
+   },
+   "ratio": 1.5,
+   "name": {
+    "es": "Coral cerebro estriado",
+    "en": "Grooved Brain Coral"
+   },
+   "sci": "Diploria labyrinthiformis",
+   "credit": "© Pauline Walsh Jacobson",
+   "license": "CC BY 4.0",
+   "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+   "source": "https://www.inaturalist.org/observations/107956063",
+   "via": "iNaturalist",
+   "date": "1997-12-22",
+   "here": false,
+   "where": {
+    "es": "las Islas de la Bahía",
+    "en": "the Bay Islands"
+   }
+  },
+  "star": {
+   "id": "inat-607311920",
+   "src": {
+    "s": "/data/photos/inat-607311920-s.jpg",
+    "m": "/data/photos/inat-607311920-m.jpg"
+   },
+   "ratio": 1.333,
+   "name": {
+    "es": "Gran coral de estrellas",
+    "en": "Greater Star Coral"
+   },
+   "sci": "Montastraea cavernosa",
+   "credit": "© Masumi Palhof",
+   "license": "CC BY-NC 4.0",
+   "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+   "source": "https://www.inaturalist.org/observations/334425137",
+   "via": "iNaturalist",
+   "date": "2025-12-16",
+   "here": false,
+   "where": {
+    "es": "otro punto de Roatán",
+    "en": "elsewhere on Roatán"
+   }
+  },
+  "elkhorn": {
+   "id": "inat-616206710",
+   "src": {
+    "s": "/data/photos/inat-616206710-s.jpg",
+    "m": "/data/photos/inat-616206710-m.jpg"
+   },
+   "ratio": 1.5,
+   "name": {
+    "es": "Coral cuerno de alce",
+    "en": "Elkhorn Coral"
+   },
+   "sci": "Acropora palmata",
+   "credit": "© cjmatheson",
+   "license": "CC BY-NC 4.0",
+   "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+   "source": "https://www.inaturalist.org/observations/338805794",
+   "via": "iNaturalist",
+   "date": "2026-01-31",
+   "here": false,
+   "where": {
+    "es": "las Islas de la Bahía",
+    "en": "the Bay Islands"
+   }
+  },
+  "staghorn": {
+   "id": "inat-33690545",
+   "src": {
+    "s": "/data/photos/inat-33690545-s.jpg",
+    "m": "/data/photos/inat-33690545-m.jpg"
+   },
+   "ratio": 1.643,
+   "name": {
+    "es": "Coral cuerno de ciervo",
+    "en": "Staghorn Coral"
+   },
+   "sci": "Acropora cervicornis",
+   "credit": "© Eric van den Berghe",
+   "license": "CC BY-NC 4.0",
+   "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+   "source": "https://www.inaturalist.org/observations/21753589",
+   "via": "iNaturalist",
+   "date": "2015-01-07",
+   "here": false,
+   "where": {
+    "es": "las Islas de la Bahía",
+    "en": "the Bay Islands"
+   }
+  },
+  "pillar": {
+   "id": "inat-765177879",
+   "src": {
+    "s": "/data/photos/inat-765177879-s.jpg",
+    "m": "/data/photos/inat-765177879-m.jpg"
+   },
+   "ratio": 1.049,
+   "name": {
+    "es": "Coral pilar",
+    "en": "Pillar Coral"
+   },
+   "sci": "Dendrogyra cylindrus",
+   "credit": "© Jean H.",
+   "license": "CC BY-NC-SA 4.0",
+   "licenseUrl": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+   "source": "https://www.inaturalist.org/observations/415538206",
+   "via": "iNaturalist",
+   "date": "2008-06-17",
+   "here": false,
+   "where": {
+    "es": "las Islas de la Bahía",
+    "en": "the Bay Islands"
+   }
+  },
+  "fan": {
+   "id": "inat-607817907",
+   "src": {
+    "s": "/data/photos/inat-607817907-s.jpg",
+    "m": "/data/photos/inat-607817907-m.jpg"
+   },
+   "ratio": 1.154,
+   "name": {
+    "es": "Abanico de mar",
+    "en": "Purple Sea Fan"
+   },
+   "sci": "Gorgonia ventalina",
+   "credit": "© Masumi Palhof",
+   "license": "CC BY-NC 4.0",
+   "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+   "source": "https://www.inaturalist.org/observations/334675803",
+   "via": "iNaturalist",
+   "date": "2025-12-18",
+   "here": false,
+   "where": {
+    "es": "otro punto de Roatán",
+    "en": "elsewhere on Roatán"
+   }
+  },
+  "rod": {
+   "id": "inat-660155730",
+   "src": {
+    "s": "/data/photos/inat-660155730-s.jpg",
+    "m": "/data/photos/inat-660155730-m.jpg"
+   },
+   "ratio": 1.109,
+   "name": {
+    "es": "Eunicea flexuosa",
+    "en": "Bent Sea Rod"
+   },
+   "sci": "Eunicea flexuosa",
+   "credit": "© portioid",
+   "license": "CC BY 4.0",
+   "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+   "source": "https://www.inaturalist.org/observations/361719886",
+   "via": "iNaturalist",
+   "date": "2026-05-14",
+   "here": false,
+   "where": {
+    "es": "otro punto de Utila",
+    "en": "elsewhere on Utila"
+   }
+  },
+  "barrel": {
+   "id": "inat-259170024",
+   "src": {
+    "s": "/data/photos/inat-259170024-s.jpg",
+    "m": "/data/photos/inat-259170024-m.jpg"
+   },
+   "ratio": 1.333,
+   "name": {
+    "es": "Esponja gigante de barril",
+    "en": "Giant Barrel Sponge"
+   },
+   "sci": "Xestospongia muta",
+   "credit": "© Floyd E. Hayes",
+   "license": "CC BY-NC 4.0",
+   "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+   "source": "https://www.inaturalist.org/observations/150317374",
+   "via": "iNaturalist",
+   "date": "2015-09-09",
+   "here": false,
+   "where": {
+    "es": "otro punto de Roatán",
+    "en": "elsewhere on Roatán"
+   }
+  },
+  "tube": {
+   "id": "inat-401232395",
+   "src": {
+    "s": "/data/photos/inat-401232395-s.jpg",
+    "m": "/data/photos/inat-401232395-m.jpg"
+   },
+   "ratio": 0.75,
+   "name": {
+    "es": "Aplysina archeri",
+    "en": "Stovepipe Sponge"
+   },
+   "sci": "Aplysina archeri",
+   "credit": "© Pauline Walsh Jacobson",
+   "license": "CC BY 4.0",
+   "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+   "source": "https://www.inaturalist.org/observations/226253092",
+   "via": "iNaturalist",
+   "date": "2022-07-26",
+   "here": false,
+   "where": {
+    "es": "otro punto de Roatán",
+    "en": "elsewhere on Roatán"
+   }
+  },
+  "vase": {
+   "id": "inat-551579728",
+   "src": {
+    "s": "/data/photos/inat-551579728-s.jpg",
+    "m": "/data/photos/inat-551579728-m.jpg"
+   },
+   "ratio": 0.897,
+   "name": {
+    "es": "Esponja vaso",
+    "en": "Azure Vase Sponge"
+   },
+   "sci": "Callyspongia plicifera",
+   "credit": "© tbuch79",
+   "license": "CC BY-NC 4.0",
+   "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+   "source": "https://www.inaturalist.org/observations/305894818",
+   "via": "iNaturalist",
+   "date": "2025-07-27",
+   "here": false,
+   "where": {
+    "es": "otro punto de Roatán",
+    "en": "elsewhere on Roatán"
+   }
+  },
+  "grass": {
+   "id": "inat-65209533",
+   "src": {
+    "s": "/data/photos/inat-65209533-s.jpg",
+    "m": "/data/photos/inat-65209533-m.jpg"
+   },
+   "ratio": 1.333,
+   "name": {
+    "es": "Hierba de tortuga",
+    "en": "Turtle Grass"
+   },
+   "sci": "Thalassia testudinum",
+   "credit": "© Eric van den Berghe",
+   "license": "CC BY-NC 4.0",
+   "licenseUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+   "source": "https://www.inaturalist.org/observations/41126165",
+   "via": "iNaturalist",
+   "date": "2015-01-08",
+   "here": false,
+   "where": {
+    "es": "otro punto de Utila",
+    "en": "elsewhere on Utila"
+   }
+  }
+ }
+}

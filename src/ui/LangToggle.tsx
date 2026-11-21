@@ -1,10 +1,10 @@
 import { useLang } from "../i18n";
 
-/** ES | EN segmented switch (Spanish first). */
+/** ES | EN as two 3D chips (Spanish first); the selected one stays pressed in. */
 export function LangToggle() {
   const { lang, setLang } = useLang();
   return (
-    <div className="lang" role="group" aria-label="Idioma / Language">
+    <div className="lang chips" role="group" aria-label="Idioma / Language">
       <button aria-pressed={lang === "es"} onClick={() => setLang("es")} lang="es">
         ES
       </button>

@@ -3,7 +3,6 @@ import { accent, fmtDate, fmtNum, useLang, useT } from "../i18n";
 import { levelFor, rampCSS } from "../lib/alert";
 import { loadLatest, type Latest } from "../lib/data";
 import { ISLAND_ORDER as ORDER, SCENE_ISLANDS as AVAILABLE } from "../lib/islands";
-import { LITE } from "../lib/device";
 import { href } from "../lib/router";
 import { AlertChip } from "../ui/AlertChip";
 import { ArchipelagoMap } from "../ui/ArchipelagoMap";
@@ -11,12 +10,11 @@ import { HeatKey } from "../ui/HeatKey";
 import { HeatStripes } from "../ui/HeatStripes";
 import { IconArrow } from "../ui/Icons";
 import { Sparkline } from "../ui/Sparkline";
+import { SpecularButton } from "../ui/SpecularButton";
 import { HAS_WEBGL } from "../webgl";
 
 // The dotted sea (hero background) loads after the first paint.
 const DottedSea = lazy(() => import("../ui/DottedSea"));
-// The metal ring on the main button (metal-fx) also loads after the first paint.
-const MetalRing = lazy(() => import("../ui/MetalRing"));
 // The headline's wave (floodtext) too: a plain headline with the same text shows until it loads.
 const FloodText = lazy(() => import("@overpunch/floodtext").then((m) => ({ default: m.FloodText })));
 
@@ -83,15 +81,11 @@ export function Home() {
             </Suspense>
             <p className="hero-sub">{t("home.sub")}</p>
             <div className="hero-actions">
-              {HAS_WEBGL &&
-                (() => {
-                  const cta = (
-                    <a className="btn light hero-cta" href={href.islands}>
-                      {t("home.ctaIslands")} <IconArrow />
-                    </a>
-                  );
-                  return LITE ? cta : <Suspense fallback={cta}><MetalRing>{cta}</MetalRing></Suspense>;
-                })()}
+              {HAS_WEBGL && (
+                <SpecularButton href={href.islands} className="btn light hero-cta" lineColor="#2f86ff" baseColor="#9cc6ff">
+                  {t("home.ctaIslands")} <IconArrow />
+                </SpecularButton>
+              )}
               <a className="btn primary" href={href.learn}>
                 {t("home.ctaLearn")} <IconArrow />
               </a>
@@ -136,9 +130,9 @@ export function Home() {
                     ))}
                   </div>
                   {AVAILABLE.has(isl) && HAS_WEBGL && (
-                    <a className="btn primary small" href={href.island(isl)}>
+                    <SpecularButton href={href.island(isl)} className="btn primary small" lineColor="#ffffff" baseColor="#bfe0ff">
                       {t("home.open3d")} <IconArrow />
-                    </a>
+                    </SpecularButton>
                   )}
                 </div>
                 <div className="strip" role="img" aria-label={`${latest.islands[isl].name}: ${t("home.panelTitle")}`}>

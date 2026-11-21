@@ -224,5 +224,22 @@
   "isles.kicker": "Roatán · Utila · Guanaja",
   "isles.title": "Explora las islas *en 3D*",
   "isles.lead": "Elige una isla para recorrer su relieve, su arrecife y el calor del mar día por día, o subir al barco de investigación.",
-  "isles.note": "Vistas previas del relieve y la profundidad reales (Copernicus DEM, Allen Coral Atlas, GEBCO), con la altura exagerada. Son un modelo, no una carta de navegación."
+  "isles.note": "Vistas previas del relieve y la profundidad reales (Copernicus DEM, Allen Coral Atlas, GEBCO), con la altura exagerada. Son un modelo, no una carta de navegación.",
+  "photos.here": "Foto tomada aquí",
+  "photos.from": "Foto de {where}",
+  "photos.show": "Ver foto {n}",
+  "photos.button": "Fotos",
+  "photos.title": "Fotos del lugar",
+  "photos.creditsTitle": "Créditos de las *fotos*",
+  "photos.creditsLead": "Fotos con licencia abierta de iNaturalist y Wikimedia Commons, usadas sin modificar y con el crédito de cada autor. Las licencias NC (no comercial) se cumplen porque ReefQuest es gratuito y sin fines de lucro.",
+  "photos.species": "Guía de campo",
+  "boat.seePhotos": "Ver fotos",
+  "photos.label": "Fotos",
+  "photos.all": "Ver todas las fotos",
+  "photos.allTitle": "Vida en los arrecifes",
+  "photos.domeHint": "Arrastra para mirar alrededor · toca una foto para verla",
+  "footer.explore": "Explorar",
+  "footer.project": "El proyecto",
+  "footer.data": "Datos: NOAA Coral Reef Watch · Allen Coral Atlas · GEBCO · Copernicus DEM · OpenStreetMap · iNaturalist",
+  "footer.license": "Código bajo licencia MIT · © 2026 ReefQuest"
 }

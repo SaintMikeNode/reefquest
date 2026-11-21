@@ -225,6 +225,9 @@ function bodyMaterial(color: string) {
 }
 
 // Dev only: window.__rqBoatScale = 6 enlarges the boats to inspect them.
+/** The "Dive sites" layer's visibility, eased 0..1 by IslandScene so boats and markers fade. */
+export const sitesFade = { v: 1 };
+
 const DEV_SCALE = () => (import.meta.env.DEV ? ((window as { __rqBoatScale?: number }).__rqBoatScale ?? 1) : 1);
 const COLORS = { story: "#ff9a7c", dive: "#5ff2ff", zone: "#7dffb5" };
 const EDGE = { story: "#ffd2c2", dive: "#c8fbff", zone: "#d4ffe6" };
@@ -330,7 +333,8 @@ export function SiteBoats({ td }: { td: TerrainData }) {
       const sc = Math.max(0.7, camera.position.distanceTo(p.root.position) * 0.03) * (s.kind === "story" ? 1 : 0.82);
       const on = hover === s.id ? 1 : 0;
       const k = (lift.current[i] = (lift.current[i] ?? 0) + (on - (lift.current[i] ?? 0)) * Math.min(1, dt * 10));
-      p.root.scale.setScalar(sc * (1 + 0.15 * k) * DEV_SCALE());
+      p.root.scale.setScalar(Math.max(1e-4, sc * (1 + 0.15 * k) * DEV_SCALE() * sitesFade.v));
+      p.root.visible = sitesFade.v > 0.01;
       // Riding at anchor: heave, pitch and roll, swinging slowly; the waterline stays on the sea and
       // the reflection mirrors every motion.
       const heave = Math.sin(t * 1.7 + ph) * 0.008 + k * 0.03;
@@ -367,6 +371,7 @@ export function SiteBoats({ td }: { td: TerrainData }) {
             material={geo.hitMat}
             position={[0, 0.1, 0]}
             onPointerOver={(e) => {
+              if (sitesFade.v < 0.5) return; // the layer is off
               e.stopPropagation();
               setHover(s.id);
               gl.domElement.style.cursor = "pointer";
@@ -376,7 +381,7 @@ export function SiteBoats({ td }: { td: TerrainData }) {
               gl.domElement.style.cursor = "";
             }}
             onClick={(e) => {
-              if (e.delta > 6) return; // that was a camera drag
+              if (e.delta > 6 || sitesFade.v < 0.5) return; // a camera drag, or the layer is off
               e.stopPropagation();
               openSite(s);
             }}

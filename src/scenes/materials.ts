@@ -234,7 +234,7 @@ export function terrainMaterial(habitatTex: THREE.Texture, heatTex: THREE.Textur
           vec3 high = vec3(0.55, 0.56, 0.42);
           col = mix(mix(low, mid, smoothstep(0.0, 0.45, e)), high, smoothstep(0.45, 1.0, e));
           col *= 0.35 + 0.95 * lambert;
-          if (uShowContours > 0.5) col += vec3(0.37, 0.95, 1.0) * contour(vH, 20.0, 1.0) * 0.18;
+          col += vec3(0.37, 0.95, 1.0) * contour(vH, 20.0, 1.0) * 0.18 * uShowContours;
           // Glowing shoreline: land is never below 0.5 m in the heightmap, so heights under 0.5 only
           // occur on triangles that cross the coast (low swamps inland stay dark).
           col += vec3(0.37, 0.95, 1.0) * (1.0 - smoothstep(0.05, 0.5, vH)) * 0.55;
@@ -249,7 +249,24 @@ export function terrainMaterial(habitatTex: THREE.Texture, heatTex: THREE.Textur
           vec4 hab = texture2D(uHabitat, vUv);
           float benthic = floor(hab.r * 255.0 + 0.5);
           float geo = floor(hab.g * 255.0 + 0.5);
-          if (uShowHabitat > 0.5 && d < 60.0) {
+          // The natural view and the classified map are both computed while the "Habitat map" layer
+          // fades between them (uShowHabitat eases 0..1), then blended.
+          vec3 water = base;
+          if (benthic > 0.5 && d < 30.0 && uShowHabitat < 0.999) {
+            // Natural view: the bottom through clear water (more water color with depth).
+            vec3 nb = naturalBottom(benthic, vWorld.xz);
+            // Bleaching: with the heat layer on, coral areas whiten as heat passes NOAA's thresholds
+            // (patchy from ~4 °C-weeks, most of the reef by ~10). Illustrative, driven by the 5 km cell.
+            if (uShowHeat > 0.001 && benthic > 14.5 && benthic < 15.5) {
+              vec2 cr;
+              float k = heatCell(vUv, cr).a;
+              float patchy = vn(vWorld.xz * 9.0) * 0.6 + vn(vWorld.xz * 27.0) * 0.4;
+              float bleach = smoothstep(0.28 + patchy * 0.25, 0.62 + patchy * 0.25, k);
+              nb = mix(nb, vec3(0.98, 0.97, 0.93), bleach * 0.92 * uShowHeat);
+            }
+            base = mix(nb, water, 1.0 - exp(-d / 7.5));
+          }
+          if (uShowHabitat > 0.001 && d < 60.0) {
             // Classified map: Allen Coral Atlas legend colors on smooth shapes, dimmer with depth,
             // with a fine darker line where two habitats meet and a light pattern inside each.
             float best, second, margin;
@@ -263,33 +280,21 @@ export function terrainMaterial(habitatTex: THREE.Texture, heatTex: THREE.Textur
               hc = mix(hc, hc * 0.55, line * 0.7);
               // (Where the Atlas has no class, habColor is the water itself, so the map's outer edge
               // blends into the sea.)
-              base = mix(base, hc, 0.82 * (1.0 - smoothstep(4.0, 22.0, d) * 0.45));
+              vec3 mapped = mix(water, hc, 0.82 * (1.0 - smoothstep(4.0, 22.0, d) * 0.45));
+              base = mix(base, mapped, uShowHabitat);
             }
-          } else if (benthic > 0.5 && d < 30.0) {
-            // Natural view: the bottom through clear water (more water color with depth).
-            vec3 nb = naturalBottom(benthic, vWorld.xz);
-            // Bleaching: with the heat layer on, coral areas whiten as heat passes NOAA's thresholds
-            // (patchy from ~4 °C-weeks, most of the reef by ~10). Illustrative, driven by the 5 km cell.
-            if (uShowHeat > 0.5 && benthic > 14.5 && benthic < 15.5) {
-              vec2 cr;
-              float k = heatCell(vUv, cr).a;
-              float patchy = vn(vWorld.xz * 9.0) * 0.6 + vn(vWorld.xz * 27.0) * 0.4;
-              float bleach = smoothstep(0.28 + patchy * 0.25, 0.62 + patchy * 0.25, k);
-              nb = mix(nb, vec3(0.98, 0.97, 0.93), bleach * 0.92);
-            }
-            base = mix(nb, base, 1.0 - exp(-d / 7.5));
           }
           col = base * (0.45 + 0.75 * lambert);
           // Surf breaking along the reef crest (and outer reef flat): white streaks that drift.
-          if (uShowHabitat < 0.5 && (geo > 14.5 && geo < 15.5 || geo > 13.5 && geo < 14.5 && d < 1.5)) {
+          if (uShowHabitat < 0.999 && (geo > 14.5 && geo < 15.5 || geo > 13.5 && geo < 14.5 && d < 1.5)) {
             float s = vn(vec2(vWorld.x * 9.0 + uTime * 0.25, vWorld.z * 9.0)) * 0.6 + vn(vWorld.xz * 23.0 - uTime * 0.4) * 0.4;
-            col = mix(col, vec3(0.95, 0.98, 1.0), smoothstep(0.5, 0.75, s) * (geo > 14.5 ? 0.75 : 0.35));
+            col = mix(col, vec3(0.95, 0.98, 1.0), smoothstep(0.5, 0.75, s) * (geo > 14.5 ? 0.75 : 0.35) * (1.0 - uShowHabitat));
           }
           // Light caustics in the shallows.
           col += vec3(0.6, 1.0, 1.0) * caustic(vWorld.xz * 0.9, uTime) * 0.16 * (1.0 - smoothstep(0.0, 14.0, d));
-          if (uShowContours > 0.5) {
+          if (uShowContours > 0.001) {
             float c = d < 30.0 ? contour(d, 5.0, 1.0) * 0.35 : contour(d, 200.0, 1.2) * 0.45;
-            col += vec3(0.37, 0.95, 1.0) * c * (d < 30.0 ? 0.5 : 0.35);
+            col += vec3(0.37, 0.95, 1.0) * c * (d < 30.0 ? 0.5 : 0.35) * uShowContours;
           }
         }
         col = applyFog(col, vDist);
@@ -337,7 +342,9 @@ export function waterMaterial(heatTex: THREE.Texture, geo: number[][], grid: Hea
         vec4 cell = heatCell(vec2(vUv.x, 1.0 - vUv.y), cr);
         vec3 c = vec3(0.04, 0.24, 0.36);
         float a = 0.08;
-        if (uShowHeat > 0.5 && cell.a > 0.0) {
+        vec3 c0 = c;
+        float a0 = a + 0.03 * sin(vWorld.x * 0.08 + vWorld.z * 0.05 + uTime * 0.6);
+        if (uShowHeat > 0.001 && cell.a > 0.0) {
           // Severity drives everything: calm years leave the sea almost clear; from Alert 1 (4 °C-weeks)
           // the sea takes the alert color, and from Alert 2 (8) it dominates and pulses slowly.
           float k = cell.a;
@@ -352,8 +359,10 @@ export function waterMaterial(heatTex: THREE.Texture, geo: number[][], grid: Hea
           float border = 1.0 - smoothstep(0.4, 1.4, min(edge.x, edge.y));
           c = mix(c, cell.rgb * 1.2 + 0.05, border * (0.3 + 0.5 * alert));
           a = max(a, border * (0.08 + 0.5 * alert));
+          c = mix(c0, c, uShowHeat);
+          a = mix(a0, a, uShowHeat);
         } else {
-          a += 0.03 * sin(vWorld.x * 0.08 + vWorld.z * 0.05 + uTime * 0.6);
+          a = a0;
         }
         c = applyFog(c, vDist);
         float fade = 1.0 - smoothstep(600.0, 1100.0, vDist);

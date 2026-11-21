@@ -38,6 +38,7 @@ Earth Engine needs a one-time `earthengine authenticate` (Cloud project `reefque
 | `zone_tiles.py [zone…]` | `zones.json` + same sources as terrain.py, habitat at native 5 m | `public/data/<island>/zones/<zone>/` (height.png, habitat.png, meta.json) + `zones/index.json` |
 | `region_relief.py` | GEBCO 2023 (Earth Engine, ~430 m nearest) | `public/data/region.json`: depth contours 20–3000 m and the mainland coast (0 m line), simplified; `relief.bin`: 175 × 100 elevation grid (int16 m) for the home page's braille landscape |
 | `terrain.py <island>` | Copernicus DEM GLO-30 2024 + GEBCO 2023 (Earth Engine), Atlas bathymetry (`data/raw/aca/atlas_<island>/`), habitat GeoTIFF, OSM outline | `public/data/<island>/terrain.png`, `habitat.png`, `meta.json` |
+| `node pipeline/photos.mjs` (Node 24, no Python or packages) | The curated list in `pipeline/photos.json`: iNaturalist observations (CC0, CC BY, CC BY-NC, CC BY-SA, CC BY-NC-SA; never ND or unlicensed) and Wikimedia Commons files | `public/data/photos/`: `index.json` (names in es/en, credit, license, source, whether taken at the place) and each photo at 240 and 500 px, unmodified |
 
 Order for a new island: `islands.py` → `aca_habitat.py <id>` → (Atlas download unzipped to
 `data/raw/aca/atlas_<id>/`) → `terrain.py <id>`. Heat: `crw_download.py --all` → `heat_products.py`.
@@ -52,3 +53,16 @@ mapped reef habitat.
 Planned: coral model conversion (`public/models/`), the other three islands' terrain.
 
 `common.py` holds the project bounding box; every pull is clipped to it.
+
+## Photos
+
+`photos.json` is curated by hand: for each story/dive site (by its id) and boat zone (`zone:<id>`),
+its coordinates and a few photos; for each field-guide species, one photo. Candidates were the
+most-favorited openly licensed observations within ~1–5 km of each place (iNaturalist API, research
+grade, marine groups only), picked by eye for quality; no watermarks, people's faces, catches or
+animals held in hands. `photos.mjs` decides "taken here" from each photo's own coordinates (1.5 km of a
+site, 3 km of a zone's center) and otherwise names the island; observations whose location
+iNaturalist hides are labeled "the Bay Islands". Every photo keeps its author credit, license and source
+link, shown next to it and on the Data & credits page. NC licenses are fine only while ReefQuest stays
+free and nonprofit. To change photos, edit `photos.json` and run the script again (it removes files no
+longer listed).

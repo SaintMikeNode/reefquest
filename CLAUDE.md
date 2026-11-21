@@ -50,7 +50,7 @@ Design (third direction, from a reference Tulio chose: the FlowOS Framer templat
 site to stop looking AI-made). One confident ocean blue (`--brand`), a rounded white-bordered
 "window" for the home hero, headlines that pair bold Inter with an italic
 Instrument Serif accent (mark the accent words with `*…*` in the i18n string and render with
-`accent()`), pill buttons (`.btn.primary` blue, `.btn.light` white; header nav links are outlined pills, centered with a three-column header grid on computers, the header CTA hidden from 901 to 1239 px so they fit; the hero headline must stay two lines on computers or the data cards fall below the fold), hairline guides with nodes,
+`accent()`), pill buttons (`.btn.primary` blue, `.btn.light` white; every text button is a full pill (999px) with its label never squeezed against the ends: the layers panel is 356 px so its two tabs fit with 14 px padding, and they stack on very narrow phones; header nav links are outlined pills, centered with a three-column header grid on computers, the header CTA hidden from 901 to 1239 px so they fit; the hero headline must stay two lines on computers or the data cards fall below the fold), hairline guides with nodes,
 and frosted-glass data cards (`.card`, white before; Tulio found the white out of place) sitting on the artwork that show real data (today's alert per
 island, the 42-year heat strip). Data sections and the 3D views stay on deep blue (`--deep`,
 `--abyss`) so figures keep contrast; figures are rounded cards (`.figure`, `--card` radius); every page except the 3D views sits on one deep navy gradient with a faint dot grid and soft pools of light (`.home` / `.sea-bg`, no bright blue around the hero), and its blocks are frosted glass: the landing page's map, table and stripes are `.window`s, inner pages' `.figure`s get the same tint, hairline edge, top highlight and backdrop blur (less on phones, none on lite; the dots behind are what the blur shows). Tulio asked for a frosted look, consistent everywhere, then found blue-tinted glass too saturated: it is now the 3D HUD panel glass (near-black navy at ~64%, white hairline, neutral grey-blue text), also on the hero data cards; inner
@@ -69,11 +69,15 @@ a 3D drone flyover, and a sonar survey of Roatán.
 The headline animates with `@overpunch/floodtext` (Tulio's pick): a slow diagonal wave of weight
 (Inter is variable) and opacity, letter by letter; Instrument Serif has no weight axis, so the italic
 line only takes the opacity. Lazy-loaded with a plain `<h1>` as fallback, remounted per language, static
-with reduced motion. The main button ("Explore the islands in 3D", to `#/islands`) wears a liquid-metal
-ring from `metal-fx` (the engine of cult-ui's "metal button"; used directly, no shadcn/Tailwind). It is the white
-pill (Tulio: the most prominent; "Learn" is the blue one) with a silver ring tuned for light and no glow
-(its halo smudged the blue); the white fill sits on the wrapper because metal-fx strips the button's
-own, and it is forced visible because metal-fx hides it until its shader paints; lazy, skipped on lite (`ui/MetalRing.tsx`).
+with reduced motion. The main button ("Explore the islands in 3D", to `#/islands`) is the white pill
+(Tulio: the most prominent; "Learn" is the blue one). Important calls to action are Specular buttons
+(`ui/SpecularButton.tsx`, React Bits' "Specular Button", MIT + Commons Clause, ported to TS; Tulio's
+pick, replacing an earlier metal-fx ring): our `.btn`/`.card-chip` pills with a rim that catches the
+light and a highlight that follows the cursor (a tiny WebGL2 canvas per button, redrawn only while the
+light moves; plain pill on lite, without WebGL2, and no gliding with reduced motion). Used on: the hero
+islands button and header "Explore in 3D" (white, blue light), "Explore by boat" in story cards
+(solid ocean blue, white light), "Open in 3D" in the hero data card and the islands page cards. The
+component renders a link (`href`), a button, or a span inside a larger link (`as="span"`).
 Tokens and all CSS in `src/styles.css`. Fonts, self-hosted via @fontsource:
 Inter (text, headlines), Instrument Serif (italic accents, big numerals), IBM Plex Mono (data).
 Phones: bottom panels clear the gesture bar (`env(safe-area-inset-bottom)`, `viewport-fit=cover`)
@@ -104,7 +108,7 @@ place name gives NOAA's alert wording. All of it follows the selected date and i
 - `src/content/`: long-form bilingual content with sources: `sites.ts` (dive-site pins and their
   stories), `learn.ts` (explainers; `src/ui/LessonFigures.tsx` draws the bleaching and DHW
   diagrams), `reefLife.ts` (underwater field guide: species names and how to recognize them). **Every fact needs a source**; don't add unsourced claims.
-- `src/pages/`: `IslandsPage` (`#/islands`: three frosted cards side by side that fit one screen on computers (Roatán, Utila, Guanaja; Cayos Cochinos left out until it has a 3D scene; the preview height follows the window height), each with a live 3D preview in blueprint line art (Tulio found the colored relief too much): coastline, survey grid, land contours and depth lines over a rising light shader with contour lines (our take on React Bits' paid "Shader Card"); hover lifts the light, speeds the turn and swings the camera toward the pointer, the text drifts the other way. All four share ONE fixed WebGL canvas through drei `<View>`; meshes are coarse samples of each island's terrain.png cropped by distance to the coast, deep water dropped; lite and reduced motion render still frames, redrawn on scroll), `Home` (hero whose copy leads with the place and its reefs, then learning, then heat: "Meet the reef around our islands", buttons to the islands page and Learn; Tulio picked this over a satellite-heat headline and a "map the reef" game headline; live SVG map with OSM coastlines + today's 5 km heat cells, island
+- `src/pages/`: `IslandsPage` (`#/islands`: three frosted cards side by side, text and button centered, with a pure-CSS blueprint texture (a faint grid fading to the edges and a wireframe floor in perspective under each island) that fit one screen on computers (Roatán, Utila, Guanaja; Cayos Cochinos left out until it has a 3D scene; the preview height follows the window height), each with a live 3D preview in blueprint line art (Tulio found the colored relief too much): coastline, survey grid, land contours and depth lines over a rising light shader with contour lines (our take on React Bits' paid "Shader Card"); hover lifts the light, speeds the turn and swings the camera toward the pointer, the text drifts the other way. All four share ONE fixed WebGL canvas through drei `<View>`; meshes are coarse samples of each island's terrain.png cropped by distance to the coast, deep water dropped; lite and reduced motion render still frames, redrawn on scroll), `Home` (hero whose copy leads with the place and its reefs, then learning, then heat: "Meet the reef around our islands", buttons to the islands page and Learn; Tulio picked this over a satellite-heat headline and a "map the reef" game headline; live SVG map with OSM coastlines + today's 5 km heat cells, island
   cards, heat stripes), `HeatPage` (island comparison chart, worst years, alert scale), `LearnPage`,
   `AboutPage` (caveats, data credits and licenses).
 - `src/scenes/`: the 3D island scene. `terrain.ts` (decode heightmap, mesh, display scale: relief
@@ -130,11 +134,15 @@ place name gives NOAA's alert wording. All of it follows the selected date and i
   in `router.ts`; the cursor readout panel is click-through so it doesn't flicker; a press whose release never
   arrives is finished with a synthetic pointerup on the next button-less move or window blur, so
   the camera can't get stuck; a lost WebGL context rebuilds the Canvas via `glKey`), `SiteCard.tsx` (its action, "Explore by boat", is a compact tinted chip (`.card-chip`, not a solid button: the title stays the loudest) right after the place name (16 px semibold), the two wrapping together on narrow cards, the close button pinned to the corner, 18 px before the title; on computers the card stops above the data credits line), `Timeline.tsx` (year chips, DHW chart, scrubber,
-  playback; on entering an island an intro sweeps from three years back to today at ~3× speed, ~5 s,
-  ending on the latest day (Tulio: so people see the visualizer at once). It starts after the curtain
-  and the first-visit guide, with those years' grids preloaded; `introPending` in the store makes it
+  playback (6 days a step, ~2 s a year; Tulio found 3 days too slow); on entering an island an intro
+  plays the current year from 1 January to today at 4 days a step (under 3 s; Tulio found four
+  years too drastic and 2 days a step too slow), ending on the latest day (Tulio: so people see the visualizer at once). It starts after the curtain
+  and the first-visit guide, with the year's grid preloaded; `introPending` in the store makes it
   play once per visit, not again after the boat; any play/pause or scrub ends it; reduced motion
-  skips it), `sceneStore.ts`.
+  skips it; the play button is a large glowing blue disc with a sonar ring pulsing out of it until
+  the first press, remembered in localStorage `rq-played`), `sceneStore.ts`. The island's `World`
+  follows the day through `useScene.subscribe` (refilling the heat texture), not a React
+  dependency: re-rendering the whole 3D tree every playback step left the mouse unresponsive.
 - `src/boat/`: the research-boat mode (lazy chunk, ~21 KB gz). `zone.ts` (detailed zone tiles: 10 m
   relief, 5 m habitat, meters as scene units, depths beyond 60 m compressed), `boatMaterials.ts`
   (seafloor with natural habitat colors + line-of-sight water attenuation + caustics, land in toon
@@ -187,6 +195,21 @@ place name gives NOAA's alert wording. All of it follows the selected date and i
   complete; the site never needs the pipeline or the raw downloads. Raw downloads go to
   `data/raw/` (git-ignored, not kept: a script that needs them downloads them again). Heat data comes from the PacIOOS ERDDAP (`dhw_5km`; CoastWatch
   redirects there). Earth Engine project: `reefquest`.
+- Photos (Tulio asked for pictures of the places): `pipeline/photos.mjs` (Node, no packages) downloads
+  the curated `pipeline/photos.json` into `public/data/photos/` (`index.json` + each photo at 240 and
+  500 px, unmodified). Openly licensed only: iNaturalist (CC0, BY, BY-NC, BY-SA, BY-NC-SA; never ND)
+  and Wikimedia Commons (the El Aguila wreck). Picked by eye for beauty and fit: no watermarks, faces,
+  catches or hands. Captions say "taken here" only when the photo's own coordinates are within 1.5 km
+  of a site / 3 km of a zone center, otherwise the island ("elsewhere on Roatán"); hidden locations
+  say "the Bay Islands". Shown in story/dive cards (`ui/PhotoStrip.tsx`, under the title), in a
+  Photos chip on the boat's title plate for every zone (Roatán, Utila, Guanaja), from the arrival bar
+  near dive sites, as thumbnails in the boat field guide (credits under the list), and all together
+  with credits on Data & credits. Galleries (our own code, after React Bits' Circular Gallery, Dome
+  Gallery and Masonry): `ui/CurveCarousel.tsx` (cards' photo strips, a CSS 3D arc), `ui/Lightbox.tsx`
+  (full-screen photo with credit), `ui/DomeGallery.tsx` (every photo on a sphere, lazy, "See all the
+  photos" via `ui/AllPhotos.tsx`; lite gets a grid), and the masonry of credits on Data & credits.
+  Loaded lazily, only when shown. BY-NC licenses depend on ReefQuest
+  staying free and nonprofit. USF Ogden slides and CoralNet images need written permission (not used).
 - `docs/`: the handoff/spec and phase reports (`docs/phase0/REPORT.md`, `docs/phase1/REPORT.md`
   with the boat, the two redesign passes and screenshots).
 - `brand/`: the brand kit (logo in horizontal, vertical, mark and wordmark layouts × color-on-dark,
@@ -218,6 +241,27 @@ only on change. `AdaptiveQuality` lowers canvas resolution when frames stay abov
 climbs back to a level that failed); `FrameCap` holds the boat at 60 fps on 90/120 Hz phones.
 Keep new 3D features inside these budgets and check all three tiers. Not yet verified on a real
 low-end Android phone.
+
+Interaction feel (Tulio: "smooth and interactive like an Apple app", on phones and desktop):
+- Motion (`motion` package) only in lazily loaded chunks (island, boat, islands page), never in the
+  first-load bundle; the header and home use CSS. Shared presets in `ui/motionPresets.ts` (spring, no
+  wobble, rise in through a light blur, quick fade out; no blur on lite).
+- Layers box: `ui/LiquidTabs.tsx` (after pinui's "Liquid Tabs"): panel body and active tab merged by
+  a goo filter so the tab is a folder tab that flows to the next label; content slides out/in by
+  direction through a blur, height eases. One tab is always open (no second-tap collapse).
+- Map layers fade (~350 ms ease-out) instead of switching: the shaders blend by `uShowHabitat`,
+  `uShowContours`, `uShowHeat` (0..1), and dive sites by `sitesFade` (boats scale, markers and labels
+  fade; always mounted, unclickable while off).
+- Panels animate in and out with AnimatePresence: story/dive cards (cross-fade between sites), the
+  readout, the first-visit guide and its backdrop, the boat's gallery and sounder; the phone layers
+  panel slides and fades; checkbox ticks pop in; layer color keys slide open.
+- Header links (desktop) and the ES/EN toggle are 3D chips (after pinui's "Chips", CSS only, no
+  sounds): a lip under each, a press sinks the chip onto it, the current page / language stays pressed
+  in, inverted. Dark chips in the 3D views.
+- Data & credits shows the project credit (`ui/Credit.tsx`, `badge`) as a frosted pill under the
+  title; the footer (`TopBar.tsx`) has three columns (brand, pages, the project) and a sources strip.
+- Every clickable thing shares one feel (`--spring`, `--ease-out` in styles.css): colors ease and a
+  press sinks it slightly. Reduced motion turns all of this off.
 
 Scene transitions: `ui/SceneTransition.tsx` with transition-style (Tulio's pick), in two phases: a
 curtain animates closed over the old scene ("in:" effect), the scene switches behind it (`apply`), and

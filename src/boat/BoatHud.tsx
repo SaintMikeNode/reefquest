@@ -1,3 +1,4 @@
+import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { REEF_LIFE, REEF_LIFE_NOTE, REEF_LIFE_SOURCES } from "../content/reefLife";
 import { SITES } from "../content/sites";
@@ -11,7 +12,9 @@ import { BENTHIC, GEOMORPHIC } from "../scenes/materials";
 import { useScene } from "../scenes/sceneStore";
 import { fmtLat, fmtLon, SiteCard } from "../scenes/SiteCard";
 import { AlertChip } from "../ui/AlertChip";
-import { IconBack, IconCast, IconCheck, IconDive, IconSurface } from "../ui/Icons";
+import { IconBack, IconCamera, IconCast, IconCheck, IconClose, IconDive, IconSurface } from "../ui/Icons";
+import { PhotoStrip, usePhotos } from "../ui/PhotoStrip";
+import { panelMotion } from "../ui/motionPresets";
 import { LangToggle } from "../ui/LangToggle";
 import { MouseGuide } from "../scenes/MouseGuide";
 import { useBottomInset } from "../scenes/useBottomInset";
@@ -122,6 +125,14 @@ export function BoatHud({ index, zoneName, islandName }: { index: HeatIndex; zon
 
   const storySite = SITES.find((s) => s.id === story);
   const nearSite = SITES.find((s) => s.id === near);
+  // Photos: the zone's own gallery (from the title plate), and a site's photos from the arrival bar.
+  const photos = usePhotos();
+  const zoneId = useScene((s) => s.boat?.zone);
+  const zonePhotos = zoneId ? photos?.places[`zone:${zoneId}`] : undefined;
+  const [gallery, setGallery] = useState(false);
+  const nearHasPhotos = !!(nearSite && photos?.places[nearSite.id]?.length);
+  const openNear = nearSite && (nearSite.kind === "story" || nearHasPhotos) ? () => (setGallery(false), setStory(nearSite.id)) : null;
+  const openLabel = nearSite?.kind === "story" ? t("boat.readStory") : t("boat.seePhotos");
   const knots = tele ? Math.abs(tele.speed) * 1.94384 : 0;
   const deg = tele ? (tele.heading * 180) / Math.PI : 0;
   const toggle = (k: "sonar" | "grid") => useBoat.setState((s) => ({ [k]: !s[k] }) as never);
@@ -159,9 +170,16 @@ export function BoatHud({ index, zoneName, islandName }: { index: HeatIndex; zon
         <h1>{zoneName}</h1>
         <div className="coords">{tele ? `${fmtLat(tele.lat, lang)} · ${fmtLon(tele.lon, lang)}` : "\u00a0"}</div>
         <HeatStatus dhw={dhw} prefix={dateISO ? fmtDate(dateISO, lang) : undefined} />
-        <button className="back-btn" onClick={() => setBoat(null)}>
-          <IconBack /> {t("boat.backTo").replace("{island}", islandName)}
-        </button>
+        <div className="plate-actions">
+          <button className="back-btn" onClick={() => setBoat(null)}>
+            <IconBack /> {t("boat.backTo").replace("{island}", islandName)}
+          </button>
+          {zonePhotos && zonePhotos.length > 0 && (
+            <button className="plate-chip" aria-pressed={gallery} onClick={() => (setStory(null), setGallery(!gallery))}>
+              <IconCamera /> {t("photos.button")}
+            </button>
+          )}
+        </div>
       </header>
 
       <div className="hud heading-tape" aria-hidden="true">
@@ -201,10 +219,23 @@ export function BoatHud({ index, zoneName, islandName }: { index: HeatIndex; zon
         </div>
       </div>
 
+      <AnimatePresence initial={false}>
       {storySite ? (
-        <SiteCard site={storySite} onClose={() => setStory(null)} />
+        <SiteCard key={`story:${storySite.id}`} site={storySite} onClose={() => setStory(null)} />
+      ) : gallery && zonePhotos ? (
+        <motion.aside key="gallery" className="hud site-card panel" aria-label={t("photos.title")} {...panelMotion}>
+          <div className="card-head">
+            <div className="card-place">
+              <span className="place-name">{zoneName}</span>
+            </div>
+            <button className="close-btn" onClick={() => setGallery(false)} aria-label={t("scene.close")}>
+              <IconClose />
+            </button>
+          </div>
+          <PhotoStrip photos={zonePhotos} />
+        </motion.aside>
       ) : (
-        <aside className={instOpen ? "hud hud-right panel sounder open" : "hud hud-right panel sounder"} aria-live="off">
+        <motion.aside key="sounder" className={instOpen ? "hud hud-right panel sounder open" : "hud hud-right panel sounder"} aria-live="off" {...panelMotion}>
           <div className="hud-section">
             <button className="fold-head" aria-expanded={instOpen} onClick={() => setInstOpen(!instOpen)}>
               <h4>{t("boat.sounder")}</h4>
@@ -295,12 +326,13 @@ export function BoatHud({ index, zoneName, islandName }: { index: HeatIndex; zon
             </button>
           </div>
           )}
-        </aside>
+        </motion.aside>
       )}
+      </AnimatePresence>
 
       {nearSite && !storySite && (
         <div className="hud arrive panel top-only">
-          <Arrival name={nearSite.name} onRead={nearSite.kind === "story" ? () => setStory(nearSite.id) : null} />
+          <Arrival name={nearSite.name} onRead={openNear} label={openLabel} />
         </div>
       )}
 
@@ -311,7 +343,7 @@ export function BoatHud({ index, zoneName, islandName }: { index: HeatIndex; zon
         {/* Phones: everything at the bottom lives in this one dock (arrival, guide or logbook, actions). */}
         {nearSite && !storySite && (
           <div className="arrive-row dock-only">
-            <Arrival name={nearSite.name} onRead={nearSite.kind === "story" ? () => setStory(nearSite.id) : null} />
+            <Arrival name={nearSite.name} onRead={openNear} label={openLabel} />
           </div>
         )}
         {under ? (
@@ -395,14 +427,14 @@ export function BoatHud({ index, zoneName, islandName }: { index: HeatIndex; zon
   );
 }
 
-function Arrival({ name, onRead }: { name: string; onRead: (() => void) | null }) {
+function Arrival({ name, onRead, label }: { name: string; onRead: (() => void) | null; label: string }) {
   const t = useT();
   return (
     <>
       <span className="hud-faint">{t("boat.near")}</span> <strong>{name}</strong>
       {onRead && (
         <button className="hbtn" onClick={onRead}>
-          {t("boat.readStory")}
+          {label}
         </button>
       )}
     </>
@@ -456,6 +488,10 @@ function FieldGuide({ bleachNote }: { bleachNote: string | null }) {
   const L = useL();
   const nearby = useBoat((s) => s.nearby);
   const [open, setOpen] = useState(!SMALL);
+  // A real photo of each species from the Bay Islands (iNaturalist), credited under the list.
+  const photos = usePhotos();
+  const shown = nearby.slice(0, 7);
+  const credited = shown.map((sp) => photos?.species[sp]).filter((p): p is NonNullable<typeof p> => !!p);
   return (
     <aside className="panel logbook-panel field-guide">
       <button className="fold-head" aria-expanded={open} onClick={() => setOpen(!open)}>
@@ -470,11 +506,12 @@ function FieldGuide({ bleachNote }: { bleachNote: string | null }) {
           {bleachNote && <p className="bleach-note" style={{ marginTop: 8 }}>{bleachNote}</p>}
           {nearby.length > 0 && (
             <ul>
-              {nearby.slice(0, 7).map((sp) => {
+              {shown.map((sp) => {
                 const s = REEF_LIFE[sp];
+                const ph = photos?.species[sp];
                 return (
-                  <li key={sp}>
-                    <i style={{ background: s.color }} />
+                  <li key={sp} className={ph ? "has-photo" : undefined}>
+                    {ph ? <img className="fg-photo" src={ph.src.s} alt={L(s.name)} loading="lazy" decoding="async" style={{ borderColor: s.color }} /> : <i style={{ background: s.color }} />}
                     <span>
                       <b style={{ fontWeight: 600 }}>{L(s.name)}</b> <em>{s.sci}</em>
                       <span className="hud-faint" style={{ display: "block", fontSize: 12.5 }}>
@@ -485,6 +522,20 @@ function FieldGuide({ bleachNote }: { bleachNote: string | null }) {
                 );
               })}
             </ul>
+          )}
+          {credited.length > 0 && (
+            <p className="notes fg-credits">
+              {t("photos.label")}:{" "}
+              {credited.map((p, k) => (
+                <span key={p.id}>
+                  {k > 0 && "; "}
+                  <a href={p.source} target="_blank" rel="noreferrer">
+                    {p.credit}
+                  </a>{" "}
+                  ({p.license})
+                </span>
+              ))}
+            </p>
           )}
           <p className="notes" style={{ margin: 0 }}>
             {L(REEF_LIFE_NOTE)}{" "}

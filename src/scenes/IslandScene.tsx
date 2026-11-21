@@ -17,7 +17,7 @@ import { FOG_CALM, FOG_SEVERE, SCENE_FOG, terrainMaterial, waterMaterial } from 
 import { clearLabels, LabelProjector, labelRef, setLabelAnchor } from "./labels";
 import { CANOPY_GREENS, canopyGeometry, h01, PALM_GREENS, palmGeometry, vegetationMaterial } from "./nature";
 import { heatRef, useScene } from "./sceneStore";
-import { openSite, SiteBoats, usePlaces } from "./siteBoats";
+import { openSite, SiteBoats, sitesFade, usePlaces } from "./siteBoats";
 import { buildGeometry, displayY, homeDistance, homeOffset, habitatAt, heightAt, loadTerrain, pickHeightfield, uvToLonLat, type TerrainData } from "./terrain";
 
 const RAMP = rampTable();
@@ -238,7 +238,8 @@ function useMouseGuards() {
 function World({ td, index }: { td: TerrainData; index: HeatIndex }) {
   const layers = useScene((s) => s.layers);
   const year = useScene((s) => s.year);
-  const day = useScene((s) => s.day);
+  // The day is read outside React (see the subscription below): re-rendering this whole 3D tree on
+  // every timelapse step (30-60 a second) starved the camera controls.
   const invalidate = useThree((s) => s.invalidate);
 
   const geometry = useMemo(() => buildGeometry(td, MOBILE ? 2 : 1), [td]);
@@ -315,17 +316,43 @@ function World({ td, index }: { td: TerrainData; index: HeatIndex }) {
     invalidate();
   }
 
-  useEffect(() => {
-    if (gridRef.current) fill(gridRef.current, day);
+  useEffect(
+    () =>
+      useScene.subscribe((st, prev) => {
+        if (st.day !== prev.day && gridRef.current) fill(gridRef.current, st.day);
+      }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [day]);
+    [],
+  );
 
+  const sitesFadeRef = useMemo(() => ({ get value() { return sitesFade.v; }, set value(x: number) { sitesFade.v = x; } }), []);
+  // Layers fade in and out (~350 ms, ease-out) instead of switching: the uniforms (and the dive
+  // sites' visibility) ease toward their targets and the scene redraws until they arrive.
   useEffect(() => {
-    terrainMat.uniforms.uShowHabitat.value = layers.habitat ? 1 : 0;
-    terrainMat.uniforms.uShowContours.value = layers.contours ? 1 : 0;
-    terrainMat.uniforms.uShowHeat.value = layers.heat ? 1 : 0;
-    waterMat.uniforms.uShowHeat.value = layers.heat ? 1 : 0;
-    invalidate();
+    const targets: [{ value: number }, number][] = [
+      [sitesFadeRef, layers.sites ? 1 : 0],
+      [terrainMat.uniforms.uShowHabitat, layers.habitat ? 1 : 0],
+      [terrainMat.uniforms.uShowContours, layers.contours ? 1 : 0],
+      [terrainMat.uniforms.uShowHeat, layers.heat ? 1 : 0],
+      [waterMat.uniforms.uShowHeat, layers.heat ? 1 : 0],
+    ];
+    if (REDUCED_MOTION) {
+      for (const [u, v] of targets) u.value = v;
+      invalidate();
+      return;
+    }
+    const from = targets.map(([u]) => u.value);
+    const t0 = performance.now();
+    let raf = 0;
+    const step = () => {
+      const k = Math.min(1, (performance.now() - t0) / 350);
+      const e = 1 - Math.pow(1 - k, 3);
+      targets.forEach(([u, v], i) => (u.value = from[i] + (v - from[i]) * e));
+      invalidate();
+      if (k < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
   }, [layers, terrainMat, waterMat, invalidate]);
 
   // Gentle animation (caustics, sheen) at ~30 fps unless lite / reduced motion.
@@ -353,8 +380,9 @@ function World({ td, index }: { td: TerrainData; index: HeatIndex }) {
       </mesh>
       <InstrumentGrid td={td} />
       <IslandVegetation td={td} />
-      {layers.sites && <Pins td={td} />}
-      {layers.sites && <SiteBoats td={td} />}
+      {/* Always mounted: the "Dive sites" layer fades them (sitesFade) instead of removing them. */}
+      <Pins td={td} />
+      <SiteBoats td={td} />
       <Picker td={td} />
       <CameraRig td={td} />
       <LabelProjector />
@@ -391,15 +419,26 @@ function Pins({ td }: { td: TerrainData }) {
     for (const s of sites) setLabelAnchor(`pin:${s.id}`, s.x, s.y, s.z);
     return () => clearLabels("pin:");
   }, [sites]);
+  // The marker posts fade with the "Dive sites" layer.
+  const group = useRef<THREE.Group>(null);
+  useFrame(() => {
+    const g = group.current;
+    if (!g) return;
+    g.visible = sitesFade.v > 0.01;
+    g.traverse((o) => {
+      const m = (o as THREE.Mesh).material as THREE.MeshBasicMaterial | undefined;
+      if (m && "opacity" in m) m.opacity = 0.7 * sitesFade.v;
+    });
+  });
   return (
-    <>
+    <group ref={group}>
       {sites.map((s) => (
         <mesh key={s.id} position={[s.x, (s.y - 0.1) / 2, s.z]}>
           <cylinderGeometry args={[0.12, 0.12, s.y, 6]} />
           <meshBasicMaterial color={s.kind === "story" ? "#f2dcc8" : "#b9d4ee"} transparent opacity={0.7} />
         </mesh>
       ))}
-    </>
+    </group>
   );
 }
 
@@ -410,9 +449,9 @@ function PinOverlay({ td }: { td: TerrainData }) {
   const hover = useScene((s) => s.hover);
   const show = useScene((s) => s.layers.sites);
   const sites = usePlaces(td);
-  if (!show) return null;
+  // Kept rendered so the names fade with the layer (CSS); hidden from pointers and screen readers when off.
   return (
-    <div className="label-layer" aria-label="Sites">
+    <div className={show ? "label-layer" : "label-layer off"} aria-label="Sites" aria-hidden={!show}>
       {sites.map((s) => (
         <div key={s.id} className="label-anchor" ref={labelRef(`pin:${s.id}`)}>
           <button

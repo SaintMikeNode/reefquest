@@ -1,3 +1,4 @@
+import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { loadZoneIndex, zoneName, type ZoneIndexEntry } from "../boat/zone";
 import { SITES } from "../content/sites";
@@ -10,6 +11,9 @@ import { AlertChip } from "../ui/AlertChip";
 import { HeatKey } from "../ui/HeatKey";
 import { IconArrow, IconBack, IconCheck, IconHelp, IconHome, IconLayers, IconShip } from "../ui/Icons";
 import { LangToggle } from "../ui/LangToggle";
+import { SpecularButton } from "../ui/SpecularButton";
+import { LiquidTabs } from "../ui/LiquidTabs";
+import { centeredMotion, fadeMotion, panelMotion } from "../ui/motionPresets";
 import { MouseGuide } from "./MouseGuide";
 import { dhwAt } from "./heatLookup";
 import { BENTHIC, GEOMORPHIC } from "./materials";
@@ -44,7 +48,7 @@ export function Hud({ td, index }: { td: TerrainData; index: HeatIndex }) {
   const setBoat = useScene((s) => s.setBoat);
   const areaDhw = useScene((s) => s.areaDhw);
   const [showLayers, setShowLayers] = useState(false);
-  const [open, setOpen] = useState<SectionId | null>("layers");
+  const [open, setOpen] = useState<SectionId>("layers");
   const [zones, setZones] = useState<ZoneIndexEntry[]>([]);
   const [hint, setHint] = useState(() => {
     try {
@@ -64,14 +68,15 @@ export function Hud({ td, index }: { td: TerrainData; index: HeatIndex }) {
       /* storage blocked */
     }
   };
-  // Intro: on entering an island, sweep the heat from three years back to today (~5 s, ending on
-  // the latest day), so the timeline and the heat on the map are seen moving at once. It waits for
-  // the transition curtain and the first-visit guide, preloads those years' grids, and doesn't start
+  // Intro: on entering an island, play the current year from 1 January to today (~5 s, a little
+  // slower than normal playback so the heat changes ease in), ending on the latest day, so the
+  // timeline and the heat on the map are seen moving at once. It waits for
+  // the transition curtain and the first-visit guide, preloads the year's grid, and doesn't start
   // if the visitor has already moved the timeline. Skipped with reduced motion.
   useEffect(() => {
     if (hint || REDUCED_MOTION || !useScene.getState().introPending) return;
     const last = index.years[index.years.length - 1];
-    const years = index.years.filter((y) => y.year >= last.year - 3);
+    const years = [last];
     let live = true, raf = 0;
     const untouched = () => {
       const s = useScene.getState();
@@ -174,70 +179,73 @@ export function Hud({ td, index }: { td: TerrainData; index: HeatIndex }) {
         <LangToggle />
       </div>
 
-      <aside className={showLayers ? "hud hud-left panel" : "hud hud-left panel collapsed"}>
-        {/* Two tabs that are always visible: opening one closes the other; the open one closes on a second tap. */}
-        <div className="panel-tabs" role="tablist">
-          <button role="tab" aria-selected={open === "layers"} onClick={() => setOpen(open === "layers" ? null : "layers")}>
-            <IconLayers /> {t("scene.layers")}
-          </button>
-          {zones.length > 0 && (
-            <button role="tab" aria-selected={open === "boat"} onClick={() => setOpen(open === "boat" ? null : "boat")}>
-              <IconShip /> {t("boat.zones")}
-            </button>
-          )}
-        </div>
-        {open === "layers" && (
-          <div className="acc-body" role="tabpanel">
-          {rows.map((r) => (
-            <div key={r.k}>
-              <button className="layer" aria-pressed={layers[r.k]} onClick={() => toggle(r.k)}>
-                {r.sw}
-                <span className="name">{t(`scene.layer.${r.k}`)}</span>
-                <span className="check">
-                  <IconCheck />
-                </span>
-                <span className="what">{r.what}</span>
-              </button>
-              {r.key && layers[r.k] && <div className="layer-key">{r.key}</div>}
+      <aside className={showLayers ? "hud hud-left liquid" : "hud hud-left liquid collapsed"}>
+        {/* Liquid tabs: one is always open; switching flows the tab across and slides the content. */}
+        <LiquidTabs
+          label={t("scene.layers")}
+          active={zones.length > 0 ? open : "layers"}
+          onSelect={(id) => setOpen(id as SectionId)}
+          tabs={[
+            { id: "layers", icon: <IconLayers />, label: t("scene.layers") },
+            ...(zones.length > 0 ? [{ id: "boat", icon: <IconShip />, label: t("boat.zones") }] : []),
+          ]}
+        >
+          {open === "layers" || zones.length === 0 ? (
+            <div className="acc-body">
+              {rows.map((r) => (
+                <div key={r.k}>
+                  <button className="layer" aria-pressed={layers[r.k]} onClick={() => toggle(r.k)}>
+                    {r.sw}
+                    <span className="name">{t(`scene.layer.${r.k}`)}</span>
+                    <span className="check">
+                      <IconCheck />
+                    </span>
+                    <span className="what">{r.what}</span>
+                  </button>
+                  <div className={r.key && layers[r.k] ? "layer-key-wrap open" : "layer-key-wrap"}>
+                    <div className="layer-key-inner">{r.key && <div className="layer-key">{r.key}</div>}</div>
+                  </div>
+                </div>
+              ))}
+              <p className="panel-note">
+                {t("scene.modelNote")} {t("scene.exaggeration")} {td.meta.bathymetry_source !== "aca-bathymetry" && t("scene.depthModel")}{" "}
+                <a href={href.about}>{t("scene.aboutData")}</a>
+              </p>
             </div>
-          ))}
-          <p className="panel-note">
-            {t("scene.modelNote")} {t("scene.exaggeration")} {td.meta.bathymetry_source !== "aca-bathymetry" && t("scene.depthModel")}{" "}
-            <a href={href.about}>{t("scene.aboutData")}</a>
-          </p>
-          </div>
-        )}
-        {open === "boat" && zones.length > 0 && (
-          <div className="acc-body" role="tabpanel">
-            <p className="notes" style={{ margin: "0 0 4px" }}>
-              {t("boat.zonesLead")}
-            </p>
-            {zones.map((z) => (
-              <button key={z.id} className="zone-row" onClick={() => setBoat({ zone: z.id, lon: z.lon, lat: z.lat })}>
-                {zoneName(z, lang)}
-                <span className="go">
-                  <IconShip /> {t("boat.go")}
-                </span>
-              </button>
-            ))}
-          </div>
-        )}
+          ) : (
+            <div className="acc-body">
+              <p className="notes" style={{ margin: "0 0 4px" }}>
+                {t("boat.zonesLead")}
+              </p>
+              {zones.map((z) => (
+                <button key={z.id} className="zone-row" onClick={() => setBoat({ zone: z.id, lon: z.lon, lat: z.lat })}>
+                  {zoneName(z, lang)}
+                  <span className="go">
+                    <IconShip /> {t("boat.go")}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </LiquidTabs>
       </aside>
 
+      <AnimatePresence initial={false}>
       {site ? (
         <SiteCard
+          key={site.id}
           site={site}
           onClose={() => setSite(null)}
           actions={
             siteZone && (
-              <button className="card-chip" onClick={() => setBoat({ zone: siteZone.id, lon: site.lon, lat: site.lat })}>
+              <SpecularButton className="card-chip" onClick={() => setBoat({ zone: siteZone.id, lon: site.lon, lat: site.lat })} lineColor="#ffffff" baseColor="#bfe0ff">
                 <IconShip /> {t("boat.explore")} <IconArrow />
-              </button>
+              </SpecularButton>
             )
           }
         />
       ) : (
-        <aside className="hud hud-right panel readout-panel" aria-live="off">
+        <motion.aside key="readout" className="hud hud-right panel readout-panel" aria-live="off" {...panelMotion}>
           <div className="kicker" style={{ marginBottom: 10 }}>
             {t("scene.readout")}
           </div>
@@ -279,13 +287,15 @@ export function Hud({ td, index }: { td: TerrainData; index: HeatIndex }) {
               {t("scene.hover")}
             </p>
           )}
-        </aside>
+        </motion.aside>
       )}
+      </AnimatePresence>
 
       {/* First-visit guide: above every other panel, on a dim backdrop (a click on it closes the guide). */}
-      {hint && <div className="hud hint-scrim" onClick={closeHint} aria-hidden="true" />}
+      <AnimatePresence>
+      {hint && <motion.div key="scrim" className="hud hint-scrim" onClick={closeHint} aria-hidden="true" {...fadeMotion} />}
       {hint && (
-        <div className="hud hint panel" role="dialog" aria-modal="true" aria-labelledby="guide-title">
+        <motion.div key="guide" className="hud hint panel" role="dialog" aria-modal="true" aria-labelledby="guide-title" {...centeredMotion}>
           <div>
             <div className="kicker">{td.meta.name}</div>
             <h2 id="guide-title">{t("scene.guideTitle")}</h2>
@@ -302,8 +312,9 @@ export function Hud({ td, index }: { td: TerrainData; index: HeatIndex }) {
               {t("scene.guideStart")} <IconArrow />
             </button>
           </div>
-        </div>
+        </motion.div>
       )}
+      </AnimatePresence>
 
       {/* The mouse controls card waits until the first-visit guide is closed (it covered the guide). */}
       {!siteId && !hint && (

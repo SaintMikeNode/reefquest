@@ -1,0 +1,583 @@
+{
+ "_about": "Curated photos for pipeline/photos.mjs. Places: story/dive site ids and 'zone:<id>' for boat zones, with the spot's coordinates (a photo within 1.5 km of them counts as taken here). Picked by eye from the most-favorited openly licensed iNaturalist observations near each place, plus Wikimedia Commons for the El Aguila wreck.",
+ "places": {
+  "pillar-coral": {
+   "lat": 16.3047352,
+   "lon": -86.5976975,
+   "photos": [
+    {
+     "inat": 415538206,
+     "photo": 765177879,
+     "note": "Coral pilar · Islas de la Bahía, HN"
+    },
+    {
+     "inat": 262414559,
+     "photo": 471423393,
+     "note": "Coral pilar · Honduras"
+    },
+    {
+     "inat": 151733894,
+     "photo": 261847903,
+     "note": "Coral pilar · Honduras"
+    },
+    {
+     "inat": 168681896,
+     "photo": 292349558,
+     "note": "Esponja gigante de barril · West End, Honduras"
+    }
+   ]
+  },
+  "flowers-bay": {
+   "lat": 16.28725,
+   "lon": -86.575223,
+   "photos": [
+    {
+     "inat": 107956063,
+     "photo": 181666903,
+     "note": "Coral cerebro estriado · Honduras"
+    },
+    {
+     "inat": 335829325,
+     "photo": 610162046,
+     "note": "Pez loro · Coxen Hole, Bay Islands, Honduras"
+    },
+    {
+     "inat": 37588283,
+     "photo": 59616739,
+     "note": "Camarón boxeador · Roatán, Honduras"
+    },
+    {
+     "inat": 37588964,
+     "photo": 59617601,
+     "note": "Payasito punteado · Roatán, Honduras"
+    }
+   ]
+  },
+  "cordelia-banks": {
+   "lat": 16.3,
+   "lon": -86.52,
+   "photos": [
+    {
+     "inat": 105522844,
+     "photo": 177071293,
+     "note": "Coral cuerno de ciervo · Honduras"
+    },
+    {
+     "inat": 337870654,
+     "photo": 614301073,
+     "note": "Coral cuerno de ciervo · Honduras"
+    },
+    {
+     "inat": 369488678,
+     "photo": 674921320,
+     "note": "Raya pinta · Honduras"
+    },
+    {
+     "inat": 332654070,
+     "photo": 603753496,
+     "note": "Tortuga carey · Honduras"
+    },
+    {
+     "inat": 42437616,
+     "photo": 67382384,
+     "note": "Mero del Caribe · Honduras"
+    }
+   ]
+  },
+  "el-aguila": {
+   "lat": 16.3275054,
+   "lon": -86.5790357,
+   "photos": [
+    {
+     "commons": "File:Diver exploring the Aguila wreck, Roatan, Honduras.jpg",
+     "name": {
+      "es": "Buzo en el naufragio El Águila",
+      "en": "Diver on the El Aguila wreck"
+     },
+     "here": true
+    },
+    {
+     "commons": "File:Large Green Moray on the wreck of the freighter El Aguila, Roatan, Honduras.jpg",
+     "name": {
+      "es": "Morena verde en el naufragio",
+      "en": "Green moray on the wreck"
+     },
+     "sci": "Gymnothorax funebris",
+     "here": true
+    },
+    {
+     "inat": 304750856,
+     "photo": 549414488,
+     "note": "Aiolochroia crassa · Roatán, HN-IB, HN"
+    },
+    {
+     "inat": 293239449,
+     "photo": 527779831,
+     "note": "Loro medianoche · 8CHF+CQ El Aguila Wreck, 34101 Sandy Bay, Roatan, Honduras"
+    }
+   ]
+  },
+  "deep-seaquest": {
+   "lat": 16.28713,
+   "lon": -86.60368,
+   "photos": [
+    {
+     "inat": 305894818,
+     "photo": 551579728,
+     "note": "Esponja vaso · Roatán, HN-IB, HN"
+    },
+    {
+     "inat": 36203319,
+     "photo": 57198203,
+     "note": "Pez cofre · Roatán, HN-IB, HN"
+    },
+    {
+     "inat": 36203303,
+     "photo": 57198160,
+     "note": "Mariposa rayada · Roatán, HN-IB, HN"
+    },
+    {
+     "inat": 39614904,
+     "photo": 62866180,
+     "note": "Ceratophyllidia papilligera · Roatán, HN-IB, HN"
+    }
+   ]
+  },
+  "chiefs-quarters": {
+   "lat": 16.2943301,
+   "lon": -86.6021079,
+   "photos": [
+    {
+     "inat": 150317374,
+     "photo": 259170024,
+     "note": "Esponja gigante de barril · Roatán, HN-IB, HN"
+    },
+    {
+     "inat": 39620386,
+     "photo": 62875341,
+     "note": "Pez loro · Roatán, HN-IB, HN"
+    },
+    {
+     "inat": 167093236,
+     "photo": 289415899,
+     "note": "Pargo canchix · Roatán, HN-IB, HN"
+    },
+    {
+     "inat": 293240131,
+     "photo": 527780936,
+     "note": "Candil rufo · Coxen Hole, Bay Islands, Honduras"
+    }
+   ]
+  },
+  "hole-in-the-wall": {
+   "lat": 16.3138371,
+   "lon": -86.5917933,
+   "photos": [
+    {
+     "inat": 334675803,
+     "photo": 607817907,
+     "note": "Abanico de mar · 8C75+J9, West End, Honduras"
+    },
+    {
+     "inat": 248304878,
+     "photo": 443637274,
+     "note": "morena manchada · Gibson Bight, Bay Islands, Honduras"
+    },
+    {
+     "inat": 206011889,
+     "photo": 364331707,
+     "note": "Cherna enjambre · Gibson Bight, Bay Islands, Honduras"
+    },
+    {
+     "inat": 193908179,
+     "photo": 340701652,
+     "note": "Solmissus incisa · Submarine Dr, West End, Honduras"
+    }
+   ]
+  },
+  "spooky-channel": {
+   "lat": 16.3393987,
+   "lon": -86.5644513,
+   "photos": [
+    {
+     "inat": 107977231,
+     "photo": 181704464,
+     "note": "Cangrejo de coral · Roatán, HN-IB, HN"
+    },
+    {
+     "inat": 334425137,
+     "photo": 607311920,
+     "note": "Gran coral de estrellas · Coxen Hole, Bay Islands, Honduras"
+    },
+    {
+     "inat": 107977724,
+     "photo": 181705692,
+     "note": "Camarón de coral · Roatán, HN-IB, HN"
+    },
+    {
+     "inat": 334438187,
+     "photo": 607334415,
+     "note": "doncella arcoiris · Coxen Hole, Bay Islands, Honduras"
+    }
+   ]
+  },
+  "marys-place": {
+   "lat": 16.3376598,
+   "lon": -86.4685934,
+   "photos": [
+    {
+     "inat": 226752584,
+     "photo": 402182282,
+     "note": "Gran coral de estrellas · Roatán, HN-IB, HN"
+    },
+    {
+     "inat": 248243109,
+     "photo": 443517984,
+     "note": "picudilla · Roatán, Islas de la Bahía, Honduras"
+    },
+    {
+     "inat": 244063313,
+     "photo": 435301221,
+     "note": "Gallineta café · Coxen Hole, Bay Islands, Honduras"
+    },
+    {
+     "inat": 37059208,
+     "photo": 58686435,
+     "note": "Ceratophyllidia papilligera · Roatán, HN-IB, HN"
+    },
+    {
+     "inat": 105918844,
+     "photo": 177830095,
+     "note": "mero índigo · French Harbor, Honduras"
+    }
+   ]
+  },
+  "zone:west-end": {
+   "lat": 16.313,
+   "lon": -86.584,
+   "photos": [
+    {
+     "inat": 334675803,
+     "photo": 607817907,
+     "note": "Abanico de mar · 8C75+J9, West End, Honduras"
+    },
+    {
+     "inat": 107977231,
+     "photo": 181704464,
+     "note": "Cangrejo de coral · Roatán, HN-IB, HN"
+    },
+    {
+     "inat": 150317374,
+     "photo": 259170024,
+     "note": "Esponja gigante de barril · Roatán, HN-IB, HN"
+    },
+    {
+     "inat": 305894818,
+     "photo": 551579728,
+     "note": "Esponja vaso · Roatán, HN-IB, HN"
+    },
+    {
+     "inat": 132278778,
+     "photo": 225236124,
+     "note": "Pez erizo apache · Turtle Crossing, Roatan"
+    }
+   ]
+  },
+  "zone:cordelia": {
+   "lat": 16.3,
+   "lon": -86.52,
+   "photos": [
+    {
+     "inat": 369488678,
+     "photo": 674921320,
+     "note": "Raya pinta · Honduras"
+    },
+    {
+     "inat": 332654070,
+     "photo": 603753496,
+     "note": "Tortuga carey · Honduras"
+    },
+    {
+     "inat": 42437616,
+     "photo": 67382384,
+     "note": "Mero del Caribe · Honduras"
+    },
+    {
+     "inat": 242788590,
+     "photo": 433012066,
+     "note": "Langosta del Caribe · Coxen Hole, Bay Islands, Honduras"
+    },
+    {
+     "inat": 105522844,
+     "photo": 177071293,
+     "note": "Coral cuerno de ciervo · Honduras"
+    }
+   ]
+  },
+  "zone:marys-place": {
+   "lat": 16.3377,
+   "lon": -86.4686,
+   "photos": [
+    {
+     "inat": 226752584,
+     "photo": 402182282,
+     "note": "Gran coral de estrellas · Roatán, HN-IB, HN"
+    },
+    {
+     "inat": 248243109,
+     "photo": 443517984,
+     "note": "picudilla · Roatán, Islas de la Bahía, Honduras"
+    },
+    {
+     "inat": 244063313,
+     "photo": 435301221,
+     "note": "Gallineta café · Coxen Hole, Bay Islands, Honduras"
+    },
+    {
+     "inat": 37059208,
+     "photo": 58686435,
+     "note": "Ceratophyllidia papilligera · Roatán, HN-IB, HN"
+    },
+    {
+     "inat": 105918844,
+     "photo": 177830095,
+     "note": "mero índigo · French Harbor, Honduras"
+    }
+   ]
+  },
+  "zone:big-bight": {
+   "lat": 16.3813,
+   "lon": -86.4543,
+   "photos": [
+    {
+     "inat": 225982496,
+     "photo": 400717663,
+     "note": "Gobio neón caribeño · Honduras"
+    },
+    {
+     "inat": 39579895,
+     "photo": 62806647,
+     "note": "Pez mariposa de cuatro ojos · José Santos Guardiola, HN-IB, HN"
+    },
+    {
+     "inat": 194333028,
+     "photo": 341568893,
+     "note": "Tortuga verde · Honduras"
+    },
+    {
+     "inat": 307920634,
+     "photo": 555473959,
+     "note": "Raya pinta · Islas de la Bahía, HN"
+    }
+   ]
+  },
+  "zone:diamond-rock": {
+   "lat": 16.4183,
+   "lon": -86.3259,
+   "photos": [
+    {
+     "inat": 4879809,
+     "photo": 5932078,
+     "note": "Coral pilar · Honduras"
+    },
+    {
+     "inat": 203396840,
+     "photo": 359354599,
+     "note": "Abanico de mar · Cow and the Calf, Roatan, Honduras"
+    },
+    {
+     "inat": 203396832,
+     "photo": 359354575,
+     "note": "Esponja de cuerda con poros · Cow and the Calf, Roatan, Honduras"
+    },
+    {
+     "inat": 203396868,
+     "photo": 359354692,
+     "note": "Gran coral de estrellas · Cow and the Calf, Roatan, Honduras"
+    }
+   ]
+  },
+  "zone:santa-elena": {
+   "lat": 16.4277,
+   "lon": -86.1762,
+   "photos": [
+    {
+     "inat": 411660842,
+     "photo": 757341086,
+     "note": "Burro payaso · Gualaco, Olancho, Honduras"
+    },
+    {
+     "inat": 203879068,
+     "photo": 360283025,
+     "note": "Abanico de mar · Jade Beach Reef, Barbareta Island, Honduras"
+    },
+    {
+     "inat": 209404284,
+     "photo": 370578901,
+     "note": "Tiburón gata · Caribbean Sea, Bay Islands, HN"
+    },
+    {
+     "inat": 203879053,
+     "photo": 360282974,
+     "note": "Gallineta negra · Jade Beach Reef, Barbareta Island, Honduras"
+    }
+   ]
+  },
+  "zone:pelican-point": {
+   "lat": 16.426,
+   "lon": -86.1142,
+   "photos": [
+    {
+     "inat": 203249737,
+     "photo": 359075722,
+     "note": "Tiburón gata · Pigeon Cays, Honduras"
+    },
+    {
+     "inat": 405365156,
+     "photo": 744566469,
+     "note": "Raya látigo · Bay Islands, HN"
+    },
+    {
+     "inat": 203249740,
+     "photo": 359075737,
+     "note": "Cirujano azul · Pigeon Cays, Honduras"
+    },
+    {
+     "inat": 203249755,
+     "photo": 359075768,
+     "note": "Pez loro real · Pigeon Cays, Honduras"
+    }
+   ]
+  },
+  "zone:utila-sw": {
+   "lat": 16.0786,
+   "lon": -86.9977,
+   "photos": [
+    {
+     "inat": 338805794,
+     "photo": 616206710,
+     "note": "Coral cuerno de alce · Honduras"
+    },
+    {
+     "inat": 35418367,
+     "photo": 55846761,
+     "note": "Chopa grisácea · Duppy waters, Utila, Honduras"
+    },
+    {
+     "inat": 37835255,
+     "photo": 60058563,
+     "note": "Tiburón gata · north side Utila Island, Honduras"
+    },
+    {
+     "inat": 177246936,
+     "photo": 308247465,
+     "note": "Raya látigo · Water Cay"
+    }
+   ]
+  },
+  "zone:guanaja-sw": {
+   "lat": 16.4151,
+   "lon": -85.9461,
+   "photos": [
+    {
+     "inat": 105552619,
+     "photo": 177128843,
+     "note": "Coral pilar · Honduras"
+    },
+    {
+     "inat": 342065531,
+     "photo": 622844877,
+     "note": "Estrella cojín · Guanaja Forest Reserve No. 3, Guanaja, Islas de la Bahía, Honduras"
+    },
+    {
+     "inat": 341183415,
+     "photo": 621045826,
+     "note": "Coral flor suave · Honduras"
+    },
+    {
+     "inat": 341756597,
+     "photo": 622217430,
+     "note": "Coral cerebro estriado · Honduras"
+    }
+   ]
+  },
+  "zone:guanaja-ne": {
+   "lat": 16.5058,
+   "lon": -85.83,
+   "photos": [
+    {
+     "inat": 341040916,
+     "photo": 620749866,
+     "note": "Coral cerebro estriado · Honduras"
+    },
+    {
+     "inat": 186120106,
+     "photo": 325190085,
+     "note": "Pez león asiático · Mar Caribe, Guanaja, Islas De La Bahía, HN"
+    },
+    {
+     "inat": 340695393,
+     "photo": 620041685,
+     "note": "Coral rocoso de estrellas · Honduras"
+    }
+   ]
+  }
+ },
+ "species": {
+  "brain": {
+   "inat": 107956063,
+   "photo": 181666903,
+   "note": "Coral cerebro estriado · Honduras"
+  },
+  "star": {
+   "inat": 334425137,
+   "photo": 607311920,
+   "note": "Gran coral de estrellas · Coxen Hole, Bay Islands, Honduras"
+  },
+  "elkhorn": {
+   "inat": 338805794,
+   "photo": 616206710,
+   "note": "Coral cuerno de alce · Honduras"
+  },
+  "staghorn": {
+   "inat": 21753589,
+   "photo": 33690545,
+   "note": "Coral cuerno de ciervo · Honduras"
+  },
+  "pillar": {
+   "inat": 415538206,
+   "photo": 765177879,
+   "note": "Coral pilar · Islas de la Bahía, HN"
+  },
+  "fan": {
+   "inat": 334675803,
+   "photo": 607817907,
+   "note": "Abanico de mar · 8C75+J9, West End, Honduras"
+  },
+  "rod": {
+   "inat": 361719886,
+   "photo": 660155730,
+   "note": "Eunicea flexuosa · Utila, Honduras"
+  },
+  "barrel": {
+   "inat": 150317374,
+   "photo": 259170024,
+   "note": "Esponja gigante de barril · Roatán, HN-IB, HN"
+  },
+  "tube": {
+   "inat": 226253092,
+   "photo": 401232395,
+   "note": "Aplysina archeri · Roatán, HN-IB, HN"
+  },
+  "vase": {
+   "inat": 305894818,
+   "photo": 551579728,
+   "note": "Esponja vaso · Roatán, HN-IB, HN"
+  },
+  "grass": {
+   "inat": 41126165,
+   "photo": 65209533,
+   "note": "Hierba de tortuga · Utila, Honduras"
+  }
+ }
+}

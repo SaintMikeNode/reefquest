@@ -3,7 +3,9 @@ import { useT } from "../i18n";
 import { href, type Route } from "../lib/router";
 import { LangToggle } from "./LangToggle";
 import { HAS_WEBGL } from "../webgl";
+import { Credit } from "./Credit";
 import { Logo } from "./Logo";
+import { SpecularButton } from "./SpecularButton";
 
 export function TopBar({ route }: { route: Route }) {
   const t = useT();
@@ -32,9 +34,9 @@ export function TopBar({ route }: { route: Route }) {
         <div className="header-end">
           <LangToggle />
           {HAS_WEBGL && (
-            <a className="btn light cta" href={href.islands}>
+            <SpecularButton href={href.islands} className="btn light cta" lineColor="#2f86ff" baseColor="#9cc6ff">
               {t("nav.cta")}
-            </a>
+            </SpecularButton>
           )}
           <button className="menu-toggle" aria-expanded={open} onClick={() => setOpen(!open)}>
             {t("nav.menu")}
@@ -45,13 +47,50 @@ export function TopBar({ route }: { route: Route }) {
   );
 }
 
+/** Footer: who it is for (left), every page (middle), the project (right), then the sources. */
 export function Footer() {
   const t = useT();
+  const pages: [string, string][] = [
+    [href.home, t("nav.home")],
+    [href.islands, t("nav.islands")],
+    [href.heat, t("nav.heat")],
+    [href.learn, t("nav.learn")],
+    [href.about, t("nav.about")],
+  ];
   return (
     <footer className="site-footer">
-      <div className="inner">
-        <span>{t("footer.made")}</span>
-        <span>{t("footer.free")}</span>
+      <div className="footer-glow" aria-hidden="true" />
+      <div className="inner footer-grid">
+        <div className="footer-brand">
+          <a className="wordmark" href={href.home}>
+            <Logo color="#ffffff" accent="#bfe0ff" />
+            <b>ReefQuest</b>
+          </a>
+          <p>{t("footer.made")}</p>
+          <p className="footer-free">{t("footer.free")}</p>
+        </div>
+        <nav className="footer-col" aria-label={t("footer.explore")}>
+          <h3>{t("footer.explore")}</h3>
+          {pages.map(([h, label]) => (
+            <a key={h} href={h}>
+              {label}
+            </a>
+          ))}
+        </nav>
+        <div className="footer-col">
+          <h3>{t("footer.project")}</h3>
+          <Credit className="footer-credit" />
+          <a href="https://github.com/saintmikenode/reefquest" target="_blank" rel="noreferrer">
+            GitHub
+          </a>
+          <a href="https://nerdypunk.dev" target="_blank" rel="noreferrer">
+            NerdyPunkDev
+          </a>
+        </div>
+      </div>
+      <div className="inner footer-bottom">
+        <span>{t("footer.data")}</span>
+        <span>{t("footer.license")}</span>
       </div>
     </footer>
   );

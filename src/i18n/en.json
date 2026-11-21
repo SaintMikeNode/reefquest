@@ -224,5 +224,22 @@
   "isles.kicker": "Roatán · Utila · Guanaja",
   "isles.title": "Explore the islands *in 3D*",
   "isles.lead": "Pick an island to explore its relief, its reef and the sea's heat day by day, or board the research boat.",
-  "isles.note": "Previews of the real relief and depth (Copernicus DEM, Allen Coral Atlas, GEBCO), with height exaggerated. They are a model, not a navigation chart."
+  "isles.note": "Previews of the real relief and depth (Copernicus DEM, Allen Coral Atlas, GEBCO), with height exaggerated. They are a model, not a navigation chart.",
+  "photos.here": "Photo taken here",
+  "photos.from": "Photo from {where}",
+  "photos.show": "Show photo {n}",
+  "photos.button": "Photos",
+  "photos.title": "Photos of this place",
+  "photos.creditsTitle": "Photo *credits*",
+  "photos.creditsLead": "Openly licensed photos from iNaturalist and Wikimedia Commons, used unmodified and credited to each author. NC (non-commercial) licenses are met because ReefQuest is free and nonprofit.",
+  "photos.species": "Field guide",
+  "boat.seePhotos": "See photos",
+  "photos.label": "Photos",
+  "photos.all": "See all the photos",
+  "photos.allTitle": "Life on the reefs",
+  "photos.domeHint": "Drag to look around · tap a photo to open it",
+  "footer.explore": "Explore",
+  "footer.project": "The project",
+  "footer.data": "Data: NOAA Coral Reef Watch · Allen Coral Atlas · GEBCO · Copernicus DEM · OpenStreetMap · iNaturalist",
+  "footer.license": "Code under the MIT License · © 2026 ReefQuest"
 }
