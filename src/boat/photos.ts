@@ -1,5 +1,6 @@
 import type * as THREE from "three";
 import { create } from "zustand";
+import { stampLogo } from "./photoLogo";
 
 // The underwater camera (after CopánQuest's): a viewfinder, the thing in frame worked out a few
 // times a second, and one small JPEG grabbed right after a frame is drawn. A photo of a place's
@@ -84,7 +85,7 @@ export function requestShot(cb: (url: string) => void) {
   pending = cb;
 }
 /** Inside the render loop: if a photo was asked for, draw the frame now and keep its 16:9 crop as
- *  a small JPEG (the drawing buffer is only readable right after drawing). */
+ *  a small JPEG with the logo in the corner (the drawing buffer is only readable right after drawing). */
 export function fulfilShot(gl: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.Camera) {
   if (!pending) return;
   const cb = pending;
@@ -96,6 +97,8 @@ export function fulfilShot(gl: THREE.WebGLRenderer, scene: THREE.Scene, camera: 
   const out = document.createElement("canvas");
   out.width = W;
   out.height = H;
-  out.getContext("2d")!.drawImage(src, (src.width - cw) / 2, (src.height - ch) / 2, cw, ch, 0, 0, W, H);
+  const ctx = out.getContext("2d")!;
+  ctx.drawImage(src, (src.width - cw) / 2, (src.height - ch) / 2, cw, ch, 0, 0, W, H);
+  stampLogo(ctx, W, H);
   cb(out.toDataURL("image/jpeg", 0.78));
 }
