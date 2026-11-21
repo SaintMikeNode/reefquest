@@ -1,223 +1,22 @@
-import { useFrame } from "@react-three/fiber";
-import { useEffect, useMemo, useRef } from "react";
+import { useFrame, useThree } from "@react-three/fiber";
+import { useEffect, useMemo } from "react";
 import * as THREE from "three";
-import { REDUCED_MOTION } from "../lib/device";
+import { MOBILE, REDUCED_MOTION } from "../lib/device";
 import { displayY, type TerrainData } from "./terrain";
 
 // A small high-wing light plane (in the spirit of a Cessna 172) on a sightseeing lap around the
-// island: white with ocean-blue trim, banking into its turns, a faint propeller disc and a soft
-// shadow on the sea. Decoration only: it never takes the pointer.
-// Budget: three draw calls and about 240 triangles, built in code. The airframe is one mesh with the
-// light baked into its vertex colors, so it needs no lights and an unlit material.
-// It never asks for a redraw. On computers the island's own ~30 fps loop moves it; on phones, where
-// the island redraws only when something changes, it is simply somewhere new at the next redraw.
+// island: white with ocean-blue trim, banking into its turns, with its shadow on the sea.
+// Decoration only: it never takes the pointer.
+//
+// It is not drawn in the 3D scene. The island redraws only when something changes on phones and
+// tablets (battery), so a plane in the scene stood still and then jumped (Tulio). Instead it is a
+// small vector image over the map, placed where its 3D position projects and turned and squashed
+// with the view (its wings and body follow the ground plane in perspective, the wings narrow as it
+// banks). Moving it is a CSS transform, which the browser's compositor applies without redrawing
+// the island or repainting anything: smooth at any frame rate, for a handful of arithmetic a frame
+// (~30 a second on phones, every frame on computers). It also follows every redraw, so it stays put
+// on the map while the view moves. With reduced motion it sits still at one point of its lap.
 
-type V3 = readonly [number, number, number];
-
-const WHITE = new THREE.Color("#f7fafc");
-const BLUE = new THREE.Color("#0a66f0");
-const GLASS = new THREE.Color("#12324f");
-const TIRE = new THREE.Color("#1b2733");
-/** What white turns into on the faces the light doesn't reach: a cool blue-gray, not a neutral gray. */
-const SHADE = new THREE.Color(0.16, 0.25, 0.42);
-
-/** Collects triangles painted one color each, with light from above baked in face by face. */
-function painter() {
-  const pos: number[] = [], col: number[] = [];
-  /** A triangle facing `out` (roughly): the winding is turned to match, so no face is inside out. */
-  const tri = (a: V3, b: V3, c: V3, paint: THREE.Color, out: V3) => {
-    let nx = (b[1] - a[1]) * (c[2] - a[2]) - (b[2] - a[2]) * (c[1] - a[1]);
-    let ny = (b[2] - a[2]) * (c[0] - a[0]) - (b[0] - a[0]) * (c[2] - a[2]);
-    let nz = (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
-    const len = Math.hypot(nx, ny, nz);
-    if (len < 1e-10) return;
-    if (nx * out[0] + ny * out[1] + nz * out[2] < 0) {
-      [b, c] = [c, b];
-      nx = -nx;
-      ny = -ny;
-      nz = -nz;
-    }
-    // Mostly from above, a little from the left and the front.
-    const k = THREE.MathUtils.clamp(0.58 + (0.42 * ny + 0.09 * nx + 0.05 * nz) / len, 0, 1);
-    pos.push(...a, ...b, ...c);
-    for (let v = 0; v < 3; v++)
-      col.push(paint.r * (SHADE.r + (1 - SHADE.r) * k), paint.g * (SHADE.g + (1 - SHADE.g) * k), paint.b * (SHADE.b + (1 - SHADE.b) * k));
-  };
-  /** A flat convex outline as a fan of triangles. */
-  const fan = (pts: V3[], paint: THREE.Color, out: V3) => {
-    for (let i = 1; i < pts.length - 1; i++) tri(pts[0], pts[i], pts[i + 1], paint, out);
-  };
-  const middle = (pts: V3[]): V3 => {
-    let x = 0, y = 0, z = 0;
-    for (const p of pts) (x += p[0]), (y += p[1]), (z += p[2]);
-    return [x / pts.length, y / pts.length, z / pts.length];
-  };
-  /** Skin between consecutive rings of points (a fuselage, a wing, a strut), facing away from the rings' middles. */
-  const loft = (rings: V3[][], paint: (segment: number, side: number) => THREE.Color) => {
-    for (let i = 0; i < rings.length - 1; i++) {
-      const A = rings[i], B = rings[i + 1];
-      const ma = middle(A), mb = middle(B);
-      for (let j = 0; j < A.length; j++) {
-        const a = A[j], b = A[(j + 1) % A.length], c = B[(j + 1) % B.length], d = B[j];
-        const out: V3 = [
-          (a[0] + b[0] + c[0] + d[0]) / 4 - (ma[0] + mb[0]) / 2,
-          (a[1] + b[1] + c[1] + d[1]) / 4 - (ma[1] + mb[1]) / 2,
-          (a[2] + b[2] + c[2] + d[2]) / 4 - (ma[2] + mb[2]) / 2,
-        ];
-        tri(a, b, c, paint(i, j), out);
-        tri(a, c, d, paint(i, j), out);
-      }
-    }
-  };
-  const build = () => {
-    const g = new THREE.BufferGeometry();
-    g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
-    g.setAttribute("color", new THREE.Float32BufferAttribute(col, 3));
-    g.computeBoundingSphere();
-    return g;
-  };
-  return { tri, fan, loft, build };
-}
-
-// ---- The airframe: 1 unit from spinner to tail, nose toward +z, y up; wingspan 1.34.
-// Fuselage sections from nose to tail: z, then half width and height of the roof edge, the belt
-// (the top and the bottom of the cheat line) and the belly edge.
-const SECTIONS: number[][] = [
-  [0.44, 0.036, 0.04, 0.052, 0.012, -0.012, 0.036, -0.058], // front of the cowling
-  [0.27, 0.046, 0.052, 0.066, 0.022, -0.004, 0.046, -0.074], // firewall, foot of the windshield
-  [0.17, 0.05, 0.118, 0.068, 0.026, 0, 0.048, -0.078], // top of the windshield
-  [-0.04, 0.044, 0.112, 0.064, 0.026, 0, 0.044, -0.07], // back of the cabin
-  [-0.24, 0.022, 0.07, 0.036, 0.03, 0.01, 0.022, -0.026], // tail cone
-];
-const TAIL: V3 = [0, 0.036, -0.5];
-const HALF_SPAN = 0.67;
-const PROP: V3 = [0, -0.006, 0.452]; // propeller hub
-
-/** Wing section at span position x: leading edge, top, trailing edge, bottom. */
-function wingSection(x: number): V3[] {
-  const t = Math.abs(x) / HALF_SPAN;
-  const taper = THREE.MathUtils.clamp((Math.abs(x) - 0.28) / (HALF_SPAN - 0.28), 0, 1); // straight inboard, tapered outboard
-  const lead = 0.235 - 0.023 * taper, trail = 0.035 + 0.037 * taper, thick = 0.03 - 0.012 * taper;
-  const y = 0.112 + 0.03 * t; // a little dihedral
-  const crown = lead - (lead - trail) * 0.32;
-  return [[x, y + thick * 0.45, lead], [x, y + thick, crown], [x, y + thick * 0.5, trail], [x, y, crown]];
-}
-
-function airframe(): THREE.BufferGeometry {
-  const { tri, fan, loft, build } = painter();
-
-  // Fuselage, eight sides: roof, window, cheat line and lower side on the right, belly, and the same
-  // back up the left. The windshield is the roof of the second segment.
-  const rings = SECTIONS.map(([z, wt, yt, w, yu, yl, wb, yb]): V3[] => [
-    [-wt, yt, z], [wt, yt, z], [w, yu, z], [w, yl, z], [wb, yb, z], [-wb, yb, z], [-w, yl, z], [-w, yu, z],
-  ]);
-  const skin = (segment: number, side: number) => {
-    if (side === 2 || side === 6) return BLUE; // cheat line
-    if ((side === 1 || side === 7) && (segment === 1 || segment === 2)) return GLASS; // side windows
-    if (side === 0 && segment === 1) return GLASS; // windshield
-    return WHITE;
-  };
-  loft(rings, skin);
-  const last = rings[rings.length - 1];
-  for (let j = 0; j < 8; j++) {
-    const a = last[j], b = last[(j + 1) % 8];
-    tri(a, b, TAIL, skin(4, j), [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2 - 0.03, 0]);
-  }
-  fan(rings[0], WHITE, [0, 0, 1]);
-  // Spinner.
-  for (let j = 0; j < 6; j++) {
-    const a0 = (j / 6) * Math.PI * 2, a1 = ((j + 1) / 6) * Math.PI * 2, r = 0.026;
-    tri(
-      [PROP[0] + Math.cos(a0) * r, PROP[1] + Math.sin(a0) * r, 0.44],
-      [PROP[0] + Math.cos(a1) * r, PROP[1] + Math.sin(a1) * r, 0.44],
-      [PROP[0], PROP[1], 0.506],
-      BLUE,
-      [Math.cos((a0 + a1) / 2), Math.sin((a0 + a1) / 2), 0.4],
-    );
-  }
-
-  // One wing across the top of the cabin, with blue tips.
-  const stations = [-HALF_SPAN, -0.575, -0.28, 0.28, 0.575, HALF_SPAN];
-  const wing = stations.map(wingSection);
-  loft(wing, (segment) => (segment === 0 || segment === 4 ? BLUE : WHITE));
-  fan(wing[0], BLUE, [-1, 0, 0]);
-  fan(wing[5], BLUE, [1, 0, 0]);
-  // Two struts from the lower fuselage to the wing: thin three-sided bars.
-  for (const s of [-1, 1]) {
-    const bar = (x: number, y: number): V3[] => [[x, y, 0.163], [x, y, 0.137], [x + s * 0.004, y - 0.007, 0.15]];
-    loft([bar(s * 0.064, -0.02), bar(s * 0.31, 0.123)], () => WHITE);
-  }
-
-  // Tail: a flat stabilizer and a swept fin with a dorsal fillet, each two faces back to back.
-  const stab: V3[] = [[-0.215, 0.044, -0.455], [-0.215, 0.044, -0.385], [0, 0.044, -0.345], [0.215, 0.044, -0.385], [0.215, 0.044, -0.455], [0, 0.044, -0.47]];
-  fan(stab, WHITE, [0, 1, 0]);
-  fan(stab, WHITE, [0, -1, 0]);
-  const fin = (z: number, y: number): V3 => [0, y, z];
-  const lower = [fin(-0.5, 0.03), fin(-0.2, 0.07), fin(-0.335, 0.105), fin(-0.379, 0.175), fin(-0.5, 0.175)];
-  const upper = [fin(-0.379, 0.175), fin(-0.41, 0.225), fin(-0.505, 0.225), fin(-0.5, 0.175)];
-  for (const s of [-1, 1]) {
-    fan(lower, WHITE, [s, 0, 0]);
-    fan(upper, BLUE, [s, 0, 0]);
-  }
-
-  // Fixed tricycle gear: three flat wheels, leaf-spring legs and a nose strut.
-  const wheel = (x: number, y: number, z: number, r: number) => {
-    const rim: V3[] = [];
-    for (let j = 0; j < 6; j++) rim.push([x, y + Math.sin((j / 6) * Math.PI * 2) * r, z + Math.cos((j / 6) * Math.PI * 2) * r]);
-    fan(rim, TIRE, [1, 0, 0]);
-    fan(rim, TIRE, [-1, 0, 0]);
-  };
-  for (const s of [-1, 1]) {
-    wheel(s * 0.125, -0.135, 0.105, 0.03);
-    const leg: V3[] = [[s * 0.045, -0.068, 0.12], [s * 0.045, -0.068, 0.09], [s * 0.125, -0.128, 0.095], [s * 0.125, -0.128, 0.115]];
-    fan(leg, WHITE, [s * 0.6, 0.8, 0]);
-    fan(leg, WHITE, [-s * 0.6, -0.8, 0]);
-  }
-  wheel(0, -0.128, 0.37, 0.026);
-  const strut: V3[] = [[0, -0.06, 0.383], [0, -0.06, 0.367], [0, -0.125, 0.365], [0, -0.125, 0.375]];
-  fan(strut, WHITE, [1, 0, 0]);
-  fan(strut, WHITE, [-1, 0, 0]);
-
-  return build();
-}
-
-/** A flat disc of triangles with a color and an opacity per vertex (center first, then the rings). */
-function softDisc(rings: { r: [number, number]; alpha: (angle: number) => number }[], center: number, rgb: V3, sides: number, plane: "xy" | "xz") {
-  const pos: number[] = [], col: number[] = [];
-  const put = (rx: number, rz: number, a: number, alpha: number) => {
-    const u = Math.cos(a) * rx, v = Math.sin(a) * rz;
-    if (plane === "xy") pos.push(u, v, 0);
-    else pos.push(u, 0, v);
-    col.push(rgb[0], rgb[1], rgb[2], alpha);
-  };
-  let inner = { r: [0, 0] as [number, number], alpha: (_: number) => center };
-  for (const ring of rings) {
-    for (let j = 0; j < sides; j++) {
-      const a0 = (j / sides) * Math.PI * 2, a1 = ((j + 1) / sides) * Math.PI * 2;
-      put(inner.r[0], inner.r[1], a0, inner.alpha(a0));
-      put(ring.r[0], ring.r[1], a0, ring.alpha(a0));
-      put(ring.r[0], ring.r[1], a1, ring.alpha(a1));
-      if (inner.r[0] === 0) continue; // the middle is a fan, not a band
-      put(inner.r[0], inner.r[1], a0, inner.alpha(a0));
-      put(ring.r[0], ring.r[1], a1, ring.alpha(a1));
-      put(inner.r[0], inner.r[1], a1, inner.alpha(a1));
-    }
-    inner = ring;
-  }
-  const g = new THREE.BufferGeometry();
-  g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
-  g.setAttribute("color", new THREE.Float32BufferAttribute(col, 4));
-  g.computeBoundingSphere();
-  return g;
-}
-
-/** The spinning propeller as a faint disc, a little brighter along two blurred blades. */
-const propDisc = () => softDisc([{ r: [0.125, 0.125], alpha: (a) => 0.1 + 0.3 * Math.cos(a) ** 2 }], 0.16, [0.82, 0.9, 0.96], 10, "xy");
-/** The shadow on the sea: dark in the middle, fading to nothing at the rim. */
-const shadowBlob = () =>
-  softDisc([{ r: [0.34, 0.27], alpha: () => 0.24 }, { r: [0.64, 0.5], alpha: () => 0 }], 0.32, [0, 0.02, 0.05], 12, "xz");
-
-// ---- The lap.
 const SAMPLES = 256;
 const OFFSHORE = 18; // scene units (1.8 km): how far outside the land the loop runs
 const ROUNDING = 14; // how far along the loop each point is averaged with its neighbors
@@ -361,75 +160,104 @@ function flightRoute(td: TerrainData): Route {
 // Readable at any zoom, like the survey boats: the plane grows with its distance from the camera,
 // about 43 px of wingspan on a 1080 px tall screen, within limits so it is neither a speck up close
 // nor a blimp from afar.
-const SIZE = 0.023;
-const SMALLEST = 0.45;
-const LARGEST = 16;
-const SEA = 0.06; // just above the water surface
+const SEA = 0.06; // its shadow, just above the water surface
 const PARKED = 0.08; // with reduced motion: where on the lap it sits (level, along the south coast)
-// Dev only: window.__rqPlaneScale = 6 enlarges the plane to inspect it.
+const SPRITE = 64; // px, the image's box; its wingspan is 60 px of it
 const DEV_SCALE = () => (import.meta.env.DEV ? ((window as { __rqPlaneScale?: number }).__rqPlaneScale ?? 1) : 1);
-const noHit = () => null;
+
+// Seen from above, nose up: wing with blue tips, fuselage with a blue stripe running into the fin,
+// tailplane, windshield ahead of the wing, a faint propeller disc. Thin dark edges keep it readable
+// over white surf and sand.
+const OUTLINE = '<path d="M23 50.5Q32 48.5 41 50.5L41 54Q32 53 23 54Z"/><path d="M32 6.5C34.8 6.5 36 9.5 36 13L35.4 38L33.2 55.5L30.8 55.5L28.6 38L28 13C28 9.5 29.2 6.5 32 6.5Z"/><path d="M3 22.5Q32 20.5 61 22.5Q62 23 61.6 26.5L61 29.5Q32 31 3 29.5L2.4 26.5Q2 23 3 22.5Z"/>';
+const PLANE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+<g fill="#f7fafc" stroke="rgba(4,16,29,0.6)" stroke-width="1" stroke-linejoin="round">${OUTLINE}</g>
+<path d="M3 22.5Q2 23 2.4 26.5L3 29.5L8.6 29.85L8.6 22.15Z" fill="#0a66f0"/>
+<path d="M61 22.5Q62 23 61.6 26.5L61 29.5L55.4 29.85L55.4 22.15Z" fill="#0a66f0"/>
+<path d="M31.35 31L32.65 31L32.5 55.3L31.5 55.3Z" fill="#0a66f0"/>
+<path d="M28.6 21.6L35.4 21.6L34.8 17.4Q32 16.3 29.2 17.4Z" fill="#12324f"/>
+<ellipse cx="32" cy="5.4" rx="8.5" ry="1.3" fill="rgba(255,255,255,0.5)"/>
+</svg>`;
+const SHADOW_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64"><g fill="#02101f">${OUTLINE}</g></svg>`;
+
+const P = new THREE.Vector3(), Q = new THREE.Vector3();
 
 export function Plane({ td }: { td: TerrainData }) {
   const route = useMemo(() => flightRoute(td), [td]);
-  const kit = useMemo(
-    () => ({
-      airframe: airframe(),
-      prop: propDisc(),
-      shadow: shadowBlob(),
-      // Unlit, and outside the scene's fog and tone mapping: the white stays white at any zoom.
-      paint: new THREE.MeshBasicMaterial({ vertexColors: true, fog: false, toneMapped: false }),
-      soft: new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, depthWrite: false, side: THREE.DoubleSide, fog: false, toneMapped: false }),
-    }),
-    [],
-  );
-  useEffect(
-    () => () => {
-      kit.airframe.dispose();
-      kit.prop.dispose();
-      kit.shadow.dispose();
-      kit.paint.dispose();
-      kit.soft.dispose();
-    },
-    [kit],
-  );
+  const { camera, gl } = useThree();
+  const get = useThree((s) => s.get);
 
-  const craft = useRef<THREE.Group>(null);
-  const prop = useRef<THREE.Mesh>(null);
-  const shadow = useRef<THREE.Mesh>(null);
+  // The two images, in a layer of their own over the canvas (under the labels and the HUD).
+  const els = useMemo(() => {
+    const layer = document.createElement("div");
+    layer.setAttribute("aria-hidden", "true");
+    layer.style.cssText = "position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:2;contain:strict";
+    const make = (svg: string, opacity: string) => {
+      const el = document.createElement("div");
+      el.style.cssText = `position:absolute;left:0;top:0;width:${SPRITE}px;height:${SPRITE}px;transform-origin:0 0;will-change:transform;visibility:hidden;opacity:${opacity}`;
+      el.innerHTML = svg;
+      layer.appendChild(el);
+      return el;
+    };
+    const shadow = make(SHADOW_SVG, "0.24");
+    const plane = make(PLANE_SVG, "1");
+    return { layer, shadow, plane, shown: false };
+  }, []);
+  useEffect(() => {
+    const host = gl.domElement.parentElement;
+    host?.appendChild(els.layer);
+    return () => els.layer.remove();
+  }, [gl, els]);
 
-  // Where the plane is depends only on the clock: nothing here asks for a frame.
-  useFrame(({ clock, camera }) => {
-    const g = craft.current, p = prop.current, s = shadow.current;
-    if (!g || !p || !s) return;
-    const t = REDUCED_MOTION ? 0 : clock.elapsedTime;
-    const lap = REDUCED_MOTION ? PARKED : t / route.lap;
-    const f = (lap - Math.floor(lap)) * SAMPLES;
-    const i = Math.min(SAMPLES - 1, Math.floor(f)), k = f - i;
-    const x = route.x[i] + (route.x[i + 1] - route.x[i]) * k;
-    const z = route.z[i] + (route.z[i + 1] - route.z[i]) * k;
-    const yaw = route.yaw[i] + (route.yaw[i + 1] - route.yaw[i]) * k;
-    const bank = route.bank[i] + (route.bank[i + 1] - route.bank[i]) * k;
-    const c = camera.position;
-    const size = THREE.MathUtils.clamp(Math.hypot(c.x - x, c.y - route.alt, c.z - z) * SIZE, SMALLEST, LARGEST) * DEV_SCALE();
-    // A very slight bob, with the nose and the wings nodding along.
-    g.position.set(x, route.alt + size * 0.05 * Math.sin(t * 1.1), z);
-    g.rotation.set(0.02 * Math.sin(t * 0.8), yaw, bank + 0.03 * Math.sin(t * 0.6 + 1), "YXZ");
-    g.scale.setScalar(size);
-    p.rotation.z = t * 9;
-    s.position.set(x, SEA, z);
-    s.rotation.y = yaw;
-    s.scale.setScalar(size);
-  });
+  /** Put the images where the plane is at time t (seconds), as the camera sees it now. */
+  const place = useMemo(() => {
+    const at = (arr: Float32Array, i: number, k: number) => arr[i] + (arr[i + 1] - arr[i]) * k;
+    const px = (v: THREE.Vector3, w: number, h: number) => [((v.x + 1) / 2) * w, ((1 - v.y) / 2) * h] as const;
+    return (t: number) => {
+      const { width: w, height: h } = get().size;
+      const lap = REDUCED_MOTION ? PARKED : t / route.lap;
+      const f = (lap - Math.floor(lap)) * SAMPLES;
+      const i = Math.min(SAMPLES - 1, Math.floor(f)), k = f - i;
+      const x = at(route.x, i, k), z = at(route.z, i, k), yaw = at(route.yaw, i, k), bank = at(route.bank, i, k);
+      P.set(x, route.alt, z).project(camera);
+      const on = P.z < 1 && Math.abs(P.x) < 1.15 && Math.abs(P.y) < 1.15;
+      if (on !== els.shown) {
+        els.shown = on;
+        els.plane.style.visibility = els.shadow.style.visibility = on ? "visible" : "hidden";
+      }
+      if (!on) return;
+      const [sx, sy] = px(P, w, h);
+      // The plane's nose and right wing, 5 units long, as they project: the image's axes.
+      const sf = Math.sin(yaw), cf = Math.cos(yaw);
+      const [fx, fy] = px(Q.set(x + sf * 5, route.alt, z + cf * 5).project(camera), w, h);
+      const [rx, ry] = px(Q.set(x - cf * 5, route.alt, z + sf * 5).project(camera), w, h);
+      let Fx = fx - sx, Fy = fy - sy, Rx = rx - sx, Ry = ry - sy;
+      // Same size on screen at any zoom: ~43 px of wingspan on a 1080 px tall view.
+      const span = THREE.MathUtils.clamp(h * 0.04, 30, 52) * DEV_SCALE();
+      const s = span / Math.max(1e-3, Math.hypot(Rx, Ry), Math.hypot(Fx, Fy)) / 60;
+      const lean = Math.cos(bank);
+      (Rx *= s * lean), (Ry *= s * lean), (Fx *= -s), (Fy *= -s); // image y runs nose → tail
+      const bob = REDUCED_MOTION ? 0 : Math.sin(t * 1.1) * 1.2;
+      const half = SPRITE / 2;
+      const m = (cx: number, cy: number) => `matrix(${Rx},${Ry},${Fx},${Fy},${cx - (Rx + Fx) * half},${cy - (Ry + Fy) * half})`;
+      els.plane.style.transform = m(sx, sy + bob);
+      const [hx, hy] = px(Q.set(x, SEA, z).project(camera), w, h);
+      els.shadow.style.transform = m(hx, hy);
+    };
+  }, [route, camera, get, els]);
 
-  return (
-    <>
-      <group ref={craft}>
-        <mesh geometry={kit.airframe} material={kit.paint} raycast={noHit} />
-        {/* After the sea (render order 2), which is see-through and would otherwise paint over them. */}
-        <mesh ref={prop} geometry={kit.prop} material={kit.soft} position={PROP} renderOrder={3} raycast={noHit} />
-      </group>
-      <mesh ref={shadow} geometry={kit.shadow} material={kit.soft} renderOrder={3} raycast={noHit} />
-    </>
-  );
+  // Follow every redraw of the island (the view moved), and fly between them on a loop of its own.
+  useFrame(() => place(performance.now() / 1000));
+  useEffect(() => {
+    if (REDUCED_MOTION) return;
+    let raf = 0, last = 0;
+    const step = (now: number) => {
+      raf = requestAnimationFrame(step);
+      if (document.hidden || (MOBILE && now - last < 32)) return;
+      last = now;
+      place(now / 1000);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [place]);
+  return null;
 }

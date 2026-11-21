@@ -153,10 +153,14 @@ place name gives NOAA's alert wording. All of it follows the selected date and i
   an island has up to 21, so: the click target is `visible={false}` (pointer rays still hit it) and
   phones skip the reflection and the ping, which would sit frozen there anyway), `nature.ts` (instanced palms and forest canopy on land, by elevation and habitat), `plane.tsx`
   (a small Cessna-like high-wing plane, white with blue trim, flying a loop 1–3 km off each
-  island's coast at a fixed height above its highest ground, one lap in 70–100 s; built in code,
-  240 triangles, 3 draw calls, unlit, never catches the pointer; it adds no redraws: on phones and
-  with reduced motion it only moves when the island redraws anyway, parked with reduced motion;
-  dev `window.__rqPlaneScale` enlarges it),
+  island's coast at a fixed height above its highest ground, one lap in 70–100 s. **Not drawn in
+  the 3D scene**: phones redraw the island only on change, and a plane in the scene stood still and
+  then jumped (Tulio). It is a small SVG over the canvas, placed where its 3D position projects and
+  turned and squashed with the view (a CSS matrix from its projected nose and wing axes, wings
+  narrowing as it banks), with its shadow on the sea. The compositor moves it: no 3D redraw, no
+  repaint, ~30 updates a second on phones, every frame on computers, and it follows every redraw
+  when the view moves. Parked with reduced motion; never takes the pointer; dev
+  `window.__rqPlaneScale` enlarges it),
   `Hud.tsx` (title plate, layers with inline keys, boat zones, readout, numbered first-visit guide
   `rq-guide-1` (on top of every panel with a dim backdrop, kept above the timeline and scrolling inside
   on short screens; the mouse controls card waits until it is closed), the timeline whose height is published as `--tb` so panels stop above it),
@@ -340,8 +344,8 @@ only on change. `AdaptiveQuality` lowers canvas resolution when frames stay abov
 climbs back to a level that failed); `FrameCap` holds the boat at 60 fps on 90/120 Hz phones.
 Missions, measured the same way (2026-11-21): beside the whale shark boil 140k / 74k / 56k
 triangles (full / phone / lite), 45–49 draw calls; snorkeling with it 6k / 4k (19 / 15 calls); a
-wreck from below 3–11k. The island view of Guanaja, with 21 places and the plane, draws 199 calls
-on computers.
+wreck from below 3–11k. The island view of Guanaja, with 21 places, draws 194 calls on computers
+(the plane is not in the 3D scene).
 Keep new 3D features inside these budgets and check all three tiers. Not yet verified on a real
 low-end Android phone.
 
