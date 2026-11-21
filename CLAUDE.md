@@ -103,7 +103,7 @@ family** ("Messages" block at the end of styles.css: toasts and warnings, the ta
 subject, the arrival and mission tags): rounded by half their one-line height (a pill on one line, a
 rounded box on two), text balanced into even lines and centered when the box is, the leading dot inline
 with the first line. Running into the shallows says "Agua poco profunda" (shown ~3 s per bump,
-`groundedAt` in the boat store); the zone's edge has its own message. On phones the top row (way back, tools) sits 16 px from the top
+`groundedAt` in the boat store); the zone's edge has its own message. On phones the top row (the name, the tools) sits 16 px from the top
 edge (Tulio: 10 was too close). **The island and boat views on phones are laid out like an app** (Tulio: easier
 to use): a bottom bar (`.scene-nav` in `Hud.tsx`) with four tabs, all islands, Capas (the layers
 panel with its "Explore by boat" tab), Calor (the timeline) and the other language; Capas and Calor
@@ -112,8 +112,9 @@ story card replaces them. The top row keeps only the name (left) and help and vi
 Its height is `--nb`; phone panels stand on it. Computers are unchanged. Fonts, self-hosted via @fontsource:
 Inter (text, headlines), Instrument Serif (italic accents, big numerals), IBM Plex Mono (data).
 Phones: bottom panels clear the gesture bar (`env(safe-area-inset-bottom)`, `viewport-fit=cover`)
-and sit 10 px from the sides; panels that stack above the timeline or the boat bar read its measured
-height (`--tb`, `--bb` via `useBottomInset`); pin names never overlap or get cut off (`labels.tsx`
+and sit 10 px from the sides; panels that stack on another read its measured height (`--nb` the bottom
+bar, `--tb` the timeline, `--bb` the boat's Equipo sheet, `--sb` the sonda, via `useBottomInset` /
+`useInsetRef`, measured without a sheet's slide-in offset so the gap stays even); pin names never overlap or get cut off (`labels.tsx`
 hides the lower-ranked name, its marker stays); the story card is opaque on phones, and its action ("Explore by boat") always stays beside the place
 name (a long name wraps in its own column; "By boat" on narrow cards; Tulio found it jumping below
 the name on some cards); while diving the
@@ -151,7 +152,8 @@ place name gives NOAA's alert wording. All of it follows the selected date and i
   only, with no animals drawn: those dolphins are captive and the card says so), `learn.ts` (explainers; `src/ui/LessonFigures.tsx` draws the bleaching and DHW
   diagrams), `reefLife.ts` (underwater field guide: species names and how to recognize them). **Every fact needs a source**; don't add unsourced claims.
 - `src/pages/`: `IslandsPage` (`#/islands`: four frosted cards in a row (2 × 2 under 1180 px, one column on phones): the three islands and a photos card (a ring of reef photos turning in CSS 3D; opens the dome of every photo); every button sits at the bottom of its card so they line up; each island card shows its mapped reef area (`reef_km2` in meta.json, from `pipeline/reef_area.mjs` on the Allen Coral Atlas habitat map) before the record year, so it isn't all bad news. The island cards: text and button centered, with a pure-CSS blueprint texture (a faint grid fading to the edges and a wireframe floor in perspective under each island) that fit one screen on computers (Roatán, Utila, Guanaja; Cayos Cochinos left out until it has a 3D scene; the preview height follows the window height), each with a live 3D preview in blueprint line art (Tulio found the colored relief too much): coastline, survey grid, land contours and depth lines over a rising light shader with contour lines (our take on React Bits' paid "Shader Card"); hover lifts the light, speeds the turn and swings the camera toward the pointer, the text drifts the other way. All four share ONE fixed WebGL canvas through drei `<View>`; meshes are coarse samples of each island's terrain.png cropped by distance to the coast, deep water dropped; lite and reduced motion render still frames, redrawn on scroll), `Home` (hero whose copy leads with the place and its reefs, then learning, then heat: "Meet the reef around our islands", buttons to the islands page and Learn; Tulio picked this over a satellite-heat headline and a "map the reef" game headline; live SVG map with OSM coastlines + today's 5 km heat cells, island
-  cards, heat stripes), `LearnHub` ("Aprende": the heat data and the lessons as two liquid tabs, Tulio's call to merge
+  cards, heat stripes; on phones the yearly heat card puts "Open in 3D" at the top right beside a
+  two-line title, with the islands in two rows), `LearnHub` ("Aprende": the heat data and the lessons as two liquid tabs, Tulio's call to merge
   them; `LiquidTabs page` is the page-size version of the tabs on the 3D layers box: only the top of
   the panel goes through the goo filter, no height or blur animation; switching tabs rewrites the
   address with `replaceState` and plays no curtain) with its two panes `HeatPage` (island comparison
@@ -279,7 +281,7 @@ place name gives NOAA's alert wording. All of it follows the selected date and i
   frame is drawn (`fulfilShot`; the drawing buffer is only readable then). One photo per mission in
   localStorage `rq-photos-v1`; the photo completes the mission. The logbook has two tabs, Habitats
   and Photos (the album: seven frames, the photo or the mission's outline, a one-press save).
-  Camera mode hides the side panels, the title and the dock. Under the water the way back on the
+  Camera mode hides the side panels, the title and the dock (and the bottom bar on phones). Under the water the way back on the
   title plate is "Back to the surface" (it surfaces; "Superficie" on phones), and the place's photo
   gallery (the Photos chip, "See photos") is not offered on computers: the camera is (phones keep
   Fotos in the bottom bar, Tulio's call). The dock then holds only
@@ -296,7 +298,8 @@ place name gives NOAA's alert wording. All of it follows the selected date and i
   spot is free. The top center is one stack (`.top-stack`: mission or arrival tag, then
   messages), so they never cover each other; on computers `useStackRoom` puts it between the title's
   text and the right panel, or under the title when that room is too narrow (zone names are long);
-  on phones it sits right above the dock (messages used to cover the title there).
+  on phones it stands on whatever is open at the bottom (Equipo, the sonda, or just the bar;
+  messages used to cover the title there).
   **CTD**: the A-frame (its own group, pivoting at the foot of its legs) swings out over the stern
   before the rosette goes down and back after it comes up: the sheave used to sit 0.15 m behind the
   transom and the rosette cut through the hull.
@@ -404,7 +407,8 @@ Interaction feel (Tulio: "smooth and interactive like an Apple app", on phones a
   sounds): a lip under each, a press sinks the chip onto it, the current page / language stays pressed
   in, inverted. Dark chips in the 3D views.
 - Data & credits shows the project credit (`ui/Credit.tsx`, `badge`) as a frosted pill under the
-  title. The footer (`TopBar.tsx`) keeps its three columns (brand, pages, the project; Tulio rejected a
+  title. On phones the credit is two lines, "Código abierto de NerdyPunkDev," / "parte de Todos en la
+  Web." (the full sentence didn't fit and a third line left the name alone). The footer (`TopBar.tsx`) keeps its three columns (brand, pages, the project; Tulio rejected a
   centered single column) with, under them, the Bay Islands seen from the sky (after the footer of
   saintmikenode.org) in contour lines (`ui/SkyIslands.tsx`: the home page's GEBCO relief.bin cut into contours once and
   projected in perspective on a canvas, land ×35, depths compressed; slow sway, draws in on first view;
