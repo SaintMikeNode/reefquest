@@ -399,12 +399,10 @@ function IslandCard({ id, latest, meta }: { id: string; latest: Latest | null; m
             {t("card.record")}: <span className="num">{latest!.years[worst]} ({fmtNum(s.year_max_dhw[worst], lang)})</span>
           </p>
         )}
-        {open ? (
+        {open && (
           <SpecularButton as="span" className="btn primary small" lineColor="#ffffff" baseColor="#bfe0ff">
             {t("home.enter3d")} <IconArrow />
           </SpecularButton>
-        ) : (
-          <span className="isle-soon">{t("home.soon3d")}</span>
         )}
       </div>
     </>

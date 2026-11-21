@@ -63,8 +63,11 @@ const LAYERS = 3;
 
 // When to open: the page must run smoothly (every frame under CALM_FRAME_MS) for CALM_MS in a row,
 // with no loading screen and no 3D view still drawing its first frames. Never longer than MAX_HOLD_MS.
+// A page that never gets that smooth (a slow phone drawing the home page's animated sea) must not
+// keep the curtain shut: once nothing is loading, it opens after SETTLE_MAX_MS at the latest.
 const CALM_FRAME_MS = 50;
 const CALM_MS = 120;
+const SETTLE_MAX_MS = 900;
 const MAX_HOLD_MS = 7000;
 
 // A 3D view holds the curtain closed from the moment it starts mounting until it has drawn
@@ -117,14 +120,16 @@ export function Curtain() {
     if (!shot || shot.phase !== "hold") return;
     shot.apply();
     const start = performance.now();
-    let raf = 0, last = start, calmSince = 0;
+    let raf = 0, last = start, calmSince = 0, readySince = 0;
     const wait = (now: number) => {
       const smooth = now - last < CALM_FRAME_MS;
       last = now;
       const busy = sceneHeld || !!document.querySelector(".loading-screen");
+      if (busy) readySince = 0;
+      else if (!readySince) readySince = now;
       if (busy || !smooth) calmSince = 0;
       else if (!calmSince) calmSince = now;
-      if ((calmSince && now - calmSince >= CALM_MS) || now - start > MAX_HOLD_MS)
+      if ((calmSince && now - calmSince >= CALM_MS) || (readySince && now - readySince > SETTLE_MAX_MS) || now - start > MAX_HOLD_MS)
         useCurtain.setState((s) => (s.shot?.key === shot.key ? { shot: { ...shot, phase: "out" } } : s));
       else raf = requestAnimationFrame(wait);
     };

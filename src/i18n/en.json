@@ -15,7 +15,6 @@
   "home.cardsTitle": "The four islands, *today*",
   "home.cardsLead": "Average of the 5 km cells around each island. Degree heating weeks (°C-weeks) add up the extra heat of the last 12 weeks.",
   "home.enter3d": "Explore in 3D",
-  "home.soon3d": "3D coming soon",
   "home.seeHistory": "History",
   "home.stripesTitle": "Forty years of heat, island by island",
   "home.stripesLead": "Each stripe is one year, colored by the highest heat stress that island had.",
@@ -266,6 +265,16 @@
   "support.link.volunteer": "Volunteer",
   "support.link.support": "How to support",
   "support.noteTitle": "ReefQuest is independent.",
-  "support.note": "It is not affiliated with these organizations, receives nothing from them and handles no donations: the links go to their own sites. The information comes from those sites, read on {date}. Before donating, confirm the details with the organization.",
-  "support.missing": "Only organizations that work for the reef and have a website we could read are listed. There may be others."
+  "support.note": "It is not affiliated with these organizations, receives nothing from them and handles no donations for them: the links go to their own sites. The information comes from those sites, read on {date}. Before donating, confirm the details with the organization.",
+  "support.missing": "Only organizations that work for the reef and have a website we could read are listed. There may be others.",
+  "contact.text": "If you want to support ReefQuest or give feedback, write to",
+  "kofi.button": "Support Saint Mike Node",
+  "kofi.title": "Support Saint Mike Node",
+  "kofi.sub": "ReefQuest is free for everyone. A coffee helps keep it that way.",
+  "kofi.loading": "Opening Ko-fi…",
+  "kofi.panel": "Ko-fi donation form",
+  "kofi.backup": "Trouble paying here? Open it on Ko-fi",
+  "kofi.where": "Your contribution goes to Saint Mike Node, not to the reef organizations.",
+  "kofi.privacy": "Donations are handled by Ko-fi, which only loads when you open this window.",
+  "kofi.line": "If you want to support the hosting and development of this project, *click here*."
 }

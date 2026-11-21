@@ -1,6 +1,8 @@
 import { ORGS, SUPPORT_CHECKED, type Org, type Place } from "../content/support";
 import { accent, fmtDate, useL, useLang, useT } from "../i18n";
+import { Contact } from "../ui/Credit";
 import { IconExternal } from "../ui/Icons";
+import { SupportLine } from "../ui/Support";
 
 // "Cómo ayudar": the organizations that work for the islands' reefs, grouped by island, each with
 // what it does, how to support it and links to its own site. ReefQuest only links out: it handles
@@ -24,6 +26,9 @@ export function SupportPage() {
             <b>{t("support.noteTitle")}</b> {t("support.note").replace("{date}", fmtDate(SUPPORT_CHECKED, lang, { day: "numeric", month: "long", year: "numeric" }))}
           </p>
           <p>{t("support.missing")}</p>
+          <Contact />
+          {/* A sentence here, not the button (Tulio): the button pushed the organizations down. */}
+          <SupportLine />
         </div>
       </header>
 

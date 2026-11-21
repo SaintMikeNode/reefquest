@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { accent, fmtDate, useL, useLang, useT } from "../i18n";
-import { Credit } from "../ui/Credit";
+import { Contact, Credit } from "../ui/Credit";
+import { SupportLine } from "../ui/Support";
 import { loadLatest, type Photo } from "../lib/data";
 import { AllPhotosButton, allPhotos } from "../ui/AllPhotos";
 import { Lightbox } from "../ui/Lightbox";
@@ -91,6 +92,10 @@ export function AboutPage() {
         <h1>{accent(t("about.title"))}</h1>
         <Credit className="about-credit" badge />
         <p className="standfirst">{t("about.lead")}</p>
+        <div className="head-note">
+          <Contact />
+          <SupportLine />
+        </div>
       </header>
 
       <section className="section">

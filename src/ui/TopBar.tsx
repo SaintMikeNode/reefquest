@@ -3,9 +3,10 @@ import { useT } from "../i18n";
 import { href, type Route } from "../lib/router";
 import { LangToggle } from "./LangToggle";
 import { HAS_WEBGL } from "../webgl";
-import { Credit } from "./Credit";
+import { Contact, Credit } from "./Credit";
 import { Logo } from "./Logo";
 import { SpecularButton } from "./SpecularButton";
+import { SupportButton } from "./Support";
 
 const SkyIslands = lazy(() => import("./SkyIslands"));
 
@@ -100,6 +101,11 @@ export function Footer() {
           <a href="https://nerdypunk.dev" target="_blank" rel="noreferrer">
             NerdyPunkDev
           </a>
+          <a href="https://saintmikenode.org" target="_blank" rel="noreferrer">
+            Saint Mike Node
+          </a>
+          <Contact className="footer-credit footer-contact" />
+          <SupportButton className="btn primary small" />
         </div>
       </div>
       <div ref={land} className="footer-land">

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useL, useT } from "../i18n";
 import type { Photo } from "../lib/data";
+import { lockScroll } from "../lib/scrollLock";
 import { IconArrow, IconClose } from "./Icons";
 import { PhotoCredit } from "./PhotoStrip";
 
@@ -16,6 +17,11 @@ export function Lightbox({ photos, start, onClose }: { photos: Photo[]; start: n
   const [i, setI] = useState(start);
   const [closing, setClosing] = useState(false);
   const swipe = useRef<number | null>(null);
+  // Clicks on the backdrop that must not close the viewer: the tail of the tap that opened it (a
+  // touch tap's click arrives after the viewer is already on screen), and the click a browser sends
+  // at the end of a mouse swipe between photos.
+  const born = useRef(performance.now());
+  const swipedAt = useRef(-1e9);
   const close = () => {
     if (closing) return;
     setClosing(true);
@@ -29,11 +35,10 @@ export function Lightbox({ photos, start, onClose }: { photos: Photo[]; start: n
       if (e.key === "ArrowLeft") step(-1);
     };
     addEventListener("keydown", onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    const release = lockScroll();
     return () => {
       removeEventListener("keydown", onKey);
-      document.body.style.overflow = prev;
+      release();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -45,14 +50,23 @@ export function Lightbox({ photos, start, onClose }: { photos: Photo[]; start: n
       role="dialog"
       aria-modal="true"
       aria-label={L(p.name)}
-      onClick={(e) => e.target === e.currentTarget && close()}
+      onClick={(e) => {
+        if (e.target !== e.currentTarget) return;
+        const now = performance.now();
+        if (now - born.current < 400 || now - swipedAt.current < 400) return;
+        close();
+      }}
       onPointerDown={(e) => (swipe.current = e.clientX)}
       onPointerUp={(e) => {
         if (swipe.current === null) return;
         const dx = e.clientX - swipe.current;
         swipe.current = null;
-        if (Math.abs(dx) > 50 && photos.length > 1) step(dx < 0 ? 1 : -1);
+        if (Math.abs(dx) > 50 && photos.length > 1) {
+          swipedAt.current = performance.now();
+          step(dx < 0 ? 1 : -1);
+        }
       }}
+      onPointerCancel={() => (swipe.current = null)}
     >
       <figure className="lb-figure">
         <img key={p.id} src={p.src.m} alt={L(p.name)} draggable={false} />

@@ -1,4 +1,4 @@
-import { useLang } from "../i18n";
+import { useLang, useT } from "../i18n";
 
 // "An open source project by NerdyPunkDev, part of Todos en la Web", each name a real link.
 const REPO = "https://github.com/saintmikenode/reefquest";
@@ -32,5 +32,23 @@ export function Credit({ className, badge }: { className?: string; badge?: boole
     </p>
   ) : (
     <p className={className}>{text}</p>
+  );
+}
+
+/** Where to write to the project (Tulio's address for ReefQuest). */
+export const CONTACT_EMAIL = "hola@saintmikenode.org";
+
+/** "If you want to support ReefQuest or give feedback, write to …": in the footer, at the end of
+ *  the note on "Cómo ayudar" and under the intro of "Datos y créditos". */
+export function Contact({ className }: { className?: string }) {
+  const t = useT();
+  return (
+    <p className={className}>
+      {t("contact.text")}{" "}
+      <a className="credit-link" href={`mailto:${CONTACT_EMAIL}`}>
+        {CONTACT_EMAIL}
+      </a>
+      .
+    </p>
   );
 }

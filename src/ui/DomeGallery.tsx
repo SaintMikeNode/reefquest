@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { useT } from "../i18n";
 import type { Photo } from "../lib/data";
 import { LITE, REDUCED_MOTION } from "../lib/device";
+import { lockScroll } from "../lib/scrollLock";
 import { IconClose } from "./Icons";
 import { Lightbox } from "./Lightbox";
 
@@ -13,12 +14,14 @@ import { Lightbox } from "./Lightbox";
 // Lite devices get a plain scrolling grid instead of the 3D dome.
 
 const COLS = 12, ROWS = 6;
+// How far (px) a press may wander from where it started and still be a tap, not a drag.
+const TAP_SLOP = 8;
 
 export default function DomeGallery({ photos, onClose }: { photos: Photo[]; onClose: () => void }) {
   const t = useT();
   const sphere = useRef<HTMLDivElement>(null);
   const rot = useRef({ x: -4, y: 0, vx: 0, vy: 0.03 });
-  const drag = useRef<{ x: number; y: number; moved: boolean } | null>(null);
+  const drag = useRef<{ x: number; y: number; sx: number; sy: number; moved: boolean } | null>(null);
   const [open, setOpen] = useState<number | null>(null);
   const [closing, setClosing] = useState(false);
   const close = () => {
@@ -37,14 +40,12 @@ export default function DomeGallery({ photos, onClose }: { photos: Photo[]; onCl
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && open === null && close();
     addEventListener("keydown", onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      removeEventListener("keydown", onKey);
-      document.body.style.overflow = prev;
-    };
+    return () => removeEventListener("keydown", onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
+  // The page behind doesn't scroll while the dome is up (its own effect: the one above re-runs
+  // every time a photo opens or closes).
+  useEffect(() => lockScroll(), []);
 
   // Turn the dome: momentum after a drag, then a slow drift.
   useEffect(() => {
@@ -70,7 +71,12 @@ export default function DomeGallery({ photos, onClose }: { photos: Photo[]; onCl
   }, []);
 
   // Dragging is tracked on the window (not captured on the stage, so taps still reach the tiles).
-  const justDragged = useRef(0);
+  // A tap opens its photo on the `click` event, never on pointerup: on a touch screen the browser
+  // sends the tap's click after the finger lifts, hit-tested again at that moment. Opening on
+  // pointerup put the photo viewer under that click, and wherever it landed on the viewer's dark
+  // backdrop (any tile away from the middle of the screen) it closed the viewer at once, so the
+  // photo "didn't open" (Tulio). `lastPress` tells the click whether its press was a tap or a drag.
+  const lastPress = useRef<{ tap: boolean; t: number } | null>(null);
   const tileEls = useRef<(HTMLButtonElement | null)[]>([]);
   // Which tile is under the pointer. The browser's own hit testing loses these tiles once the dome
   // turns (the viewpoint sits inside the sphere), so a tap landed on the stage and nothing opened.
@@ -91,15 +97,15 @@ export default function DomeGallery({ photos, onClose }: { photos: Photo[]; onCl
     return best;
   };
   const onDown = (e: React.PointerEvent) => {
-    if (e.button !== 0) return;
-    drag.current = { x: e.clientX, y: e.clientY, moved: false };
-    const move = (ev: PointerEvent) => onMove(ev);
+    // One pointer at a time: a second finger must not restart the gesture or stack listeners.
+    if (e.button !== 0 || !e.isPrimary || drag.current) return;
+    const id = e.pointerId;
+    drag.current = { x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, moved: false };
+    lastPress.current = null;
+    const move = (ev: PointerEvent) => ev.pointerId === id && onMove(ev);
     const up = (ev: PointerEvent) => {
-      if (drag.current?.moved) justDragged.current = performance.now();
-      else if (ev.type === "pointerup") {
-        const k = tileAt(ev.clientX, ev.clientY);
-        if (k >= 0) setOpen(tiles[k].i);
-      }
+      if (ev.pointerId !== id) return;
+      lastPress.current = { tap: ev.type === "pointerup" && !drag.current?.moved, t: performance.now() };
       drag.current = null;
       removeEventListener("pointermove", move);
       removeEventListener("pointerup", up);
@@ -109,11 +115,27 @@ export default function DomeGallery({ photos, onClose }: { photos: Photo[]; onCl
     addEventListener("pointerup", up);
     addEventListener("pointercancel", up);
   };
+  // The tap's click (mouse, touch or pen): open the photo under it, unless the press was a drag.
+  const onStageClick = (e: React.MouseEvent) => {
+    if (e.detail === 0) return; // keyboard: handled on the tile itself
+    const press = lastPress.current;
+    lastPress.current = null;
+    if (!press?.tap || performance.now() - press.t > 1000) return;
+    const k = tileAt(e.clientX, e.clientY);
+    if (k >= 0) setOpen(tiles[k].i);
+  };
   const onMove = (e: PointerEvent) => {
     const d = drag.current;
     if (!d) return;
+    // A drag is judged by the distance from where the press began, not by one event's step: a slow
+    // drag (small steps) used to count as a tap and opened a photo when the finger lifted, and one
+    // jumpy step in a real tap used to cancel it. Until then the dome holds still, so the tile
+    // under a tap can't slide away from it.
+    if (!d.moved) {
+      if (Math.hypot(e.clientX - d.sx, e.clientY - d.sy) <= TAP_SLOP) return;
+      d.moved = true;
+    }
     const dx = e.clientX - d.x, dy = e.clientY - d.y;
-    if (Math.abs(dx) + Math.abs(dy) > 5) d.moved = true;
     const r = rot.current;
     r.vy = dx * 0.14;
     r.vx = -dy * 0.1;
@@ -138,7 +160,7 @@ export default function DomeGallery({ photos, onClose }: { photos: Photo[]; onCl
           ))}
         </div>
       ) : (
-        <div className="dome-stage" onPointerDown={onDown}>
+        <div className="dome-stage" onPointerDown={onDown} onClick={onStageClick}>
           <div ref={sphere} className="dome-sphere">
             {tiles.map(({ p, i, col, row }, k) => (
               <button
@@ -146,7 +168,7 @@ export default function DomeGallery({ photos, onClose }: { photos: Photo[]; onCl
                 ref={(el) => void (tileEls.current[k] = el)}
                 className="dome-tile"
                 style={{ transform: `rotateY(${(col * 360) / COLS}deg) rotateX(${(row - (ROWS - 1) / 2) * 17}deg) translateZ(calc(var(--dome-r) * -1))` }}
-                // Pointer taps are handled by the stage (tileAt); this is for the keyboard (Enter/Space).
+                // Pointer taps are handled by the stage's click (tileAt); this is for the keyboard (Enter/Space).
                 onClick={(e) => {
                   if (e.detail === 0) setOpen(i);
                 }}

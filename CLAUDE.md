@@ -19,6 +19,13 @@ dive shops, visitors. **The full spec is `docs/HANDOFF.md`; read it before plann
   lat 15.8–16.6, lon -87.1 to -85.7 (`pipeline/common.py`). No other part of the Mesoamerican Reef.
 - Static site; data is precomputed by scripts into `public/data/`, never fetched live from third-party
   servers in the browser.
+  One exception, Tulio's call: the "Support Saint Mike Node" button in the footer, and the sentence
+  "…, haz clic aquí" after the contact line on "Cómo ayudar" and "Datos y créditos" (he asked for
+  a sentence there, not a button), both in `src/ui/Support.tsx`, open Ko-fi's donation
+  panel (`ko-fi.com/saintmikenode`) in a window over the page, as on his Pipodojo site. Nothing
+  from Ko-fi loads until a visitor presses it, and the window says the money goes to Saint Mike
+  Node, not to the reef organizations. Contact: `hola@saintmikenode.org` (`Contact` in
+  `src/ui/Credit.tsx`).
 - Low-end Android and old PCs: first view under ~5 MB, island scenes lazy-loaded, coral models
   50k–150k triangles, Draco/meshopt compressed. WebGL fallback = 2D map + charts.
 - Every dataset and model shown needs visible attribution; the heat overlay is labeled as a 5 km
@@ -318,6 +325,19 @@ animation effects off) the scene just switches.
   constructor (as `ZoneLod` once did) ends up detached. Give such objects their own geometry.
 - Hot reload of shader or reef modules can leave instanced meshes empty (refs survive, new meshes
   don't); reload the page before judging a 3D change.
+- A full-screen overlay that stops the page scrolling must use `lockScroll()` (`src/lib/scrollLock.ts`,
+  counted, so overlays can nest), never save and restore `body.style.overflow` itself: the photo
+  dome and the photo viewer each did, and opening a photo inside the dome left the page locked on
+  every page until a reload (Tulio: "pages get stuck and scrolling is frozen").
+- Open things on `click`, not on `pointerup`: on a touch screen the tap's click arrives after the
+  finger lifts and is hit-tested again, so whatever a pointerup handler just put on screen receives
+  it. The photo dome opened the viewer on pointerup and the click then closed it on the viewer's
+  backdrop, for every photo away from the middle of the screen (Tulio: "clicking a photo sometimes
+  doesn't open it"). Judge tap versus drag by the distance from where the press began (`TAP_SLOP`),
+  not by one move event's step.
+- A page opened before a deploy asks for chunk files that no longer exist (the server answers with
+  index.html). `main.tsx` reloads once on `vite:preloadError`; a second failure within 30 s shows
+  the error card.
 - Content must match the data: the full record shows 2024 hotter than 2023 around Roatán, Utila
   and Cayos Cochinos (2023 for Guanaja). Re-check lesson and story wording when heat data changes.
 

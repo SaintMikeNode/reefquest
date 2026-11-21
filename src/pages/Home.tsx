@@ -225,15 +225,14 @@ export function Home() {
                   <td className="r" data-label={t("table.worst")}>
                     {latest!.years[ri]} ({fmtNum(s.year_max_dhw[ri], lang)})
                   </td>
+                  {/* No 3D link, no label: an island without a 3D scene (Cayos Cochinos: the habitat
+                      atlas has no data there) just has an empty cell. It used to say "3D coming
+                      soon", which promised something we can't build yet (Tulio). */}
                   <td className="action">
-                    {ok ? (
+                    {ok && (
                       <a className="arrow-link" href={href.island(id)}>
                         {t("home.enter3d")} <IconArrow />
                       </a>
-                    ) : (
-                      <span className="faint" style={{ fontSize: 14 }}>
-                        {t("home.soon3d")}
-                      </span>
                     )}
                   </td>
                 </tr>
