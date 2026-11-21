@@ -19,8 +19,7 @@ dive shops, visitors. **The full spec is `docs/HANDOFF.md`; read it before plann
   lat 15.8–16.6, lon -87.1 to -85.7 (`pipeline/common.py`). No other part of the Mesoamerican Reef.
 - Static site; data is precomputed by scripts into `public/data/`, never fetched live from third-party
   servers in the browser.
-  One exception, Tulio's call: the sentence "Si quieres apoyar el hosting y el desarrollo de este
-  proyecto, haz clic aquí" after the contact line in the footer, on "Cómo ayudar" and on "Datos y
+  One exception, Tulio's call: the sentence "Para apoyar este proyecto, haz clic aquí" after the contact line in the footer, on "Cómo ayudar" and on "Datos y
   créditos" (`src/ui/Support.tsx`; he asked for a sentence, not a button) opens Ko-fi's donation
   panel (`ko-fi.com/saintmikenode`) in a window over the page, as on his Pipodojo site. Nothing
   from Ko-fi loads until a visitor presses it, and the window says the money goes to Saint Mike
@@ -95,8 +94,17 @@ M 36 px (HUD and header buttons, messages, the way back on phones), L 44 px (her
 buttons, the way back on computers, the boat dock); all fully rounded, labels weight 600, one icon
 size per height, a little less padding on a leading icon's side. A new pill takes one of these
 sizes; don't set its height or padding elsewhere. Round buttons follow the same heights (close buttons S, tool and arrow
-circles M, play and lightbox L). On phones the top row (way back, tools) sits 16 px from the top
-edge (Tulio: 10 was too close). Fonts, self-hosted via @fontsource:
+circles M, play and lightbox L). **Box corners come in four sizes too** (`--r-xl/l/m/s` in styles.css; Tulio: two
+boxes that differed in rounding "look different"): XL the home page's big windows, L 22 px every panel,
+card, sheet, menu and dialog (HUD panels, the phone bar, the timeline, cards, figures), M 14 px photos
+and rows inside a box, S 8 px thumbnails, tooltips and focus rings; marks and key caps under ~20 px keep
+2–5 px, and a box holding pills is concentric with them. A new box takes one of these. On phones the top row (way back, tools) sits 16 px from the top
+edge (Tulio: 10 was too close). **The island view on phones is laid out like an app** (Tulio: easier
+to use): a bottom bar (`.scene-nav` in `Hud.tsx`) with four tabs, all islands, Capas (the layers
+panel with its "Explore by boat" tab), Calor (the timeline) and the other language; Capas and Calor
+open as sheets right above the bar, one at a time (Calor starts open so the intro is seen), and a
+story card replaces them. The top row keeps only the name (left) and help and view reset (right).
+Its height is `--nb`; phone panels stand on it. Computers are unchanged. Fonts, self-hosted via @fontsource:
 Inter (text, headlines), Instrument Serif (italic accents, big numerals), IBM Plex Mono (data).
 Phones: bottom panels clear the gesture bar (`env(safe-area-inset-bottom)`, `viewport-fit=cover`)
 and sit 10 px from the sides; panels that stack above the timeline or the boat bar read its measured
@@ -432,7 +440,7 @@ animation effects off) the scene just switches.
   constructor (as `ZoneLod` once did) ends up detached. Give such objects their own geometry.
 - Hot reload of shader or reef modules can leave instanced meshes empty (refs survive, new meshes
   don't); reload the page before judging a 3D change.
-- 3D views on phones: the way back (first row of the title plate) and the tools share the top row
+- Boat view on phones (the island view has its bottom bar instead): the way back (first row of the title plate) and the tools share the top row
   as two separate boxes. The row may take only the room the tools leave (`--tools-w`, measured by
   `useWidthVar`); under 360 px the label is short (`.back-short`). Check Spanish at 360 px, where
   "Todas las islas" has 9 px to spare, before adding a tool or lengthening a label.

@@ -9,7 +9,7 @@ import { REDUCED_MOTION } from "../lib/device";
 import { href } from "../lib/router";
 import { AlertChip } from "../ui/AlertChip";
 import { HeatKey } from "../ui/HeatKey";
-import { IconArrow, IconBack, IconCheck, IconHelp, IconHome, IconLayers, IconShip } from "../ui/Icons";
+import { IconArrow, IconBack, IconCheck, IconGlobe, IconHeat, IconHelp, IconHome, IconIslands, IconLayers, IconShip } from "../ui/Icons";
 import { LangToggle } from "../ui/LangToggle";
 import { SpecularButton } from "../ui/SpecularButton";
 import { LiquidTabs } from "../ui/LiquidTabs";
@@ -21,7 +21,7 @@ import { useScene } from "./sceneStore";
 import { fmtLat, fmtLon, SiteCard } from "./SiteCard";
 import { homeDistance, uvToLonLat, xzToUV, type TerrainData } from "./terrain";
 import { Timeline } from "./Timeline";
-import { useBottomInset, useWidthVar } from "./useBottomInset";
+import { useBottomInset, useMedia, useWidthVar } from "./useBottomInset";
 
 /** The boat zone containing a lon/lat, if any. */
 export function zoneFor(zones: ZoneIndexEntry[], lon: number, lat: number): ZoneIndexEntry | undefined {
@@ -47,7 +47,23 @@ export function Hud({ td, index }: { td: TerrainData; index: HeatIndex }) {
   const fly = useScene((s) => s.fly);
   const setBoat = useScene((s) => s.setBoat);
   const areaDhw = useScene((s) => s.areaDhw);
-  const [showLayers, setShowLayers] = useState(false);
+  const setLang = useLang((s) => s.setLang);
+  // Phones: a bottom bar like an app's (all islands, layers, heat, language). Layers and the heat
+  // timeline are sheets above it, one at a time; the timeline starts open so the intro is seen.
+  // Computers ignore `sheet`: both panels are always on screen there.
+  const phone = useMedia("(max-width: 760px)");
+  const [sheet, setSheet] = useState<"layers" | "heat" | null>("heat");
+  const showLayers = sheet === "layers";
+  const openSheet = (s: "layers" | "heat") => {
+    setSheet(sheet === s ? null : s);
+    if (sheet !== s) setSite(null);
+  };
+  // A story card opening on a phone closes the sheet under it (both sit above the bar).
+  useEffect(() => {
+    if (siteId) setSheet((s) => (s === "heat" || s === "layers" ? null : s));
+  }, [siteId]);
+  const navRef = useRef<HTMLElement>(null);
+  useBottomInset(navRef, "--nb");
   const toolsRef = useRef<HTMLDivElement>(null);
   useWidthVar(toolsRef, "--tools-w");
   const [open, setOpen] = useState<SectionId>("layers");
@@ -159,7 +175,7 @@ export function Hud({ td, index }: { td: TerrainData; index: HeatIndex }) {
       <header className="hud plate">
         {/* The way back comes first, above the name (Tulio: on top of everything). On phones it
             shares its row with the tools and takes only the room they leave (--tools-w). */}
-        <a className="back-btn" href={href.islands}>
+        <a className="back-btn island-back" href={href.islands}>
           <IconBack />
           {/* Screens narrower than 360 px show the short label (styles.css). */}
           <span className="lbl">
@@ -175,10 +191,7 @@ export function Hud({ td, index }: { td: TerrainData; index: HeatIndex }) {
         {layers.heat && <HeatStatus dhw={areaDhw} />}
       </header>
 
-      <div ref={toolsRef} className="hud tools">
-        <button className="hbtn icon-only layers-toggle" aria-pressed={showLayers} onClick={() => setShowLayers(!showLayers)} aria-label={t("scene.layers")} title={t("scene.layers")}>
-          <IconLayers />
-        </button>
+      <div ref={toolsRef} className="hud tools island-tools">
         <button className="hbtn icon-only" onClick={() => setHint(true)} aria-label={t("scene.help")} title={t("scene.help")}>
           <IconHelp />
         </button>
@@ -313,7 +326,7 @@ export function Hud({ td, index }: { td: TerrainData; index: HeatIndex }) {
             <h2 id="guide-title">{t("scene.guideTitle")}</h2>
           </div>
           <ol>
-            {(["scene.guide1", "scene.guide2", "scene.guide3", "scene.guide4"] as const).map((k) => (
+            {(["scene.guide1", "scene.guide2", phone ? "scene.guide3Phone" : "scene.guide3", "scene.guide4"] as const).map((k) => (
               <li key={k}>
                 <span>{rich(t(k))}</span>
               </li>
@@ -340,20 +353,48 @@ export function Hud({ td, index }: { td: TerrainData; index: HeatIndex }) {
       )}
       <div className="hud attribution">{t("scene.attribution")}</div>
 
-      <TimeBar>
+      <TimeBar closed={sheet !== "heat"}>
         <Timeline index={index} island={td.meta.island} />
       </TimeBar>
+
+      {/* Phones only (styles.css hides it on computers): the island's controls as an app's tab bar. */}
+      <nav ref={navRef} className="hud panel scene-nav" aria-label={t("nav.label")}>
+        <a href={href.islands}>
+          <span className="ind">
+            <IconIslands />
+          </span>
+          <span className="lbl">{t("nav.islands")}</span>
+        </a>
+        <button aria-pressed={sheet === "layers"} onClick={() => openSheet("layers")}>
+          <span className="ind">
+            <IconLayers />
+          </span>
+          <span className="lbl">{t("nav.layers")}</span>
+        </button>
+        <button aria-pressed={sheet === "heat"} onClick={() => openSheet("heat")}>
+          <span className="ind">
+            <IconHeat />
+          </span>
+          <span className="lbl">{t("nav.heat")}</span>
+        </button>
+        <button onClick={() => setLang(lang === "es" ? "en" : "es")} aria-label={t("nav.lang")} lang={lang === "es" ? "en" : "es"}>
+          <span className="ind">
+            <IconGlobe />
+          </span>
+          <span className="lbl">{lang === "es" ? "English" : "Español"}</span>
+        </button>
+      </nav>
     </>
   );
 }
 
 /** The timeline panel. Its height (which changes with the window width and language) is published
  * as --tb on the scene, so the layers panel, site card and credits always stop above it. */
-function TimeBar({ children }: { children: ReactNode }) {
+function TimeBar({ children, closed }: { children: ReactNode; closed: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
   useBottomInset(ref, "--tb");
   return (
-    <div ref={ref} className="hud timebar panel">
+    <div ref={ref} className={closed ? "hud timebar panel closed" : "hud timebar panel"}>
       {children}
     </div>
   );

@@ -269,7 +269,7 @@
   "support.noteTitle": "ReefQuest is independent.",
   "support.note": "It is not affiliated with these organizations, receives nothing from them and handles no donations for them: the links go to their own sites. The information comes from those sites, read on {date}. Before donating, confirm the details with the organization.",
   "support.missing": "Only organizations that work for the reef and have a website we could read are listed. There may be others.",
-  "contact.text": "If you want to support ReefQuest or give feedback, write to",
+  "contact.text": "For feedback and bug reports, reach",
   "kofi.button": "Support Saint Mike Node",
   "kofi.title": "Support Saint Mike Node",
   "kofi.sub": "ReefQuest is free for everyone. A coffee helps keep it that way.",
@@ -278,7 +278,7 @@
   "kofi.backup": "Trouble paying here? Open it on Ko-fi",
   "kofi.where": "Your contribution goes to Saint Mike Node, not to the reef organizations.",
   "kofi.privacy": "Donations are handled by Ko-fi, which only loads when you open this window.",
-  "kofi.line": "If you want to support the hosting and development of this project, *click here*.",
+  "kofi.line": "To support this project, *click here*.",
   "scene.backShort": "Islands",
   "boat.key.sail": "Sail",
   "boat.key.space": "Space",
@@ -317,5 +317,11 @@
   "shot.tab": "Photos",
   "shot.save": "Save photo",
   "shot.hint": "Under the water, open the camera at the marked places and frame what there is to find. Each photo completes a mission.",
-  "log.habitats": "Habitats"
+  "log.habitats": "Habitats",
+  "nav.label": "Island controls",
+  "nav.islands": "Islands",
+  "nav.layers": "Layers",
+  "nav.heat": "Heat",
+  "nav.lang": "Idioma / Language",
+  "scene.guide3Phone": "<b>Watch the heat.</b> Tap “Heat” in the bar at the bottom to open the timeline; tap a year or press ▶ to see the heat that bleaches corals build up."
 }

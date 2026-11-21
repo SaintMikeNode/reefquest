@@ -269,7 +269,7 @@
   "support.noteTitle": "ReefQuest es independiente.",
   "support.note": "No está afiliado a estas organizaciones, no recibe nada de ellas y no maneja donaciones para ellas: los enlaces llevan a sus propios sitios. La información viene de esos sitios, consultados el {date}. Antes de donar, confirma los detalles con la organización.",
   "support.missing": "Solo aparecen organizaciones que trabajan por el arrecife y tienen un sitio web que pudimos consultar. Puede haber otras.",
-  "contact.text": "Si quieres apoyar a ReefQuest o darnos tu opinión, escríbenos a",
+  "contact.text": "Para comentarios y reportes de errores, escríbenos a",
   "kofi.button": "Apoya a Saint Mike Node",
   "kofi.title": "Apoya a Saint Mike Node",
   "kofi.sub": "ReefQuest es gratis para todos. Un cafecito ayuda a que siga así.",
@@ -278,7 +278,7 @@
   "kofi.backup": "¿Problemas para pagar aquí? Ábrelo en Ko-fi",
   "kofi.where": "Tu aporte va a Saint Mike Node, no a las organizaciones del arrecife.",
   "kofi.privacy": "Las donaciones las maneja Ko-fi, que solo se carga cuando abres esta ventana.",
-  "kofi.line": "Si quieres apoyar el hosting y el desarrollo de este proyecto, *haz clic aquí*.",
+  "kofi.line": "Para apoyar este proyecto, *haz clic aquí*.",
   "scene.backShort": "Islas",
   "boat.key.sail": "Navegar",
   "boat.key.space": "Espacio",
@@ -317,5 +317,11 @@
   "shot.tab": "Fotos",
   "shot.save": "Guardar foto",
   "shot.hint": "Bajo el agua, abre la cámara en los lugares marcados y encuadra lo que hay que encontrar. Cada foto completa una misión.",
-  "log.habitats": "Hábitats"
+  "log.habitats": "Hábitats",
+  "nav.label": "Controles de la isla",
+  "nav.islands": "Islas",
+  "nav.layers": "Capas",
+  "nav.heat": "Calor",
+  "nav.lang": "Idioma / Language",
+  "scene.guide3Phone": "<b>Mira el calor.</b> Toca «Calor» en la barra de abajo para abrir la línea de tiempo; toca un año o pulsa ▶ para ver cómo se acumuló el calor que blanquea los corales."
 }

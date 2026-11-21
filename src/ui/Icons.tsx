@@ -28,6 +28,12 @@ export const IconPause = (p: SVGProps<SVGSVGElement>) => (
 export const IconClose = (p: SVGProps<SVGSVGElement>) => (
   <svg {...base(p)}><path d="M6 6l12 12M18 6L6 18" /></svg>
 );
+export const IconIslands = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base(p)}><path d="M3.5 12.5c1.4-2.4 4-3.3 6.4-2.7s2.8 2.2 1.2 3.4-6.4 1.6-7.6-.7z" /><path d="M14.2 7.6c1-1.5 3-2 4.6-1.2s1.2 2.3-.4 2.9-4.8.3-4.2-1.7z" /><path d="M3 18.5c1.5-1 3-1 4.5 0s3 1 4.5 0 3-1 4.5 0 3 1 4.5 0" /></svg>
+);
+export const IconGlobe = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base(p)}><circle cx="12" cy="12" r="8.5" /><path d="M12 3.5c-2.3 2.5-3.3 5.3-3.3 8.5s1 6 3.3 8.5M12 3.5c2.3 2.5 3.3 5.3 3.3 8.5s-1 6-3.3 8.5M4 9.2h16M4 14.8h16" /></svg>
+);
 export const IconLayers = (p: SVGProps<SVGSVGElement>) => (
   <svg {...base(p)}><path d="M12 4l9 5-9 5-9-5 9-5z" /><path d="M3 14l9 5 9-5" /></svg>
 );

@@ -1,6 +1,8 @@
 import { useLang, useT } from "../i18n";
 
 // "An open source project by NerdyPunkDev, part of Todos en la Web", each name a real link.
+// On phones it is two lines: "Open source by NerdyPunkDev," / "part of Todos en la Web." (the full
+// first half doesn't fit a phone's width, and a third line left "NerdyPunkDev," on its own).
 const REPO = "https://github.com/saintmikenode/reefquest";
 const AUTHOR = "https://nerdypunk.dev";
 const TEW = "https://todosenlaweb.com";
@@ -21,9 +23,17 @@ export function Credit({ className, badge }: { className?: string; badge?: boole
   );
   const text =
     lang === "es" ? (
-      <>Un proyecto de {a(REPO, "código abierto")} de {a(AUTHOR, "NerdyPunkDev")}, parte de {a(TEW, "Todos en la Web")}.</>
+      <>
+        <span className="credit-long">Un proyecto de {a(REPO, "código abierto")}</span>
+        <span className="credit-short">{a(REPO, "Código abierto")}</span> de {a(AUTHOR, "NerdyPunkDev")},{" "}
+        <span className="credit-part">parte de {a(TEW, "Todos en la Web")}.</span>
+      </>
     ) : (
-      <>An {a(REPO, "open source")} project by {a(AUTHOR, "NerdyPunkDev")}, part of {a(TEW, "Todos en la Web")}.</>
+      <>
+        <span className="credit-long">An {a(REPO, "open source")} project</span>
+        <span className="credit-short">{a(REPO, "Open source")}</span> by {a(AUTHOR, "NerdyPunkDev")},{" "}
+        <span className="credit-part">part of {a(TEW, "Todos en la Web")}.</span>
+      </>
     );
   return badge ? (
     <p className={`credit-badge ${className ?? ""}`}>
@@ -38,7 +48,7 @@ export function Credit({ className, badge }: { className?: string; badge?: boole
 /** Where to write to the project (Tulio's address for ReefQuest). */
 export const CONTACT_EMAIL = "hola@saintmikenode.org";
 
-/** "If you want to support ReefQuest or give feedback, write to …": in the footer, at the end of
+/** "For feedback and bug reports, reach …": in the footer, at the end of
  *  the note on "Cómo ayudar" and under the intro of "Datos y créditos". */
 export function Contact({ className }: { className?: string }) {
   const t = useT();

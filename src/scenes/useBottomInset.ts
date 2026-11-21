@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, type RefObject } from "react";
+import { useEffect, useLayoutEffect, useState, type RefObject } from "react";
 
 /**
  * Publishes how much of the scene a bottom-anchored panel takes (from its top edge to the bottom of
@@ -41,4 +41,17 @@ export function useWidthVar(ref: RefObject<HTMLElement | null>, name: string) {
       root.style.removeProperty(name);
     };
   }, [ref, name]);
+}
+
+/** Whether a media query matches, kept current (e.g. the phone layout, "(max-width: 760px)"). */
+export function useMedia(query: string) {
+  const [on, setOn] = useState(() => typeof matchMedia !== "undefined" && matchMedia(query).matches);
+  useEffect(() => {
+    const m = matchMedia(query);
+    const update = () => setOn(m.matches);
+    m.addEventListener("change", update);
+    update();
+    return () => m.removeEventListener("change", update);
+  }, [query]);
+  return on;
 }

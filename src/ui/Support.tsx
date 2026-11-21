@@ -4,8 +4,7 @@ import { useT } from "../i18n";
 import { lockScroll } from "../lib/scrollLock";
 import { IconClose } from "./Icons";
 
-// Donations to Saint Mike Node: a sentence ("If you want to support the hosting and development of
-// this project, click here") whose link opens Ko-fi's donation panel in a window over the page, so
+// Donations to Saint Mike Node: a sentence ("To support this project, click here") whose link opens Ko-fi's donation panel in a window over the page, so
 // people can give without leaving (the same approach as Tulio's Pipodojo site; he asked for a
 // sentence, not a button, in the footer and on both pages). Nothing from Ko-fi loads until someone
 // opens it: visitors who never click get no Ko-fi code and no cookies. This is the site's one third-party embed, and only on
@@ -17,7 +16,7 @@ export const KOFI_URL = "https://ko-fi.com/saintmikenode";
 const PANEL_URL = `${KOFI_URL}/?hidefeed=true&widget=true&embed=true&preview=true`;
 
 /**
- * "If you want to support the hosting and development of this project, click here." The starred
+ * "To support this project, click here." The starred
  * words of `kofi.line` are the link. It is a real link to the
  * Ko-fi page (open in a new tab, copy the address), and a plain click opens the window instead.
  */
