@@ -42,6 +42,9 @@ export interface SceneMeta {
   bathymetry_source: string;
   geo: { lonlat_to_uv: number[][]; uv_to_lonlat: number[][]; fit_error_m: number };
   bounds_lonlat: { south: number; north: number; west: number; east: number };
+  /** Allen Coral Atlas mapped reef and Coral/Algae area in the island's box, km² (pipeline/reef_area.mjs). */
+  reef_km2?: number;
+  coral_km2?: number;
 }
 
 const cache = new Map<string, Promise<unknown>>();

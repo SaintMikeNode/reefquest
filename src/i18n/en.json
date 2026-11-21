@@ -225,7 +225,7 @@
   "isles.title": "Explore the islands *in 3D*",
   "isles.lead": "Pick an island to explore its relief, its reef and the sea's heat day by day, or board the research boat.",
   "isles.note": "Previews of the real relief and depth (Copernicus DEM, Allen Coral Atlas, GEBCO), with height exaggerated. They are a model, not a navigation chart.",
-  "photos.here": "Photo taken here",
+  "photos.here": "Photo taken on location",
   "photos.from": "Photo from {where}",
   "photos.show": "Show photo {n}",
   "photos.button": "Photos",
@@ -241,5 +241,12 @@
   "footer.explore": "Explore",
   "footer.project": "The project",
   "footer.data": "Data: NOAA Coral Reef Watch · Allen Coral Atlas · GEBCO · Copernicus DEM · OpenStreetMap · iNaturalist",
-  "footer.license": "Code under the MIT License · © 2026 ReefQuest"
+  "footer.license": "Code under the MIT License · © 2026 ReefQuest",
+  "photos.prev": "Previous photo",
+  "photos.next": "Next photo",
+  "footer.landNote": "island relief exaggerated in height",
+  "photos.cardCount": "{n} PHOTOS",
+  "photos.cardFrom": "Fish, corals and places",
+  "photos.cardLicense": "Openly licensed",
+  "isles.reef": "{n} km² of reef"
 }

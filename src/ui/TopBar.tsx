@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { useT } from "../i18n";
 import { href, type Route } from "../lib/router";
 import { LangToggle } from "./LangToggle";
@@ -6,6 +6,8 @@ import { HAS_WEBGL } from "../webgl";
 import { Credit } from "./Credit";
 import { Logo } from "./Logo";
 import { SpecularButton } from "./SpecularButton";
+
+const SkyIslands = lazy(() => import("./SkyIslands"));
 
 export function TopBar({ route }: { route: Route }) {
   const t = useT();
@@ -34,7 +36,7 @@ export function TopBar({ route }: { route: Route }) {
         <div className="header-end">
           <LangToggle />
           {HAS_WEBGL && (
-            <SpecularButton href={href.islands} className="btn light cta" lineColor="#2f86ff" baseColor="#9cc6ff">
+            <SpecularButton href={href.islands} className="btn light cta" lineColor="#2f86ff" baseColor="#9cc6ff" intensity={1.8} glow={1.8} thickness={1.8}>
               {t("nav.cta")}
             </SpecularButton>
           )}
@@ -47,9 +49,20 @@ export function TopBar({ route }: { route: Route }) {
   );
 }
 
-/** Footer: who it is for (left), every page (middle), the project (right), then the sources. */
+/** Footer: who it is for (left), every page (middle), the project (right); under them the Bay
+ * Islands from the sky in contour lines (SkyIslands, its own chunk, loaded when the footer gets
+ * near; after the footer of saintmikenode.org), then the sources. */
 export function Footer() {
   const t = useT();
+  const land = useRef<HTMLDivElement>(null);
+  const [near, setNear] = useState(false);
+  useEffect(() => {
+    const el = land.current;
+    if (!el || near) return;
+    const io = new IntersectionObserver((es) => es.some((e) => e.isIntersecting) && setNear(true), { rootMargin: "600px 0px" });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [near]);
   const pages: [string, string][] = [
     [href.home, t("nav.home")],
     [href.islands, t("nav.islands")],
@@ -88,8 +101,17 @@ export function Footer() {
           </a>
         </div>
       </div>
+      <div ref={land} className="footer-land">
+        {near && (
+          <Suspense fallback={null}>
+            <SkyIslands />
+          </Suspense>
+        )}
+      </div>
       <div className="inner footer-bottom">
-        <span>{t("footer.data")}</span>
+        <span>
+          {t("footer.data")} · {t("footer.landNote")}
+        </span>
         <span>{t("footer.license")}</span>
       </div>
     </footer>

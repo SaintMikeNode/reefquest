@@ -1,6 +1,6 @@
 import { PerspectiveCamera, View } from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { accent, fmtNum, useLang, useT } from "../i18n";
 import { loadLatest, loadSceneMeta, type Latest, type SceneMeta } from "../lib/data";
@@ -8,9 +8,10 @@ import { LITE, REDUCED_MOTION, pick } from "../lib/device";
 import { ISLAND_ORDER, SCENE_ISLANDS } from "../lib/islands";
 import { href } from "../lib/router";
 import { AlertChip } from "../ui/AlertChip";
-import { IconArrow } from "../ui/Icons";
+import { IconArrow, IconCamera } from "../ui/Icons";
 import { SpecularButton } from "../ui/SpecularButton";
-import { AllPhotosButton } from "../ui/AllPhotos";
+import { allPhotos, DomeGallery } from "../ui/AllPhotos";
+import { usePhotos } from "../ui/PhotoStrip";
 import { HAS_WEBGL } from "../webgl";
 
 // "Explore the islands in 3D": one card per island with a live 3D preview of its relief and reef
@@ -387,6 +388,12 @@ function IslandCard({ id, latest, meta }: { id: string; latest: Latest | null; m
             <AlertChip dhw={s.dhw} /> <span className="num">{fmtNum(s.dhw, lang)} {t("unit.dhw")}</span>
           </p>
         )}
+        {/* Something to look forward to before the record year: how much reef the Allen Coral Atlas maps around it. */}
+        {meta?.reef_km2 != null && (
+          <p className="isle-reef">
+            <i aria-hidden="true" /> {t("isles.reef").replace("{n}", fmtNum(meta.reef_km2, lang, 0))}
+          </p>
+        )}
         {s && worst >= 0 && (
           <p className="isle-worst">
             {t("card.record")}: <span className="num">{latest!.years[worst]} ({fmtNum(s.year_max_dhw[worst], lang)})</span>
@@ -422,6 +429,46 @@ function IslandCard({ id, latest, meta }: { id: string; latest: Latest | null; m
   );
 }
 
+/**
+ * The fourth card: the photos. Same frosted card and blueprint floor as the islands; its preview is
+ * a ring of reef photos turning slowly in CSS 3D (eight small 240 px images, loaded right away:
+ * lazy images inside 3D transforms never load). It opens the dome of every photo.
+ */
+function PhotosCard() {
+  const t = useT();
+  const index = usePhotos();
+  const [open, setOpen] = useState(false);
+  const photos = useMemo(() => (index ? allPhotos(index) : []), [index]);
+  const ring = photos.slice(0, 8);
+  return (
+    <>
+      <button type="button" className="isle-card photos-card" onClick={() => setOpen(true)} disabled={!index}>
+        <div className="isle-stage" aria-hidden="true">
+          <div className="pc-ring">
+            {ring.map((p, i) => (
+              <img key={p.id} src={p.src.s} alt="" decoding="async" draggable={false} style={{ "--i": i } as React.CSSProperties} />
+            ))}
+          </div>
+        </div>
+        <div className="isle-body">
+          <p className="isle-where num">{index ? t("photos.cardCount").replace("{n}", String(photos.length)) : "\u00a0"}</p>
+          <h2>{t("photos.label")}</h2>
+          <p className="isle-status">{t("photos.cardFrom")}</p>
+          <p className="isle-worst">{t("photos.cardLicense")}</p>
+          <SpecularButton as="span" className="btn primary small" lineColor="#ffffff" baseColor="#bfe0ff">
+            <IconCamera /> {t("photos.all")}
+          </SpecularButton>
+        </div>
+      </button>
+      {open && (
+        <Suspense fallback={null}>
+          <DomeGallery photos={photos} onClose={() => setOpen(false)} />
+        </Suspense>
+      )}
+    </>
+  );
+}
+
 export function IslandsPage() {
   const t = useT();
   const [latest, setLatest] = useState<Latest | null>(null);
@@ -447,9 +494,9 @@ export function IslandsPage() {
             {SHOWN.map((id) => (
               <IslandCard key={id} id={id} latest={latest} meta={metas[id]} />
             ))}
+            <PhotosCard />
           </div>
           <div className="isle-foot">
-            <AllPhotosButton className="btn light" />
             <p className="fig-source isle-note">{t("isles.note")}</p>
           </div>
         </section>

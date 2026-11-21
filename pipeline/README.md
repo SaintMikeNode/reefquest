@@ -54,6 +54,10 @@ Planned: coral model conversion (`public/models/`), the other three islands' ter
 
 `common.py` holds the project bounding box; every pull is clipped to it.
 
+## Reef area
+
+`node pipeline/reef_area.mjs` (Node, no packages) measures each island's mapped reef (`reef_km2`, Allen Coral Atlas reef mask) and Coral/Algae area (`coral_km2`, benthic class 15) on the shipped `habitat.png` and writes both into `public/data/<island>/meta.json` (only those two keys; safe to re-run). The islands page shows `reef_km2`. Re-run after `terrain.py` rewrites the habitat maps.
+
 ## Photos
 
 `photos.json` is curated by hand: for each story/dive site (by its id) and boat zone (`zone:<id>`),

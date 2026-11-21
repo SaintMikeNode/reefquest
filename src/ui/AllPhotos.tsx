@@ -4,7 +4,8 @@ import type { Photo, PhotoIndex } from "../lib/data";
 import { IconCamera } from "./Icons";
 import { usePhotos } from "./PhotoStrip";
 
-const DomeGallery = lazy(() => import("./DomeGallery"));
+/** The dome of every photo, its own chunk (loaded when opened). */
+export const DomeGallery = lazy(() => import("./DomeGallery"));
 
 /** Every photo once (places first, then the field guide). */
 export function allPhotos(index: PhotoIndex): Photo[] {

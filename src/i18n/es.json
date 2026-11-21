@@ -225,7 +225,7 @@
   "isles.title": "Explora las islas *en 3D*",
   "isles.lead": "Elige una isla para recorrer su relieve, su arrecife y el calor del mar día por día, o subir al barco de investigación.",
   "isles.note": "Vistas previas del relieve y la profundidad reales (Copernicus DEM, Allen Coral Atlas, GEBCO), con la altura exagerada. Son un modelo, no una carta de navegación.",
-  "photos.here": "Foto tomada aquí",
+  "photos.here": "Foto tomada en locación",
   "photos.from": "Foto de {where}",
   "photos.show": "Ver foto {n}",
   "photos.button": "Fotos",
@@ -241,5 +241,12 @@
   "footer.explore": "Explorar",
   "footer.project": "El proyecto",
   "footer.data": "Datos: NOAA Coral Reef Watch · Allen Coral Atlas · GEBCO · Copernicus DEM · OpenStreetMap · iNaturalist",
-  "footer.license": "Código bajo licencia MIT · © 2026 ReefQuest"
+  "footer.license": "Código bajo licencia MIT · © 2026 ReefQuest",
+  "photos.prev": "Foto anterior",
+  "photos.next": "Foto siguiente",
+  "footer.landNote": "relieve de las islas exagerado en altura",
+  "photos.cardCount": "{n} FOTOS",
+  "photos.cardFrom": "Peces, corales y lugares",
+  "photos.cardLicense": "Licencias abiertas",
+  "isles.reef": "{n} km² de arrecife"
 }

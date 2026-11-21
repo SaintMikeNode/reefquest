@@ -1095,8 +1095,10 @@ html.lite .ltabs-strip { -webkit-backdrop-filter: none; backdrop-filter: none; b
 .dome-hint { margin: 2px 0 0; font-size: 13px; color: var(--hud-muted); }
 .dome-stage { position: absolute; inset: 0; perspective: calc(var(--dome-r) * 0.9); perspective-origin: 50% 50%; cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
 .dome-stage:active { cursor: grabbing; }
-.dome-sphere { position: absolute; left: 50%; top: 50%; width: 0; height: 0; transform-style: preserve-3d; animation: dome-in 1.1s var(--ease-out) both; }
-@keyframes dome-in { from { opacity: 0; filter: blur(8px); } to { opacity: 1; filter: none; } }
+.dome-sphere { position: absolute; left: 50%; top: 50%; width: 0; height: 0; transform-style: preserve-3d; }
+/* The fade-in runs on the stage: opacity or a filter on the sphere itself would flatten its 3D. */
+.dome-stage { animation: dome-in 1.1s var(--ease-out) both; }
+@keyframes dome-in { from { opacity: 0; transform: scale(0.94); } to { opacity: 1; transform: none; } }
 .dome-tile { position: absolute; left: calc(var(--dome-r) * -0.13); top: calc(var(--dome-r) * -0.09); width: calc(var(--dome-r) * 0.26); height: calc(var(--dome-r) * 0.18); padding: 0; border: 0; border-radius: 14px; overflow: hidden; background: rgba(255, 255, 255, 0.04); backface-visibility: hidden; -webkit-backface-visibility: hidden; cursor: pointer; box-shadow: inset 0 0 0 1px rgba(191, 224, 255, 0.12); transition: box-shadow 0.2s ease, filter 0.2s ease; -webkit-tap-highlight-color: transparent; }
 .dome-tile img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
 @media (hover: hover) { .dome-tile:hover { box-shadow: inset 0 0 0 2px rgba(191, 224, 255, 0.7); filter: brightness(1.12); } }
@@ -1155,3 +1157,110 @@ html.lite .credit-badge { -webkit-backdrop-filter: none; backdrop-filter: none; 
 .play-btn.invite { animation: play-breathe 2s ease-in-out infinite; }
 @keyframes play-breathe { 0%, 100% { box-shadow: 0 0 0 4px rgba(10, 102, 240, 0.22), 0 8px 22px -6px rgba(10, 102, 240, 0.9); } 50% { box-shadow: 0 0 0 8px rgba(10, 102, 240, 0.3), 0 10px 30px -4px rgba(47, 134, 255, 1); } }
 @media (max-width: 760px) { .play-btn { width: 40px; height: 40px; } }
+/* Carousel arrows: frosted round buttons floating on the edges of the photo in the middle (outside
+   the edge mask, above the cards); hidden at either end. */
+.curve-wrap { position: relative; --cw: 240px; }
+.curve-nav { position: absolute; z-index: 200; top: calc(6px + var(--cw) / 3); width: 38px; height: 38px; margin: -19px 0 0 -19px; display: grid; place-items: center; padding: 0; border-radius: 999px; color: var(--white); cursor: pointer;
+  background: rgba(5, 18, 34, 0.64); border: 1px solid rgba(255, 255, 255, 0.28); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16), 0 10px 22px -10px rgba(0, 0, 0, 0.8); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  transition: transform 0.24s var(--spring), opacity 0.25s var(--ease-out), background-color 0.2s ease, border-color 0.2s ease; -webkit-tap-highlight-color: transparent; }
+.curve-nav svg { width: 17px; height: 17px; }
+.curve-nav.prev { left: calc(50% - var(--cw) / 2 + 4px); }
+.curve-nav.prev svg { transform: scaleX(-1); }
+.curve-nav.next { left: calc(50% + var(--cw) / 2 - 4px); }
+.curve-nav:active { transform: scale(0.9); }
+.curve-nav:disabled { opacity: 0; transform: scale(0.7); pointer-events: none; }
+.curve-nav:focus-visible { outline: 2px solid rgba(191, 224, 255, 0.8); outline-offset: 2px; }
+@media (hover: hover) { .curve-nav:hover { background: var(--brand); border-color: rgba(191, 224, 255, 0.6); transform: scale(1.08); } }
+html.lite .curve-nav { -webkit-backdrop-filter: none; backdrop-filter: none; background: rgba(5, 18, 34, 0.9); }
+/* Heat status: one height for every level (severe only adds color), so the back button under it
+   stays put while the timeline plays. */
+.heat-status { padding: 7px 10px 8px; margin-left: -10px; border-left: 3px solid transparent; }
+.heat-status .desc { display: grid; }
+.heat-status .desc > span { grid-area: 1 / 1; visibility: hidden; }
+.heat-status .desc > span.on { visibility: visible; }
+/* The white Specular buttons (hero islands button, header "Explore in 3D") brighten on hover
+   instead of washing to blue: they stay white, the label turns ocean blue, a blue halo opens around
+   them and the rim light (stronger on these two) follows the cursor. */
+.btn.light.specular:hover, .btn.light.specular:focus-visible { background: var(--white); border-color: var(--white); color: var(--brand); }
+.hero-cta:hover, .hero-cta:focus-visible { box-shadow: 0 0 0 4px rgba(127, 190, 255, 0.45), 0 0 28px 4px rgba(47, 134, 255, 0.7), 0 16px 36px -12px rgba(10, 102, 240, 0.9); }
+.btn.light.cta.specular:hover, .btn.light.cta.specular:focus-visible { box-shadow: 0 0 0 3px rgba(127, 190, 255, 0.4), 0 0 20px 2px rgba(47, 134, 255, 0.6); }
+/* Hero headline wave: each letter rises and settles with the swell (--ft-y, set by floodtext). */
+.hero-content h1 .ft-char { display: inline-block; translate: 0 var(--ft-y, 0); }
+/* Tabs that read as tabs (Tulio: the two looked the same): the tab you're not on sits on a lighter,
+   blue-grey frosted strip behind, with muted text; the open tab is the dark folder joined to the
+   panel, its label white and its icon sky blue. */
+.ltabs-strip { background: linear-gradient(180deg, rgba(96, 140, 200, 0.34), rgba(60, 100, 160, 0.26)); border-color: rgba(191, 224, 255, 0.16); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14); }
+.ltabs-tab { color: rgba(214, 228, 245, 0.72); }
+.ltabs-tab[aria-selected="true"] { color: var(--white); }
+.ltabs-tab[aria-selected="true"] svg, .ltabs-tab[aria-selected="true"] .icon { color: #7fc4ff; }
+.ltabs-tab svg, .ltabs-tab .icon { transition: color 0.3s ease; }
+@media (hover: hover) { .ltabs-tab[aria-selected="false"]:hover { color: var(--white); } }
+html.lite .ltabs-strip { background: rgba(50, 88, 145, 0.85); }
+/* The open tab's outer corners match the strip's (20 px), so the two outlines meet exactly. */
+.ltabs-blob { border-radius: 20px; }
+/* Islands page foot: the photos button centered under the cards (the cards are centered too),
+   the source note centered under it. */
+.isle-foot { flex-direction: column; justify-content: center; gap: 14px; margin-top: 22px; text-align: center; }
+.isle-foot .isle-note { flex: none; max-width: 760px; }
+/* The way back sits at the top of the title plate, above the kicker and the name. */
+.plate > .back-btn, .plate > .plate-actions { margin: 0 0 14px; }
+.plate > .back-btn { display: flex; width: fit-content; }
+@media (max-width: 760px) { .plate > .back-btn, .plate > .plate-actions { margin-bottom: 8px; } }
+/* Footer landscape (after saintmikenode.org): under the three columns, the Bay Islands from the sky
+   in contour lines (ui/SkyIslands.tsx), fading in from the columns; the sources strip sits on it. */
+/* No dot grid here (Tulio: it should feel like its own section, not more page). */
+.site-footer { overflow: hidden; background: radial-gradient(ellipse 70% 45% at 50% 100%, rgba(10, 102, 240, 0.26), transparent 70%), linear-gradient(180deg, #04132d 0%, #031029 55%, #062457 100%); }
+.site-footer .inner.footer-grid { padding-bottom: 0; }
+.footer-land { position: relative; height: clamp(240px, 30vw, 380px); margin-top: 20px; pointer-events: none; -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 16%); mask-image: linear-gradient(180deg, transparent 0, #000 16%); }
+.sky-islands { position: absolute; inset: 0; display: block; width: 100%; height: 100%; max-width: none; }
+.site-footer .inner.footer-bottom { position: relative; border-top: 0; }
+/* The divider above the sources runs the full width of the window, not just the content column. */
+.site-footer .inner.footer-bottom::before { content: ""; position: absolute; top: 0; left: 50%; width: 100vw; height: 1px; translate: -50% 0; background: rgba(255, 255, 255, 0.1); }
+@media (max-width: 640px) { .footer-land { height: 220px; margin-top: 12px; } }
+/* Four cards in the islands row (three islands and the photos): four across on computers, two by
+   two on mid-size screens, one column on phones. */
+.isle-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 1180px) { .isle-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 860px) { .isle-grid { grid-template-columns: 1fr; } }
+/* The photos card: a button dressed as an island card, its preview a ring of photos turning in 3D. */
+.photos-card { width: 100%; padding: 0; font: inherit; text-align: inherit; cursor: pointer; }
+.photos-card:disabled { cursor: default; }
+.photos-card .isle-stage { perspective: 600px; --pc: clamp(64px, 6.4vw, 96px); }
+@media (max-width: 1180px) { .photos-card .isle-stage { --pc: clamp(80px, 12vw, 120px); } }
+@media (max-width: 860px) { .photos-card .isle-stage { --pc: min(26vw, 120px); } }
+.pc-ring { position: absolute; left: 50%; top: 54%; width: 0; height: 0; transform-style: preserve-3d; animation: pc-spin 36s linear infinite; transition: top 0.5s var(--ease-out); }
+.pc-ring img { position: absolute; max-width: none; width: var(--pc); height: calc(var(--pc) * 2 / 3); left: calc(var(--pc) / -2); top: calc(var(--pc) / -3); object-fit: cover; border-radius: 10px; border: 1px solid rgba(191, 224, 255, 0.35); box-shadow: 0 10px 24px -10px rgba(0, 6, 30, 0.8);
+  transform: rotateY(calc(var(--i) * 45deg)) translateZ(calc(var(--pc) * 1.08)); }
+.photos-card:hover .pc-ring { top: 49%; }
+@keyframes pc-spin { from { transform: rotateX(-14deg) rotateY(0deg); } to { transform: rotateX(-14deg) rotateY(-360deg); } }
+html.lite .pc-ring { animation: none; transform: rotateX(-10deg) rotateY(-22deg); }
+@media (prefers-reduced-motion: reduce) { .pc-ring { animation: none; transform: rotateX(-10deg) rotateY(-22deg); } }
+/* Card bodies fill the card and keep the button at the bottom, so every blue button lines up
+   across the row whatever the lines above it. */
+.isle-card > .isle-body { flex: 1 1 auto; display: flex; flex-direction: column; align-items: center; }
+.isle-card > .isle-body > :last-child { margin-top: auto; }
+.isle-card > .isle-body > :nth-last-child(2) { margin-bottom: 12px; }
+/* The reef line: a calm, positive fact before the record year. */
+.isle-reef { margin: 0; display: flex; align-items: center; gap: 8px; color: #bff3ea; font-size: 14.5px; }
+.isle-reef i { width: 9px; height: 9px; border-radius: 50%; background: #5fd0c6; box-shadow: 0 0 10px rgba(95, 208, 198, 0.8); }
+/* A larger wordmark (Tulio): header 34 px mark / 24 px name, footer larger still; a bit smaller on phones. */
+.wordmark { gap: 10px; }
+.wordmark svg { width: 34px; height: 34px; }
+.wordmark b { font-size: 24px; }
+.footer-brand .wordmark svg { width: 42px; height: 42px; }
+.footer-brand .wordmark b { font-size: 30px; }
+@media (max-width: 640px) { .wordmark svg { width: 30px; height: 30px; } .wordmark b { font-size: 21px; } .footer-brand .wordmark svg { width: 38px; height: 38px; } .footer-brand .wordmark b { font-size: 27px; } }
+/* Hit slop for pressable pills: a press sinks a chip ~3.5 px and shrinks buttons a little, so a
+   click near an edge could end (mouseup) outside the element and the browser dropped the click
+   (Tulio: header buttons sometimes missed the first click). An invisible margin, wider than that
+   movement, keeps the release on the element. :where() keeps it from overriding any position set
+   elsewhere; 2 px at the sides so neighbors 4 px apart never overlap. */
+:where(.site-nav a, .lang.chips button, .btn, .back-btn, .menu-toggle) { position: relative; }
+:where(.site-nav a, .lang.chips button, .btn, .back-btn, .menu-toggle)::after { content: ""; position: absolute; inset: -6px -2px; border-radius: inherit; }
+/* Photo credits masonry: our own columns (AboutPage PhotoCredits) instead of CSS columns, so the
+   last row can be evened out: every column ends on the same line. */
+.masonry { columns: auto; display: grid; grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr)); gap: 0 14px; align-items: start; }
+.masonry-col { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+.masonry-col li { margin: 0; }
+.masonry-photo { height: auto; }
+@media (max-width: 520px) { .masonry { gap: 0 10px; } .masonry-col { gap: 12px; } }

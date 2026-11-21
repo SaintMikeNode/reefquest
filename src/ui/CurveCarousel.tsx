@@ -1,22 +1,47 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Photo } from "../lib/data";
 import { REDUCED_MOTION } from "../lib/device";
+import { IconArrow } from "./Icons";
 
 // A curved photo carousel (after React Bits' "Circular Gallery", Tulio's pick), rebuilt with CSS 3D
 // transforms instead of WebGL, so a story card doesn't open a second GPU context next to the 3D map.
 // Cards sit on an arc that bends away from the center: neighbors tilt, shrink and fade toward the
 // edges. Drag or swipe (with momentum), scroll the wheel, or use the arrow keys; it settles on the
 // nearest photo with a spring. Only the photo in the middle is clickable (it opens the lightbox).
-// One rAF loop runs only while the position is moving.
+// One rAF loop runs only while the position is moving. Round arrow buttons float on the sides of
+// the photo in the middle, for people who don't know they can drag.
 
-export function CurveCarousel({ photos, index, onIndex, onOpen, label }: { photos: Photo[]; index: number; onIndex: (i: number) => void; onOpen: (i: number) => void; label: string }) {
+export function CurveCarousel({
+  photos,
+  index,
+  onIndex,
+  onOpen,
+  label,
+  prevLabel,
+  nextLabel,
+}: {
+  photos: Photo[];
+  index: number;
+  onIndex: (i: number) => void;
+  onOpen: (i: number) => void;
+  label: string;
+  prevLabel: string;
+  nextLabel: string;
+}) {
   const host = useRef<HTMLDivElement>(null);
+  const wrap = useRef<HTMLDivElement>(null);
   const cards = useRef<(HTMLButtonElement | null)[]>([]);
   const pos = useRef(index); // current position, in cards (fractional while moving)
   const target = useRef(index);
   const vel = useRef(0);
   const raf = useRef(0);
-  const drag = useRef<{ x: number; start: number; last: number; t: number; moved: boolean } | null>(null);
+  const drag = useRef<{
+    x: number;
+    start: number;
+    last: number;
+    t: number;
+    moved: boolean;
+  } | null>(null);
   const [, force] = useState(0);
   const n = photos.length;
 
@@ -25,6 +50,7 @@ export function CurveCarousel({ photos, index, onIndex, onOpen, label }: { photo
     if (!el) return;
     const w = el.clientWidth;
     const cardW = Math.min(w * 0.7, 320);
+    wrap.current?.style.setProperty("--cw", `${cardW}px`);
     for (let i = 0; i < n; i++) {
       const c = cards.current[i];
       if (!c) continue;
@@ -35,7 +61,8 @@ export function CurveCarousel({ photos, index, onIndex, onOpen, label }: { photo
       const rot = a * 9; // and tilts
       const z = -Math.abs(a) * 90;
       const s = 1 - Math.min(Math.abs(a), 2) * 0.12;
-      const o = Math.abs(d) > 2.6 ? 0 : 1 - Math.max(0, Math.abs(d) - 1.2) * 0.7;
+      const o =
+        Math.abs(d) > 2.6 ? 0 : 1 - Math.max(0, Math.abs(d) - 1.2) * 0.7;
       c.style.transform = `translate3d(calc(-50% + ${x.toFixed(1)}px), ${bend.toFixed(1)}px, ${z.toFixed(1)}px) rotateY(${(-rot).toFixed(2)}deg) rotateZ(${(rot * 0.35).toFixed(2)}deg) scale(${s.toFixed(3)})`;
       c.style.opacity = o.toFixed(3);
       c.style.zIndex = String(100 - Math.round(Math.abs(d) * 10));
@@ -53,13 +80,19 @@ export function CurveCarousel({ photos, index, onIndex, onOpen, label }: { photo
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
       if (!drag.current) {
-        const k = 90, c = 2 * Math.sqrt(k);
+        const k = 90,
+          c = 2 * Math.sqrt(k);
         const acc = (target.current - pos.current) * k - vel.current * c;
         vel.current += acc * dt;
         pos.current += vel.current * dt;
       }
       layout();
-      if (drag.current || Math.abs(target.current - pos.current) > 0.001 || Math.abs(vel.current) > 0.001) raf.current = requestAnimationFrame(step);
+      if (
+        drag.current ||
+        Math.abs(target.current - pos.current) > 0.001 ||
+        Math.abs(vel.current) > 0.001
+      )
+        raf.current = requestAnimationFrame(step);
       else {
         pos.current = target.current;
         layout();
@@ -102,10 +135,17 @@ export function CurveCarousel({ photos, index, onIndex, onOpen, label }: { photo
     force((k) => k + 1);
   }, [photos]);
 
-  const cardW = () => Math.min((host.current?.clientWidth ?? 320) * 0.7, 320) * 0.62;
+  const cardW = () =>
+    Math.min((host.current?.clientWidth ?? 320) * 0.7, 320) * 0.62;
   const onDown = (e: React.PointerEvent) => {
     if (e.button !== 0) return;
-    drag.current = { x: e.clientX, start: pos.current, last: e.clientX, t: performance.now(), moved: false };
+    drag.current = {
+      x: e.clientX,
+      start: pos.current,
+      last: e.clientX,
+      t: performance.now(),
+      moved: false,
+    };
     vel.current = 0;
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     run();
@@ -119,7 +159,8 @@ export function CurveCarousel({ photos, index, onIndex, onOpen, label }: { photo
     const p = d.start - dx / cardW();
     // Rubber band past the ends.
     pos.current = p < 0 ? p * 0.35 : p > n - 1 ? n - 1 + (p - n + 1) * 0.35 : p;
-    vel.current = (-(e.clientX - d.last) / cardW()) / Math.max(0.008, (now - d.t) / 1000);
+    vel.current =
+      -(e.clientX - d.last) / cardW() / Math.max(0.008, (now - d.t) / 1000);
     d.last = e.clientX;
     d.t = now;
   };
@@ -144,38 +185,62 @@ export function CurveCarousel({ photos, index, onIndex, onOpen, label }: { photo
   };
 
   return (
-    <div
-      ref={host}
-      className="curve"
-      role="group"
-      aria-roledescription="carousel"
-      aria-label={label}
-      onPointerDown={onDown}
-      onPointerMove={onMove}
-      onPointerUp={onUp}
-      onPointerCancel={onUp}
-      onWheel={onWheel}
-      onKeyDown={(e) => {
-        if (e.key === "ArrowRight") (e.preventDefault(), go(index + 1));
-        if (e.key === "ArrowLeft") (e.preventDefault(), go(index - 1));
-      }}
-    >
-      {photos.map((p, i) => (
-        <button
-          key={p.id}
-          ref={(el) => void (cards.current[i] = el)}
-          className="curve-card"
-          style={{ aspectRatio: "3 / 2" }}
-          aria-label={`${i + 1} / ${n}`}
-          onClick={() => {
-            if (performance.now() - suppress.current < 250) return; // that was a drag
-            if (i === index) onOpen(i);
-            else go(i);
-          }}
-        >
-          <img src={Math.abs(i - index) <= 1 ? p.src.m : p.src.s} alt="" loading="lazy" decoding="async" draggable={false} />
-        </button>
-      ))}
+    <div ref={wrap} className="curve-wrap">
+      <div
+        ref={host}
+        className="curve"
+        role="group"
+        aria-roledescription="carousel"
+        aria-label={label}
+        onPointerDown={onDown}
+        onPointerMove={onMove}
+        onPointerUp={onUp}
+        onPointerCancel={onUp}
+        onWheel={onWheel}
+        onKeyDown={(e) => {
+          if (e.key === "ArrowRight") (e.preventDefault(), go(index + 1));
+          if (e.key === "ArrowLeft") (e.preventDefault(), go(index - 1));
+        }}
+      >
+        {photos.map((p, i) => (
+          <button
+            key={p.id}
+            ref={(el) => void (cards.current[i] = el)}
+            className="curve-card"
+            style={{ aspectRatio: "3 / 2" }}
+            aria-label={`${i + 1} / ${n}`}
+            onClick={() => {
+              if (performance.now() - suppress.current < 250) return; // that was a drag
+              if (i === index) onOpen(i);
+              else go(i);
+            }}
+          >
+            <img
+              src={Math.abs(i - index) <= 1 ? p.src.m : p.src.s}
+              alt=""
+              loading="lazy"
+              decoding="async"
+              draggable={false}
+            />
+          </button>
+        ))}
+      </div>
+      <button
+        className="curve-nav prev"
+        onClick={() => go(index - 1)}
+        aria-label={prevLabel}
+        disabled={index <= 0}
+      >
+        <IconArrow />
+      </button>
+      <button
+        className="curve-nav next"
+        onClick={() => go(index + 1)}
+        aria-label={nextLabel}
+        disabled={index >= n - 1}
+      >
+        <IconArrow />
+      </button>
     </div>
   );
 }

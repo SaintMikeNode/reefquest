@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { useT } from "./i18n";
 import { SCENE_ISLANDS } from "./lib/islands";
 import { useRoute, type Route } from "./lib/router";
@@ -44,8 +44,13 @@ export function App() {
   // a circle swoop between pages.
   const [route, setRoute] = useState(target);
   const key = routeKey(target);
+  // The last route asked for: a change made while the curtain is still closing is compared with
+  // where we are going, not with what is on screen (otherwise it was dropped and the earlier change
+  // landed, leaving the page and the address out of step, so a click seemed lost).
+  const wanted = useRef(key);
   useEffect(() => {
-    if (key === routeKey(route)) return;
+    if (key === wanted.current) return;
+    wanted.current = key;
     const next = target;
     if (next.page === "island")
       transition({ kind: "island", label: ISLAND_NAMES[next.id] ?? next.id, sub: t("home.kicker"), apply: () => setRoute(next) });

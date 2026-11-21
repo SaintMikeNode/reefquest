@@ -166,10 +166,6 @@ export function BoatHud({ index, zoneName, islandName }: { index: HeatIndex; zon
       <div className="scrim-bottom" />
 
       <header className="hud plate">
-        <div className="kicker">{t("boat.kicker")}</div>
-        <h1>{zoneName}</h1>
-        <div className="coords">{tele ? `${fmtLat(tele.lat, lang)} · ${fmtLon(tele.lon, lang)}` : "\u00a0"}</div>
-        <HeatStatus dhw={dhw} prefix={dateISO ? fmtDate(dateISO, lang) : undefined} />
         <div className="plate-actions">
           <button className="back-btn" onClick={() => setBoat(null)}>
             <IconBack /> {t("boat.backTo").replace("{island}", islandName)}
@@ -180,6 +176,10 @@ export function BoatHud({ index, zoneName, islandName }: { index: HeatIndex; zon
             </button>
           )}
         </div>
+        <div className="kicker">{t("boat.kicker")}</div>
+        <h1>{zoneName}</h1>
+        <div className="coords">{tele ? `${fmtLat(tele.lat, lang)} · ${fmtLon(tele.lon, lang)}` : "\u00a0"}</div>
+        <HeatStatus dhw={dhw} prefix={dateISO ? fmtDate(dateISO, lang) : undefined} />
       </header>
 
       <div className="hud heading-tape" aria-hidden="true">

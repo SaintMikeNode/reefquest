@@ -31,10 +31,18 @@ export function LiquidTabs({ tabs, active, onSelect, label, children }: { tabs: 
   const [blob, setBlob] = useState<{ x: number; w: number } | null>(null);
   const [dir, setDir] = useState(1);
 
+  // The open tab's place in the row (numbers, not the tabs array: a new array each parent render
+  // would re-measure and re-observe every time).
+  const activeIndex = tabs.findIndex((tab) => tab.id === active), count = tabs.length;
   const measure = useCallback(() => {
     const r = root.current?.getBoundingClientRect(), t = tabRefs.current[active]?.getBoundingClientRect();
-    if (r && t) setBlob({ x: t.left - r.left, w: t.width });
-  }, [active]);
+    if (!r || !t) return;
+    // The first and last tabs reach the panel's edges (1 px past, over the strip's hairline), so
+    // no sliver of the lighter strip shows around the open tab's outer corner.
+    const left = activeIndex === 0 ? -1 : t.left - r.left;
+    const right = activeIndex === count - 1 ? r.width + 1 : t.right - r.left;
+    setBlob((b) => (b && b.x === left && b.w === right - left ? b : { x: left, w: right - left }));
+  }, [active, activeIndex, count]);
   useLayoutEffect(measure, [measure]);
   useEffect(() => {
     const ro = new ResizeObserver(measure);

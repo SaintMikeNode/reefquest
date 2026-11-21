@@ -16,6 +16,13 @@ import { HAS_WEBGL } from "../webgl";
 // The dotted sea (hero background) loads after the first paint.
 const DottedSea = lazy(() => import("../ui/DottedSea"));
 // The headline's wave (floodtext) too: a plain headline with the same text shows until it loads.
+// The headline wave: weight swells (Inter only; the serif line has no weight axis), letters rise
+// and settle a few pixels like a passing swell, and they dim only slightly (never below ~88%:
+// the library's own opacity effect went down to ~40% and made words hard to read).
+const FLOOD_PROPS = [
+  { property: "opacity", base: 0.94, amplitude: 0.06, clamp: [0.88, 1] as [number, number] },
+  { property: "--ft-y", base: 0, amplitude: 0.035, unit: "em" },
+];
 const FloodText = lazy(() => import("@overpunch/floodtext").then((m) => ({ default: m.FloodText })));
 
 export function Home() {
@@ -71,18 +78,18 @@ export function Home() {
               </span>
               <Laurel flip />
             </p>
-            {/* The headline breathes: a slow wave of weight (Inter is a variable font) and opacity
+            {/* The headline breathes: a slow wave of weight (Inter is a variable font), a gentle rise and a slight dimming
                 runs through it letter by letter (floodtext, Tulio's pick). Remounted per language and
                 window width, since the library rewraps the letters and locks the lines. Static with reduced motion. */}
             <Suspense fallback={<h1>{accent(t("home.title"))}</h1>}>
-              <FloodText as="h1" key={`${lang}-${fit}`} effect={["wght", "opacity"]} amplitudes={{ wght: 120, opacity: 0.28 }} period={5} density={1.4} direction="diagonal-down">
+              <FloodText as="h1" key={`${lang}-${fit}`} effect="wght" amplitude={140} properties={FLOOD_PROPS} period={6} density={1.1} direction="diagonal-down">
                 {accent(t("home.title"))}
               </FloodText>
             </Suspense>
             <p className="hero-sub">{t("home.sub")}</p>
             <div className="hero-actions">
               {HAS_WEBGL && (
-                <SpecularButton href={href.islands} className="btn light hero-cta" lineColor="#2f86ff" baseColor="#9cc6ff">
+                <SpecularButton href={href.islands} className="btn light hero-cta" lineColor="#2f86ff" baseColor="#9cc6ff" intensity={1.8} glow={1.8} thickness={1.8}>
                   {t("home.ctaIslands")} <IconArrow />
                 </SpecularButton>
               )}

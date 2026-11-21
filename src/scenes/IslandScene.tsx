@@ -166,8 +166,21 @@ function useMouseGuards() {
       downY = e.clientY;
     };
     const rMove = (e: PointerEvent) => {
+      // A right-drag whose release the browser swallowed (mouse gestures do): end it on the first move
+      // without the right button, so a stale "right-drag under way" can't block later navigation.
+      if (rightDown && !(e.buttons & 2)) {
+        rightDown = false;
+        if (moved) rightUpAt = performance.now();
+        return;
+      }
       if (rightDown && Math.hypot(e.clientX - downX, e.clientY - downY) > 8) moved = true;
     };
+    // A click on a link (e.g. "All islands") also fires popstate; that is never a gesture Back.
+    let linkAt = -1e9;
+    const linkClick = (e: MouseEvent) => {
+      if (e.button === 0 && e.target instanceof Element && e.target.closest("a[href]")) linkAt = performance.now();
+    };
+    document.addEventListener("click", linkClick, true);
     const rUp = (e: PointerEvent) => {
       if (e.button !== 2 || !rightDown) return;
       rightDown = false;
@@ -210,7 +223,8 @@ function useMouseGuards() {
       }
     });
     const pop = (e: PopStateEvent) => {
-      if ((rightDown && moved) || performance.now() - rightUpAt < 1500) {
+      const fromLink = performance.now() - linkAt < 500;
+      if (!fromLink && ((rightDown && moved) || performance.now() - rightUpAt < 1500)) {
         rightUpAt = -1e9;
         if (location.hash !== sceneHash) {
           navGuard.skip = 1;
@@ -226,6 +240,7 @@ function useMouseGuards() {
     window.addEventListener("popstate", pop);
     return () => {
       document.removeEventListener("contextmenu", menu, true);
+      document.removeEventListener("click", linkClick, true);
       for (const t of sideEvents) document.removeEventListener(t, side, true);
       window.removeEventListener("popstate", pop);
       for (const [t, fn] of rightEvents) window.removeEventListener(t, fn, true);

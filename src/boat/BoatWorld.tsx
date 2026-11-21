@@ -20,13 +20,13 @@ import { COV_CELL, makeCoverage, resetCoverage, saveCoverage, SonarFan, stamp, t
 import { floorY, habitatAtXZ, hash, heightAtXZ, loadZone, lonLatToXZ, xzToLonLat, ZoneLod, type Zone } from "./zone";
 
 // Physics (m, s), tuned for fun rather than realism (a fun experience first: a real ~24 m research
-// vessel cruises at ~4 m/s and turns slowly). Top speed ~16 m/s (~31 knots) reached in a few
-// seconds, quick turns, bow lift and lean, and a bump back off the shallows.
-const V_MAX = 16;
-const V_REV = 5;
-const ACCEL = 7.5;
-const DRAG = 0.47; // terminal speed = ACCEL / DRAG; also how fast it coasts to a stop
-const YAW = 0.95; // rad/s at speed
+// vessel cruises at ~4 m/s and turns slowly). Top speed ~26 m/s (~50 knots; Tulio found 31 knots
+// still too slow to be fun) reached in about three seconds, quick turns, bow lift and lean, and a bump back off the shallows.
+const V_MAX = 26;
+const V_REV = 7;
+const ACCEL = 14;
+const DRAG = 0.54; // terminal speed = ACCEL / DRAG; also how fast it coasts to a stop
+const YAW = 1.1; // rad/s at speed
 const DRAFT = 2.2; // keel depth: shallower water ahead stops the boat
 const BOW = 12.5;
 const STERN = -12;

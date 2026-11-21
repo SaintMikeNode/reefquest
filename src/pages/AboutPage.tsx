@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { accent, fmtDate, useL, useLang, useT } from "../i18n";
 import { Credit } from "../ui/Credit";
-import { loadLatest } from "../lib/data";
+import { loadLatest, type Photo } from "../lib/data";
 import { AllPhotosButton, allPhotos } from "../ui/AllPhotos";
 import { Lightbox } from "../ui/Lightbox";
 import { PhotoCredit, usePhotos } from "../ui/PhotoStrip";
@@ -142,28 +142,77 @@ export function AboutPage() {
 }
 
 /**
- * Every photo on the site, once each, as a masonry grid (after React Bits' "Masonry", Tulio's pick;
- * CSS columns, no animation library): each keeps its own shape, springs up as it scrolls into view,
- * and opens in the lightbox; the credit sits under each one. "See all the photos" opens the dome.
+ * Every photo on the site, once each, as a masonry (after React Bits' "Masonry", Tulio's pick): each
+ * photo keeps its own shape and goes into the shortest column; then the gap left under the shorter
+ * columns is shared out over their photos (a few pixels each, cropped to fill), so every column ends
+ * on the same line. Springs up as it scrolls into view, opens in the lightbox, credit under each one.
+ * "See all the photos" opens the dome.
  */
+const MASONRY_GAP = 14;
 function PhotoCredits() {
   const t = useT();
   const L = useL();
   const index = usePhotos();
   const [open, setOpen] = useState<number | null>(null);
-  const list = useRef<HTMLUListElement>(null);
+  const wrap = useRef<HTMLDivElement>(null);
+  const [width, setWidth] = useState(0);
+  const photos = useMemo(() => (index ? allPhotos(index) : []), [index]);
+  const cols = width <= 520 ? 2 : Math.max(2, Math.min(4, Math.floor((width + MASONRY_GAP) / (220 + MASONRY_GAP))));
+
+  useLayoutEffect(() => {
+    const el = wrap.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setWidth(el.clientWidth));
+    ro.observe(el);
+    setWidth(el.clientWidth);
+    return () => ro.disconnect();
+  }, [index]);
+
+  // Shortest column first, by each photo's shape (captions counted as a fixed ~60 px).
+  const columns = useMemo(() => {
+    const colW = width ? (width - MASONRY_GAP * (cols - 1)) / cols : 220;
+    const out: { p: Photo; i: number }[][] = Array.from({ length: cols }, () => []);
+    const h = new Array(cols).fill(0);
+    photos.forEach((p, i) => {
+      const c = h.indexOf(Math.min(...h));
+      out[c].push({ p, i });
+      h[c] += colW / (p.ratio || 1.5) + 60 + MASONRY_GAP;
+    });
+    return out;
+  }, [photos, cols, width]);
+
+  // Even bottoms: measure the columns, then grow the photos of the shorter ones to the tallest.
+  useLayoutEffect(() => {
+    const el = wrap.current;
+    if (!el) return;
+    const even = () => {
+      const lists = [...el.querySelectorAll<HTMLUListElement>(".masonry-col")];
+      const btns = lists.map((ul) => [...ul.querySelectorAll<HTMLButtonElement>(".masonry-photo")]);
+      btns.flat().forEach((b) => (b.style.height = ""));
+      const heights = lists.map((ul) => ul.getBoundingClientRect().height), target = Math.max(...heights);
+      lists.forEach((_, c) => {
+        // Layout sizes (computed style): the scroll-in animation scales the boxes on screen.
+        const extra = target - heights[c], sizes = btns[c].map((b) => parseFloat(getComputedStyle(b).height)), total = sizes.reduce((a, b) => a + b, 0);
+        if (extra < 0.5 || !total) return;
+        btns[c].forEach((b, k) => (b.style.height = `${sizes[k] + (extra * sizes[k]) / total}px`));
+      });
+    };
+    even();
+    document.fonts?.ready.then(even).catch(() => {});
+  }, [columns]);
+
   useEffect(() => {
-    const ul = list.current;
-    if (!ul) return;
+    const el = wrap.current;
+    if (!el) return;
     const io = new IntersectionObserver(
       (entries) => entries.forEach((e) => e.isIntersecting && (e.target.classList.add("in"), io.unobserve(e.target))),
       { rootMargin: "0px 0px -8% 0px" },
     );
-    ul.querySelectorAll("li").forEach((li) => io.observe(li));
+    el.querySelectorAll("li:not(.in)").forEach((li) => io.observe(li));
     return () => io.disconnect();
-  }, [index]);
+  }, [columns]);
+
   if (!index) return null;
-  const photos = allPhotos(index);
   return (
     <section className="section">
       <div className="section-head">
@@ -171,20 +220,24 @@ function PhotoCredits() {
         <p>{t("photos.creditsLead")}</p>
         <AllPhotosButton className="btn light small" />
       </div>
-      <ul ref={list} className="masonry">
-        {photos.map((p, i) => (
-          <li key={p.id} style={{ "--d": `${(i % 4) * 60}ms` } as React.CSSProperties}>
-            <button className="masonry-photo" onClick={() => setOpen(i)} style={{ aspectRatio: String(p.ratio) }} aria-label={L(p.name)}>
-              <img src={p.src.s} alt="" loading="lazy" decoding="async" />
-            </button>
-            <span className="masonry-cap">
-              <b>{L(p.name)}</b>
-              {p.sci && p.sci !== L(p.name) && <i> {p.sci}</i>}
-              <PhotoCredit p={p} />
-            </span>
-          </li>
+      <div ref={wrap} className="masonry" style={{ "--cols": cols } as React.CSSProperties}>
+        {columns.map((col, c) => (
+          <ul key={c} className="masonry-col">
+            {col.map(({ p, i }, k) => (
+              <li key={p.id} style={{ "--d": `${(c + k) % 4 * 60}ms` } as React.CSSProperties}>
+                <button className="masonry-photo" onClick={() => setOpen(i)} style={{ aspectRatio: String(p.ratio) }} aria-label={L(p.name)}>
+                  <img src={p.src.s} alt="" loading="lazy" decoding="async" />
+                </button>
+                <span className="masonry-cap">
+                  <b>{L(p.name)}</b>
+                  {p.sci && p.sci !== L(p.name) && <i> {p.sci}</i>}
+                  <PhotoCredit p={p} />
+                </span>
+              </li>
+            ))}
+          </ul>
         ))}
-      </ul>
+      </div>
       {open !== null && <Lightbox photos={photos} start={open} onClose={() => setOpen(null)} />}
     </section>
   );

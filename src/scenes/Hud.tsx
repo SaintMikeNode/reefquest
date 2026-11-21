@@ -3,7 +3,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { loadZoneIndex, zoneName, type ZoneIndexEntry } from "../boat/zone";
 import { SITES } from "../content/sites";
 import { fmtNum, rich, useL, useLang, useT } from "../i18n";
-import { levelFor, rampCSS } from "../lib/alert";
+import { LEVELS, levelFor, rampCSS } from "../lib/alert";
 import { loadYearGrid, type HeatIndex } from "../lib/data";
 import { REDUCED_MOTION } from "../lib/device";
 import { href } from "../lib/router";
@@ -155,15 +155,16 @@ export function Hud({ td, index }: { td: TerrainData; index: HeatIndex }) {
       <div className="scrim-bottom" />
 
       <header className="hud plate">
+        {/* The way back comes first, above the name (Tulio: on top of everything). */}
+        <a className="back-btn" href={href.islands}>
+          <IconBack /> {t("scene.back")}
+        </a>
         <div className="kicker">{t("scene.region")}</div>
         <h1>{td.meta.name}</h1>
         <div className="coords">
           {fmtLat(here.lat, lang)} · {fmtLon(here.lon, lang)}
         </div>
         {layers.heat && <HeatStatus dhw={areaDhw} />}
-        <a className="back-btn" href={href.home}>
-          <IconBack /> {t("scene.back")}
-        </a>
       </header>
 
       <div className="hud tools">
@@ -360,7 +361,15 @@ export function HeatStatus({ dhw, prefix }: { dhw: number | null; prefix?: strin
       <span>
         {prefix && <span className="pre">{prefix} · </span>}
         <b>{t(`alert.${lv.key}`)}</b> · <span className="nw">{fmtNum(dhw, lang)} {t("unit.dhw")}</span>
-        <span className="desc">{t(`alert.${lv.key}.desc`)}</span>
+        {/* Every level's description stacked in one cell, only the current one shown: the line keeps
+            the height of the longest, so nothing below it moves while the timeline plays. */}
+        <span className="desc">
+          {LEVELS.map((l) => (
+            <span key={l.key} className={l.key === lv.key ? "on" : undefined} aria-hidden={l.key !== lv.key}>
+              {t(`alert.${l.key}.desc`)}
+            </span>
+          ))}
+        </span>
       </span>
     </div>
   );

@@ -51,7 +51,7 @@ export function PhotoStrip({ photos }: { photos: Photo[] }) {
   return (
     <figure className="photo-strip">
       {photos.length > 1 ? (
-        <CurveCarousel photos={photos} index={i} onIndex={setI} onOpen={setOpen} label={t("photos.title")} />
+        <CurveCarousel photos={photos} index={i} onIndex={setI} onOpen={setOpen} label={t("photos.title")} prevLabel={t("photos.prev")} nextLabel={t("photos.next")} />
       ) : (
         <button className="ps-single" onClick={() => setOpen(0)}>
           <img src={p.src.m} alt={L(p.name)} loading="lazy" decoding="async" />

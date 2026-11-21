@@ -71,12 +71,35 @@ export default function DomeGallery({ photos, onClose }: { photos: Photo[]; onCl
 
   // Dragging is tracked on the window (not captured on the stage, so taps still reach the tiles).
   const justDragged = useRef(0);
+  const tileEls = useRef<(HTMLButtonElement | null)[]>([]);
+  // Which tile is under the pointer. The browser's own hit testing loses these tiles once the dome
+  // turns (the viewpoint sits inside the sphere), so a tap landed on the stage and nothing opened.
+  // Instead: among the tiles facing us, the one whose on-screen box holds the point, nearest its center.
+  const tileAt = (x: number, y: number) => {
+    const r = rot.current;
+    let best = -1, bestD = Infinity;
+    tiles.forEach(({ col, row }, k) => {
+      const yaw = (((col * 360) / COLS + r.y) * Math.PI) / 180, pitch = (((row - (ROWS - 1) / 2) * 17 + r.x) * Math.PI) / 180;
+      if (Math.cos(yaw) * Math.cos(pitch) < 0.3) return; // behind or edge-on
+      const el = tileEls.current[k];
+      if (!el) return;
+      const b = el.getBoundingClientRect();
+      if (b.width > innerWidth * 0.7 || x < b.left || x > b.right || y < b.top || y > b.bottom) return;
+      const d = Math.hypot(x - (b.left + b.width / 2), y - (b.top + b.height / 2));
+      if (d < bestD) (bestD = d), (best = k);
+    });
+    return best;
+  };
   const onDown = (e: React.PointerEvent) => {
     if (e.button !== 0) return;
     drag.current = { x: e.clientX, y: e.clientY, moved: false };
     const move = (ev: PointerEvent) => onMove(ev);
-    const up = () => {
+    const up = (ev: PointerEvent) => {
       if (drag.current?.moved) justDragged.current = performance.now();
+      else if (ev.type === "pointerup") {
+        const k = tileAt(ev.clientX, ev.clientY);
+        if (k >= 0) setOpen(tiles[k].i);
+      }
       drag.current = null;
       removeEventListener("pointermove", move);
       removeEventListener("pointerup", up);
@@ -120,15 +143,18 @@ export default function DomeGallery({ photos, onClose }: { photos: Photo[]; onCl
             {tiles.map(({ p, i, col, row }, k) => (
               <button
                 key={k}
+                ref={(el) => void (tileEls.current[k] = el)}
                 className="dome-tile"
                 style={{ transform: `rotateY(${(col * 360) / COLS}deg) rotateX(${(row - (ROWS - 1) / 2) * 17}deg) translateZ(calc(var(--dome-r) * -1))` }}
-                onClick={() => {
-                  if (performance.now() - justDragged.current < 250) return; // that was a drag
-                  setOpen(i);
+                // Pointer taps are handled by the stage (tileAt); this is for the keyboard (Enter/Space).
+                onClick={(e) => {
+                  if (e.detail === 0) setOpen(i);
                 }}
                 aria-label={`${i + 1}`}
               >
-                <img src={p.src.s} alt="" loading="lazy" decoding="async" draggable={false} />
+                {/* Not lazy: inside a 3D transform the browser never sees the tiles as on screen, so lazy
+                    images never loaded and the dome stayed empty. The gallery only opens on request. */}
+                <img src={p.src.s} alt="" decoding="async" draggable={false} />
               </button>
             ))}
           </div>
