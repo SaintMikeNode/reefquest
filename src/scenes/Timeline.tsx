@@ -166,7 +166,12 @@ export function Timeline({ index, island }: { index: HeatIndex; island: string }
   };
 
   const first = index.years[0].year, lastY = index.years[index.years.length - 1].year;
-  const ticks = [first, ...index.years.map((y) => y.year).filter((y) => y % 10 === 0 && y - first > 3 && lastY - y > 3), lastY];
+  // Axis labels: the first and last years and every decade, plus the year on screen in white;
+  // labels that would run into the year on screen step aside for it. On phones a decade within six
+  // years of the first label (1990) is hidden: it ran into 1985.
+  const ticks = [first, ...index.years.map((y) => y.year).filter((y) => y % 10 === 0 && y - first > 3 && lastY - y > 3), lastY]
+    .filter((y) => y === year || Math.abs(y - year) > 4);
+  if (!ticks.includes(year)) ticks.push(year);
 
   return (
     <>
@@ -206,6 +211,7 @@ export function Timeline({ index, island }: { index: HeatIndex; island: string }
         />
       </div>
       <div className="timebar-key">{t("scene.timebarKey")}</div>
+      <div className="timebar-key-short">{t("scene.timebarKeyShort")}</div>
       <div className="yearstrip" role="group" aria-label={t("heat.year")}>
         {index.years.map((y, i) => (
           <button
@@ -224,7 +230,7 @@ export function Timeline({ index, island }: { index: HeatIndex; island: string }
       </div>
       <div className="year-axis">
         {ticks.map((y, i) => (
-          <span key={`${y}-${i}`} style={yearTick(((y - first + 0.5) / index.years.length) * 100)}>
+          <span key={`${y}-${i}`} className={y === year ? "on" : y !== first && y - first <= 6 ? "near-start" : undefined} style={yearTick(((y - first + 0.5) / index.years.length) * 100)}>
             {y}
           </span>
         ))}

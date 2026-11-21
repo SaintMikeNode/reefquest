@@ -5,7 +5,7 @@ import { SITES } from "../content/sites";
 import { fmtNum, rich, useL, useLang, useT } from "../i18n";
 import { LEVELS, levelFor, rampCSS } from "../lib/alert";
 import { loadYearGrid, type HeatIndex } from "../lib/data";
-import { REDUCED_MOTION } from "../lib/device";
+import { REDUCED_MOTION, TOUCH } from "../lib/device";
 import { href } from "../lib/router";
 import { AlertChip } from "../ui/AlertChip";
 import { HeatKey } from "../ui/HeatKey";
@@ -324,15 +324,26 @@ export function Hud({ td, index }: { td: TerrainData; index: HeatIndex }) {
           <div>
             <div className="kicker">{td.meta.name}</div>
             <h2 id="guide-title">{t("scene.guideTitle")}</h2>
+            <p className="hint-intro">{t("scene.guideIntro")}</p>
           </div>
+          {/* Gestures follow the pointer (touch or mouse); where things are follows the layout
+              (phones have the bottom bar, computers the left panel and the timeline). */}
           <ol>
-            {(["scene.guide1", "scene.guide2", phone ? "scene.guide3Phone" : "scene.guide3", "scene.guide4"] as const).map((k) => (
+            {([
+              TOUCH ? "scene.guide1Touch" : "scene.guide1",
+              TOUCH ? "scene.guide2Touch" : "scene.guide2",
+              phone ? "scene.guide3Phone" : "scene.guide3",
+              phone ? "scene.guide4Phone" : "scene.guide4",
+            ] as const).map((k) => (
               <li key={k}>
                 <span>{rich(t(k))}</span>
               </li>
             ))}
           </ol>
           <div className="actions">
+            <span className="hint-again">
+              {t("scene.guideAgain")} <IconHelp aria-label={t("scene.help")} />
+            </span>
             <button className="hbtn primary" onClick={closeHint} autoFocus>
               {t("scene.guideStart")} <IconArrow />
             </button>

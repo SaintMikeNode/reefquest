@@ -420,12 +420,18 @@ div.pin { pointer-events: none; }
 .timebar .curve input[type="range"] { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; margin: 0; cursor: ew-resize; }
 .play-btn { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; background: var(--brand); color: var(--white); border: 0; flex: none; }
 .play-btn:hover { background: #2a7bff; }
-.yearstrip { grid-column: 2; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; height: 14px; gap: 1px; }
-.yearstrip button { border: 0; padding: 0; margin: 0; position: relative; }
-.yearstrip button.on { outline: 2px solid var(--white); outline-offset: 0; z-index: 1; }
-.yearstrip button:hover { outline: 1px solid rgba(255, 255, 255, 0.7); outline-offset: 0; }
-.year-axis { grid-column: 2; position: relative; height: 14px; font-family: var(--mono); font-size: 10.5px; color: var(--hud-faint); margin-top: -2px; }
-.year-axis span { position: absolute; top: 0; transform: translateX(-50%); }
+/* The 42 years are the point of the bar (Tulio: make them prominent): tall stripes, the year on
+   screen raised and outlined, readable year labels with that year in white. */
+.yearstrip { grid-column: 2; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; height: 24px; gap: 2px; }
+.yearstrip button { border: 0; padding: 0; margin: 0; position: relative; border-radius: 2px; cursor: pointer; transition: transform 0.18s var(--ease-out); }
+.yearstrip button:first-child { border-radius: 6px 2px 2px 6px; }
+.yearstrip button:last-child { border-radius: 2px 6px 6px 2px; }
+.yearstrip button.on { outline: 2px solid var(--white); outline-offset: 1px; z-index: 1; transform: scaleY(1.2); }
+.yearstrip button:hover { outline: 1px solid rgba(255, 255, 255, 0.75); outline-offset: 1px; z-index: 1; }
+.year-axis { grid-column: 2; position: relative; height: 17px; font-family: var(--mono); font-size: 12px; color: #a9b9c7; margin-top: 1px; font-variant-numeric: tabular-nums; }
+.year-axis span { position: absolute; top: 0; transform: translateX(-50%); white-space: nowrap; }
+.year-axis span.on { color: var(--white); font-weight: 600; }
+.timebar-key-short { display: none; }
 .timebar-key { grid-column: 1; font-size: 11.5px; color: var(--hud-faint); line-height: 1.4; }
 
 /* First-visit guide: how to read and move in this view. */
@@ -437,7 +443,10 @@ div.pin { pointer-events: none; }
 .hint li { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 10px; font-size: 14.5px; line-height: 1.5; color: #d5dee6; counter-increment: s; }
 .hint li::before { content: counter(s); font-family: var(--serif); font-style: italic; font-size: 24px; color: var(--hud-hi); line-height: 1.2; }
 .hint li b { color: var(--white); font-weight: 600; }
-.hint .actions { display: flex; justify-content: flex-end; gap: 8px; }
+.hint .hint-intro { margin: 6px 0 0; font-size: 14.5px; line-height: 1.45; color: #aebdca; }
+.hint .actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.hint .hint-again { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: #8fa1b1; }
+.hint .hint-again svg { width: 18px; height: 18px; flex: none; color: #d5dee6; }
 
 .scalebar { display: flex; align-items: flex-end; gap: 6px; font-size: 11.5px; color: var(--hud-muted); font-variant-numeric: tabular-nums; }
 .scalebar i { display: block; height: 5px; border: 1px solid var(--hud-text); border-top: 0; }
@@ -508,7 +517,11 @@ div.pin { pointer-events: none; }
   .timebar .curve { height: 44px; }
   .play-btn { width: 32px; height: 32px; }
   .yearstrip, .year-axis { grid-column: 1; }
+  .yearstrip { height: 22px; }
+  .year-axis span.near-start { display: none; }
   .timebar-key { display: none; }
+  /* Phones have no room for the side key: one short line above the stripes instead. */
+  .timebar-key-short { display: block; grid-column: 1; font-size: 11.5px; color: var(--hud-faint); line-height: 1.3; margin-top: 2px; }
   .attribution { display: none; }
   .heading-tape { display: none; }
   .instrument { display: flex; align-items: center; gap: 6px; padding: 6px 9px; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
