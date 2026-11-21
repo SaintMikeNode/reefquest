@@ -358,26 +358,26 @@ export function Hud({ td, index }: { td: TerrainData; index: HeatIndex }) {
       </TimeBar>
 
       {/* Phones only (styles.css hides it on computers): the island's controls as an app's tab bar. */}
-      <nav ref={navRef} className="hud panel scene-nav" aria-label={t("nav.label")}>
+      <nav ref={navRef} className="hud panel scene-nav" aria-label={t("bar.island")}>
         <a href={href.islands}>
           <span className="ind">
             <IconIslands />
           </span>
-          <span className="lbl">{t("nav.islands")}</span>
+          <span className="lbl">{t("bar.islands")}</span>
         </a>
         <button aria-pressed={sheet === "layers"} onClick={() => openSheet("layers")}>
           <span className="ind">
             <IconLayers />
           </span>
-          <span className="lbl">{t("nav.layers")}</span>
+          <span className="lbl">{t("bar.layers")}</span>
         </button>
         <button aria-pressed={sheet === "heat"} onClick={() => openSheet("heat")}>
           <span className="ind">
             <IconHeat />
           </span>
-          <span className="lbl">{t("nav.heat")}</span>
+          <span className="lbl">{t("bar.heat")}</span>
         </button>
-        <button onClick={() => setLang(lang === "es" ? "en" : "es")} aria-label={t("nav.lang")} lang={lang === "es" ? "en" : "es"}>
+        <button onClick={() => setLang(lang === "es" ? "en" : "es")} aria-label={t("bar.lang")} lang={lang === "es" ? "en" : "es"}>
           <span className="ind">
             <IconGlobe />
           </span>

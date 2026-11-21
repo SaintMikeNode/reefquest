@@ -180,9 +180,18 @@ export function BoatHud({ index, zoneName, islandName }: { index: HeatIndex; zon
 
   useEffect(() => {
     const s = SITES.find((x) => x.id === near);
-    // A story opens on arrival, except where there is something to find first (whale sharks,
-    // turtles, reef sharks, a wreck): there the arrival bar offers it, and the hint has the screen.
-    if (s?.kind === "story" && !s.scene && !s.wreck && tele) setStory(s.id);
+    if (!s || !tele) return;
+    // Phones: a story never opens by itself, it would cover the boat and the tools (Tulio: people
+    // would think there is nothing to do). Arriving shows the Equipo sheet, with "You've reached"
+    // and the button that opens the story.
+    if (phone) {
+      setSheet((k) => k ?? "tools");
+      return;
+    }
+    // Computers: a story opens on arrival (the card sits at the side), except where there is
+    // something to find first (whale sharks, turtles, reef sharks, a wreck): there the arrival tag
+    // offers it, and the hint has the screen.
+    if (s.kind === "story" && !s.scene && !s.wreck) setStory(s.id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [near]);
 
@@ -640,7 +649,7 @@ export function BoatHud({ index, zoneName, islandName }: { index: HeatIndex; zon
 
       {/* Phones only (styles.css hides it on computers): the boat's controls as an app's tab bar.
           Under the water the first is the way up; the camera is in Equipo. */}
-      <nav ref={navRef} className={camOn && under ? "hud panel scene-nav cam-hidden" : "hud panel scene-nav"} aria-label={t("nav.boat")}>
+      <nav ref={navRef} className={camOn && under ? "hud panel scene-nav cam-hidden" : "hud panel scene-nav"} aria-label={t("bar.boat")}>
         {under ? (
           <button onClick={toggleDive}>
             <span className="ind">
@@ -660,7 +669,7 @@ export function BoatHud({ index, zoneName, islandName }: { index: HeatIndex; zon
           <span className="ind">
             <IconTools />
           </span>
-          <span className="lbl">{t("nav.tools")}</span>
+          <span className="lbl">{t("bar.tools")}</span>
         </button>
         <button aria-pressed={gallery} disabled={!zonePhotos?.length} onClick={() => (setStory(null), setGallery(!gallery))}>
           <span className="ind">

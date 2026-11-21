@@ -262,7 +262,8 @@ place name gives NOAA's alert wording. All of it follows the selected date and i
   with a colored label run into the text "vibe coded") replaces the arrival tag in range; on boarding
   a message names what the zone has; the logbook lists it ("What to look for here") with distance and
   bearing, and a press sails there (stopping short of the whale sharks' contact zone). A place with
-  a mission does not open its story card on arrival (the card would cover the tag). A new mission
+  a mission does not open its story card on arrival (the card would cover the tag); on phones no story
+  opens by itself (it hid the boat and the tools): arriving opens the Equipo sheet with "Read the story". A new mission
   needs its texts (`mission.<type>.<state>` in both languages), its icon (`PlaceMark`), its mood and
   its photo subjects.
   **Camera** (`photos.ts`, after CopánQuest's `game/camera.ts`): underwater only, button "Cámara" or
@@ -431,6 +432,10 @@ nothing): import `transition.hackpack.min.css` before any pack. With reduced mot
 animation effects off) the scene just switches.
 
 ## Gotchas
+
+- A translation key written twice keeps only the last value, with no type error: the phone bar's
+  "Islas" and "Calor" once replaced the footer's "Islas en 3D" and "Estrés térmico". `vite.config.ts`
+  now fails the build on a duplicate key. The bottom bars' labels are `bar.*`.
 
 - A package reached only through a lazy chunk must be listed in `optimizeDeps.include` (vite.config.ts);
   otherwise the dev server re-bundles mid-session and React is loaded twice ("Invalid hook call").

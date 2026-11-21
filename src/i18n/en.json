@@ -318,12 +318,12 @@
   "shot.save": "Save photo",
   "shot.hint": "Under the water, open the camera at the marked places and frame what there is to find. Each photo completes a mission.",
   "log.habitats": "Habitats",
-  "nav.label": "Island controls",
-  "nav.islands": "Islands",
-  "nav.layers": "Layers",
-  "nav.heat": "Heat",
-  "nav.lang": "Idioma / Language",
+  "bar.island": "Island controls",
+  "bar.islands": "Islands",
+  "bar.layers": "Layers",
+  "bar.heat": "Heat",
+  "bar.lang": "Idioma / Language",
   "scene.guide3Phone": "<b>Watch the heat.</b> Tap “Heat” in the bar at the bottom to open the timeline; tap a year or press ▶ to see the heat that bleaches corals build up.",
-  "nav.boat": "Boat controls",
-  "nav.tools": "Tools"
+  "bar.boat": "Boat controls",
+  "bar.tools": "Tools"
 }
