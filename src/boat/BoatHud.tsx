@@ -103,6 +103,17 @@ export function BoatHud({ index, zoneName, islandName }: { index: HeatIndex; zon
   const [logOpen, setLogOpen] = useState(!SMALL);
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef(0);
+  // "Too shallow": shown for a few seconds after each time the boat runs aground (and as long as it
+  // keeps pushing into the shallows), however briefly it touched.
+  const groundedAt = useBoat((s) => s.groundedAt);
+  const groundEdge = useBoat((s) => s.groundEdge);
+  const [aground, setAground] = useState(false);
+  useEffect(() => {
+    if (!groundedAt) return;
+    setAground(true);
+    const timer = window.setTimeout(() => setAground(false), 2800);
+    return () => clearTimeout(timer);
+  }, [groundedAt]);
   const prevSamples = useRef(samples.length);
 
   const dhw = tele ? dhwAt(index, tele.lon, tele.lat, day) : null;
@@ -505,7 +516,7 @@ export function BoatHud({ index, zoneName, islandName }: { index: HeatIndex; zon
             </div>
           )
         )}
-        {tele?.aground ? <div className="toast warn">{t("boat.aground")}</div> : toast && <div className="toast">{toast}</div>}
+        {aground ? <div className="toast warn">{t(groundEdge ? "boat.edge" : "boat.aground")}</div> : toast && <div className="toast">{toast}</div>}
       </div>
 
       {under && camOn && <Viewfinder onShoot={shoot} onClose={() => useRoll.getState().setCamera(false)} />}

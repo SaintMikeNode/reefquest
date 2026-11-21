@@ -1860,3 +1860,19 @@ html.lite .org-more, html.lite .org-toggle svg { transition: none; }
 @media (max-width: 760px) and (prefers-reduced-motion: reduce) {
   .hud.boat-bottom { transition: none; }
 }
+
+/* ---------- Messages: one family ----------
+   Tulio: the shallow-water warning's text sat unevenly (its dot centered on two lines, the box wider
+   than its words). Every message box (messages and warnings, the tap hint, the camera's subject, the
+   arrival and mission tags) is rounded by half its one-line height, so it is a pill on one line and a
+   rounded box on two; its text is balanced into even lines, centered when the box is centered on the
+   screen; a leading dot sits on the first line, inline with the words. */
+.toast { display: block; width: fit-content; max-width: min(560px, 100%); padding: 8px 16px; border-radius: calc(var(--pill-m) / 2); text-align: center; text-wrap: balance; line-height: 1.35; }
+.toast::before { display: inline-block; vertical-align: 0.12em; margin-right: 9px; }
+.toast.warn { border-color: rgba(255, 191, 94, 0.4); }
+.tap-label { padding: 8px 16px; border-radius: calc(var(--pill-m) / 2); line-height: 1.35; text-wrap: balance; }
+.vf-label { padding: 0 16px 0 12px; border-radius: calc(var(--pill-m) / 2); max-width: calc(100% - 32px); text-wrap: balance; }
+.arrive { border-radius: calc(var(--pill-l) / 2); }
+/* The mission tag: concentric with its 38 px icon circle and 8 px padding, on computers and phones. */
+.mission, .hud .mission { border-radius: 27px; }
+.mission-line { text-wrap: pretty; }

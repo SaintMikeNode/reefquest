@@ -98,7 +98,12 @@ circles M, play and lightbox L). **Box corners come in four sizes too** (`--r-xl
 boxes that differed in rounding "look different"): XL the home page's big windows, L 22 px every panel,
 card, sheet, menu and dialog (HUD panels, the phone bar, the timeline, cards, figures), M 14 px photos
 and rows inside a box, S 8 px thumbnails, tooltips and focus rings; marks and key caps under ~20 px keep
-2–5 px, and a box holding pills is concentric with them. A new box takes one of these. On phones the top row (way back, tools) sits 16 px from the top
+2–5 px, and a box holding pills is concentric with them. A new box takes one of these. **Messages are one
+family** ("Messages" block at the end of styles.css: toasts and warnings, the tap hint, the camera's
+subject, the arrival and mission tags): rounded by half their one-line height (a pill on one line, a
+rounded box on two), text balanced into even lines and centered when the box is, the leading dot inline
+with the first line. Running into the shallows says "Agua poco profunda" (shown ~3 s per bump,
+`groundedAt` in the boat store); the zone's edge has its own message. On phones the top row (way back, tools) sits 16 px from the top
 edge (Tulio: 10 was too close). **The island and boat views on phones are laid out like an app** (Tulio: easier
 to use): a bottom bar (`.scene-nav` in `Hud.tsx`) with four tabs, all islands, Capas (the layers
 panel with its "Explore by boat" tab), Calor (the timeline) and the other language; Capas and Calor

@@ -59,6 +59,10 @@ interface BoatState {
   mission: { id: string; type: MissionType; state: "near" | "far" | "watch" | "logged" | "dived" | "above" | "below" } | null;
   /** A message for the HUD to flash (an i18n key); `n` makes repeats distinct. */
   notice: { key: string; n: number } | null;
+  /** When the boat last ran into the shallows or the zone's edge (ms), for the HUD's warning. */
+  groundedAt: number;
+  /** Whether that was the edge of the zone rather than shallow water. */
+  groundEdge: boolean;
   notify: (key: string) => void;
   logSighting: (id: string) => void;
   setPresent: (p: number[]) => void;
@@ -104,6 +108,8 @@ export const useBoat = create<BoatState>((set, get) => ({
   sightings: [],
   mission: null,
   notice: null,
+  groundedAt: 0,
+  groundEdge: false,
   notify: (key) => set((s) => ({ notice: { key, n: (s.notice?.n ?? 0) + 1 } })),
   logSighting: (id) => {
     if (get().sightings.includes(id)) return;

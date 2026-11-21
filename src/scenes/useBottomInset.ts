@@ -1,5 +1,12 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
 
+/** Distance from an element's top to the bottom of `root`, ignoring its own translate: a sheet sliding
+ *  in or out (transform) would otherwise be measured part-way and things stacked on it end up touching. */
+function insetOf(el: HTMLElement, root: HTMLElement) {
+  const ty = new DOMMatrixReadOnly(getComputedStyle(el).transform === "none" ? undefined : getComputedStyle(el).transform).m42;
+  return Math.ceil(root.getBoundingClientRect().bottom - (el.getBoundingClientRect().top - ty));
+}
+
 /**
  * Publishes how much of the scene a bottom-anchored panel takes (from its top edge to the bottom of
  * the scene, safe-area spacing included) as a CSS variable on the scene root, so other panels can
@@ -10,7 +17,7 @@ export function useBottomInset(ref: RefObject<HTMLElement | null>, name: string)
   useEffect(() => {
     const el = ref.current, root = el?.parentElement;
     if (!el || !root) return;
-    const update = () => root.style.setProperty(name, `${Math.ceil(root.getBoundingClientRect().bottom - el.getBoundingClientRect().top)}px`);
+    const update = () => root.style.setProperty(name, `${insetOf(el, root)}px`);
     const ro = new ResizeObserver(update);
     ro.observe(el);
     ro.observe(root);
@@ -66,7 +73,7 @@ export function useInsetRef(name: string) {
       stop.current = null;
       const root = el?.parentElement;
       if (!el || !root) return;
-      const update = () => root.style.setProperty(name, `${Math.ceil(root.getBoundingClientRect().bottom - el.getBoundingClientRect().top)}px`);
+      const update = () => root.style.setProperty(name, `${insetOf(el, root)}px`);
       const ro = new ResizeObserver(update);
       ro.observe(el);
       ro.observe(root);

@@ -215,7 +215,7 @@ function Boat({ zone, start, coverage }: { zone: Zone; start: { x: number; z: nu
   const vessel = useMemo(() => makeVessel(), []);
   const controls = useRef<Controls>(null);
   const orbiting = useRef(false); // the person is dragging the camera: no auto chase
-  const st = useRef({ x: start.x, z: start.z, a: Math.PI, v: 0, aground: false, lastTele: 0, sx: start.x, sz: start.z, lastTex: 0, under: false });
+  const st = useRef({ x: start.x, z: start.z, a: Math.PI, v: 0, aground: false, groundNote: -1, lastTele: 0, sx: start.x, sz: start.z, lastTex: 0, under: false });
   const diving = useBoat((b) => b.under);
   const cast = useRef({ phase: "idle" as "idle" | "out" | "down" | "hold" | "up" | "in", L: 0, target: 0, t: 0, swing: 0, req: useBoat.getState().castReq });
   const wake = useMemo(() => new Wake(), []);
@@ -375,6 +375,12 @@ function Boat({ zone, start, coverage }: { zone: Zone; start: { x: number; z: nu
     const inside = Math.abs(nx) < zone.sizeX / 2 - margin && Math.abs(nz) < zone.sizeZ / 2 - margin;
     if (ahead > -DRAFT || !inside) {
       s.aground = Math.abs(s.v) > 0.05 || s.aground;
+      // Tell the HUD as an event, not only through telemetry: a fast boat bounces off in a frame or
+      // two, between the 6 telemetry updates a second phones get, so the warning used to be missed.
+      if ((Math.abs(s.v) > 0.05 || throttle !== 0) && t - s.groundNote > 0.4) {
+        s.groundNote = t;
+        useBoat.setState({ groundedAt: Date.now(), groundEdge: !inside });
+      }
       s.v = Math.abs(s.v) > 2 ? -s.v * 0.3 : 0; // bounce back a little
       if (target) setTarget(null);
     } else {

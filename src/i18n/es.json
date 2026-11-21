@@ -118,7 +118,7 @@
   "boat.samples": "Bitácora",
   "boat.mission": "Misión: haz un lance de CTD sobre cada hábitat de esta zona.",
   "boat.missionDone": "Misión cumplida: registraste todos los hábitats de la zona.",
-  "boat.aground": "¡Bajo fondo! Retrocede o toca agua más profunda.",
+  "boat.aground": "¡Agua poco profunda! Retrocede o toca agua más honda.",
   "boat.near": "Llegaste a",
   "boat.readStory": "Leer la historia",
   "boat.empty": "Aún no hay muestras. Navega sobre el arrecife y toma una.",
@@ -325,5 +325,6 @@
   "bar.lang": "Idioma / Language",
   "scene.guide3Phone": "<b>Mira el calor.</b> Toca «Calor» en la barra de abajo para abrir la línea de tiempo; toca un año o pulsa ▶ para ver cómo se acumuló el calor que blanquea los corales.",
   "bar.boat": "Controles del barco",
-  "bar.tools": "Equipo"
+  "bar.tools": "Equipo",
+  "boat.edge": "Fin de la zona de exploración. Da la vuelta."
 }

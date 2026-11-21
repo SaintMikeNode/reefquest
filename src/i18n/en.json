@@ -325,5 +325,6 @@
   "bar.lang": "Idioma / Language",
   "scene.guide3Phone": "<b>Watch the heat.</b> Tap “Heat” in the bar at the bottom to open the timeline; tap a year or press ▶ to see the heat that bleaches corals build up.",
   "bar.boat": "Boat controls",
-  "bar.tools": "Tools"
+  "bar.tools": "Tools",
+  "boat.edge": "Edge of the survey area. Turn back."
 }
