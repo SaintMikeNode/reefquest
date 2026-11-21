@@ -12,12 +12,12 @@ import { BENTHIC, GEOMORPHIC } from "../scenes/materials";
 import { useScene } from "../scenes/sceneStore";
 import { fmtLat, fmtLon, SiteCard } from "../scenes/SiteCard";
 import { AlertChip } from "../ui/AlertChip";
-import { IconBack, IconBook, IconCamera, IconCast, IconCheck, IconClose, IconDive, IconDownload, IconShark, IconSurface, IconTurtle, IconWhaleShark, IconWreck } from "../ui/Icons";
+import { IconBack, IconBook, IconCamera, IconCast, IconCheck, IconClose, IconDive, IconDownload, IconShark, IconPhotos, IconSonar, IconSurface, IconTools, IconTurtle, IconWhaleShark, IconWreck } from "../ui/Icons";
 import { PhotoStrip, usePhotos } from "../ui/PhotoStrip";
 import { panelMotion } from "../ui/motionPresets";
 import { LangToggle } from "../ui/LangToggle";
 import { MouseGuide } from "../scenes/MouseGuide";
-import { useBottomInset, useWidthVar } from "../scenes/useBottomInset";
+import { useBottomInset, useInsetRef, useMedia, useWidthVar } from "../scenes/useBottomInset";
 import { transition } from "../ui/SceneTransition";
 import { useBoat, type MissionType } from "./boatStore";
 import { requestShot, useRoll } from "./photos";
@@ -91,6 +91,15 @@ export function BoatHud({ index, zoneName, islandName }: { index: HeatIndex; zon
   const [story, setStory] = useState<string | null>(null);
   // On phones the instruments and the logbook start folded so the scene stays visible.
   const [instOpen, setInstOpen] = useState(!SMALL);
+  // Phones: an app-style bar at the bottom (the way back, tools, photos, sonda). The tools (the
+  // dock: arrival, logbook or field guide, actions) and the sonda open as sheets right above it, one
+  // at a time; the tools start open. Computers ignore `sheet`.
+  const phone = useMedia("(max-width: 760px)");
+  const [sheet, setSheet] = useState<"tools" | "sonda" | null>("tools");
+  const sonarOpen = phone ? sheet === "sonda" : instOpen;
+  const navRef = useRef<HTMLElement>(null);
+  useBottomInset(navRef, "--nb");
+  const sbRef = useInsetRef("--sb"); // the sonda sheet's height, for the messages above it
   const [logOpen, setLogOpen] = useState(!SMALL);
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef(0);
@@ -216,13 +225,25 @@ export function BoatHud({ index, zoneName, islandName }: { index: HeatIndex; zon
   const zonePhotos = zoneId ? photos?.places[`zone:${zoneId}`] : undefined;
   const [gallery, setGallery] = useState(false);
   const stackRef = useRef<HTMLDivElement>(null);
-  useStackRoom(stackRef, `${lang}|${zoneName}|${instOpen}|${gallery}`);
+  useStackRoom(stackRef, `${lang}|${zoneName}|${sonarOpen}|${gallery}`);
   const nearHasPhotos = !!(nearSite && photos?.places[nearSite.id]?.length);
   const openNear = nearSite && (nearSite.kind === "story" || (nearHasPhotos && !under)) ? () => (setGallery(false), setStory(nearSite.id)) : null;
   const openLabel = nearSite?.kind === "story" ? t("boat.readStory") : t("boat.seePhotos");
   const knots = tele ? Math.abs(tele.speed) * 1.94384 : 0;
   const deg = tele ? (tele.heading * 180) / Math.PI : 0;
   const toggle = (k: "sonar" | "grid") => useBoat.setState((s) => ({ [k]: !s[k] }) as never);
+  const openSheet = (k: "tools" | "sonda") => {
+    setSheet(sheet === k ? null : k);
+    if (sheet !== k) (setStory(null), setGallery(false));
+  };
+  function toggleSonar() {
+    if (phone) openSheet("sonda");
+    else setInstOpen(!instOpen);
+  }
+  // A story card or the gallery opening on a phone closes the sheet under it (both stand on the bar).
+  useEffect(() => {
+    if (story || gallery) setSheet(null);
+  }, [story, gallery]);
 
   return (
     <>
@@ -309,7 +330,7 @@ export function BoatHud({ index, zoneName, islandName }: { index: HeatIndex; zon
 
       <div ref={toolsRef} className="hud tools">
         {/* Phones: one instrument pill (heading, speed, depth); tapping it opens the sounder. */}
-        <button className="panel instrument" aria-expanded={instOpen} onClick={() => setInstOpen(!instOpen)} title={t("boat.sounder")}>
+        <button className="panel instrument" aria-expanded={sonarOpen} onClick={() => toggleSonar()} title={t("boat.sounder")}>
           <span>
             <b>{Math.round(deg).toString().padStart(3, "0")}°</b>
           </span>
@@ -325,7 +346,7 @@ export function BoatHud({ index, zoneName, islandName }: { index: HeatIndex; zon
               m
             </span>
           )}
-          <Chevron open={instOpen} />
+          <Chevron open={sonarOpen} />
         </button>
         <div className="hide-sm">
           <LangToggle />
@@ -348,20 +369,20 @@ export function BoatHud({ index, zoneName, islandName }: { index: HeatIndex; zon
           <PhotoStrip photos={zonePhotos} />
         </motion.aside>
       ) : (
-        <motion.aside key="sounder" className={instOpen ? "hud hud-right panel sounder open" : "hud hud-right panel sounder"} aria-live="off" {...panelMotion}>
+        <motion.aside key="sounder" ref={sbRef} className={sonarOpen ? "hud hud-right panel sounder open" : "hud hud-right panel sounder"} aria-live="off" {...panelMotion}>
           <div className="hud-section">
-            <button className="fold-head" aria-expanded={instOpen} onClick={() => setInstOpen(!instOpen)}>
+            <button className="fold-head" aria-expanded={sonarOpen} onClick={() => toggleSonar()}>
               <h4>{t("boat.sounder")}</h4>
-              <Chevron open={instOpen} />
+              <Chevron open={sonarOpen} />
             </button>
-            {tele && !instOpen && (
+            {tele && !sonarOpen && (
               <div className="depth" title={estimated ? t("scene.depthModel") : undefined}>
                 {estimated && tele.depth > 0 ? "≈ " : ""}
                 {fmtNum(tele.depth, lang, tele.depth < 30 ? 1 : 0)}
                 <small>m</small>
               </div>
             )}
-            {tele && instOpen && (
+            {tele && sonarOpen && (
               <>
                 <div className="depth" title={estimated ? t("scene.depthModel") : undefined}>
                   {estimated && tele.depth > 0 ? "≈ " : ""}
@@ -396,7 +417,7 @@ export function BoatHud({ index, zoneName, islandName }: { index: HeatIndex; zon
               </>
             )}
           </div>
-          {instOpen && (
+          {sonarOpen && (
           <div className="hud-section">
             <h4>{t("boat.survey")}</h4>
             {/* The figure stays on one line; a long label ("Plataforma cartografiada") wraps instead. */}
@@ -444,7 +465,7 @@ export function BoatHud({ index, zoneName, islandName }: { index: HeatIndex; zon
       )}
       </AnimatePresence>
 
-      {TOUCH && !under && !storySite && !mission && <TapHint />}
+      {TOUCH && !under && !storySite && !mission && !gallery && !(phone && sheet === "sonda") && <TapHint />}
       {/* Top center, one stack: the mission in range (or the plain arrival tag), then messages. */}
       <div className="hud top-stack" ref={stackRef}>
         {missionSite && mission && !storySite ? (
@@ -480,7 +501,7 @@ export function BoatHud({ index, zoneName, islandName }: { index: HeatIndex; zon
 
       {under && camOn && <Viewfinder onShoot={shoot} onClose={() => useRoll.getState().setCamera(false)} />}
 
-      <div className={camOn && under ? "hud boat-bottom cam-hidden" : "hud boat-bottom"} ref={bottomRef}>
+      <div className={`hud boat-bottom${camOn && under ? " cam-hidden" : ""}${sheet !== "tools" ? " closed" : ""}`} ref={bottomRef}>
         {/* Phones: everything at the bottom lives in this one dock (arrival, guide or logbook, actions). */}
         {nearSite && !storySite && !mission && (
           <div className="arrive-row dock-only">
@@ -616,6 +637,44 @@ export function BoatHud({ index, zoneName, islandName }: { index: HeatIndex; zon
         </button>
         </div>
       </div>
+
+      {/* Phones only (styles.css hides it on computers): the boat's controls as an app's tab bar.
+          Under the water the first is the way up; the camera is in Equipo. */}
+      <nav ref={navRef} className={camOn && under ? "hud panel scene-nav cam-hidden" : "hud panel scene-nav"} aria-label={t("nav.boat")}>
+        {under ? (
+          <button onClick={toggleDive}>
+            <span className="ind">
+              <IconSurface />
+            </span>
+            <span className="lbl">{t("boat.surfaceTo")}</span>
+          </button>
+        ) : (
+          <button onClick={() => setBoat(null)}>
+            <span className="ind">
+              <IconBack />
+            </span>
+            <span className="lbl">{islandName}</span>
+          </button>
+        )}
+        <button aria-pressed={sheet === "tools"} onClick={() => openSheet("tools")}>
+          <span className="ind">
+            <IconTools />
+          </span>
+          <span className="lbl">{t("nav.tools")}</span>
+        </button>
+        <button aria-pressed={gallery} disabled={!zonePhotos?.length} onClick={() => (setStory(null), setGallery(!gallery))}>
+          <span className="ind">
+            <IconPhotos />
+          </span>
+          <span className="lbl">{t("photos.button")}</span>
+        </button>
+        <button aria-pressed={sheet === "sonda"} onClick={() => openSheet("sonda")}>
+          <span className="ind">
+            <IconSonar />
+          </span>
+          <span className="lbl">{t("boat.sounder")}</span>
+        </button>
+      </nav>
     </>
   );
 }

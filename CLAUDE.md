@@ -99,7 +99,7 @@ boxes that differed in rounding "look different"): XL the home page's big window
 card, sheet, menu and dialog (HUD panels, the phone bar, the timeline, cards, figures), M 14 px photos
 and rows inside a box, S 8 px thumbnails, tooltips and focus rings; marks and key caps under ~20 px keep
 2–5 px, and a box holding pills is concentric with them. A new box takes one of these. On phones the top row (way back, tools) sits 16 px from the top
-edge (Tulio: 10 was too close). **The island view on phones is laid out like an app** (Tulio: easier
+edge (Tulio: 10 was too close). **The island and boat views on phones are laid out like an app** (Tulio: easier
 to use): a bottom bar (`.scene-nav` in `Hud.tsx`) with four tabs, all islands, Capas (the layers
 panel with its "Explore by boat" tab), Calor (the timeline) and the other language; Capas and Calor
 open as sheets right above the bar, one at a time (Calor starts open so the intro is seen), and a
@@ -225,8 +225,13 @@ place name gives NOAA's alert wording. All of it follows the selected date and i
   per tier, one draw call per kind; the vessel is hidden while diving),
   `BoatHud.tsx` (title plate with "Back to <island>", heading tape, sounder, survey %, depth key,
   CTD cast button/space bar, logbook mission saved in localStorage `rq-log-<zone>`, field guide of
-  nearby species when underwater; on phones: one instrument pill at the top (heading, speed,
-  depth; tap for the sounder sheet) and one dock at the bottom (arrival, guide/logbook, actions)).
+  nearby species when underwater; on phones: the name and an instrument pill (heading, speed,
+  depth) on top, and the same bottom bar as the island: the way back (to the island, or
+  "Superficie" under the water), Equipo/Tools (the dock: arrival, guide/logbook, actions; the
+  camera and CTD under the water), Fotos (the zone's gallery, under the water too) and Sonda (the
+  sounder); Equipo and Sonda are sheets on the bar, Equipo starts open, the bar hides while the
+  camera is up. The sonda opens on the bar whether its tab or the instrument pill at the top opened
+  it, closing whatever else was there, so nothing ever overlaps).
   `places.ts` (`zonePlaces(zone)`: where each place of `sites.ts` sits in a zone, worked out once
   and shared by buoys, tags, the arrival check, wildlife and wrecks; `subject`: what the mission in
   range is about, which the underwater view starts out facing).
@@ -270,7 +275,8 @@ place name gives NOAA's alert wording. All of it follows the selected date and i
   and Photos (the album: seven frames, the photo or the mission's outline, a one-press save).
   Camera mode hides the side panels, the title and the dock. Under the water the way back on the
   title plate is "Back to the surface" (it surfaces; "Superficie" on phones), and the place's photo
-  gallery (the Photos chip, "See photos") is not offered: the camera is. The dock then holds only
+  gallery (the Photos chip, "See photos") is not offered on computers: the camera is (phones keep
+  Fotos in the bottom bar, Tulio's call). The dock then holds only
   Camera and CTD (Tulio: a second way up was redundant). On phones a cast shows only its depth and
   no label is ever cut (checked in Spanish at 360 px).
   **Place tags**: every place of the zone is a tag over the water (icon by kind, name, distance; a
@@ -440,10 +446,10 @@ animation effects off) the scene just switches.
   constructor (as `ZoneLod` once did) ends up detached. Give such objects their own geometry.
 - Hot reload of shader or reef modules can leave instanced meshes empty (refs survive, new meshes
   don't); reload the page before judging a 3D change.
-- Boat view on phones (the island view has its bottom bar instead): the way back (first row of the title plate) and the tools share the top row
-  as two separate boxes. The row may take only the room the tools leave (`--tools-w`, measured by
-  `useWidthVar`); under 360 px the label is short (`.back-short`). Check Spanish at 360 px, where
-  "Todas las islas" has 9 px to spare, before adding a tool or lengthening a label.
+- 3D views on phones: the top row is the name (left) and the tools or instrument pill (right); the
+  name takes only the room they leave (`--tools-w`, measured by `useWidthVar`). The bottom bar's
+  labels must fit a quarter of a 320 px screen (~70 px at 11.5 px): "Herramientas" didn't, hence
+  "Equipo". Check Spanish at 320 px before adding or lengthening a tab.
 - Earth Engine sign-in expires: `region_relief.py`, `terrain.py` and the Atlas scripts then fail
   with "Please authorize access" and need Tulio to run `earthengine authenticate` (it had expired
   on 2026-11-20). `relief_land.py`, `zone_from_island.py` and the heat scripts don't need it.

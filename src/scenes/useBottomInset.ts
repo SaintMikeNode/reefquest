@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useState, type RefObject } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
 
 /**
  * Publishes how much of the scene a bottom-anchored panel takes (from its top edge to the bottom of
@@ -54,4 +54,28 @@ export function useMedia(query: string) {
     return () => m.removeEventListener("change", update);
   }, [query]);
   return on;
+}
+
+/** useBottomInset for an element that comes and goes (a callback ref): while it is on screen, its
+ *  distance from the bottom of the scene is published as `name` on its parent. */
+export function useInsetRef(name: string) {
+  const stop = useRef<(() => void) | null>(null);
+  return useCallback(
+    (el: HTMLElement | null) => {
+      stop.current?.();
+      stop.current = null;
+      const root = el?.parentElement;
+      if (!el || !root) return;
+      const update = () => root.style.setProperty(name, `${Math.ceil(root.getBoundingClientRect().bottom - el.getBoundingClientRect().top)}px`);
+      const ro = new ResizeObserver(update);
+      ro.observe(el);
+      ro.observe(root);
+      update();
+      stop.current = () => {
+        ro.disconnect();
+        root.style.removeProperty(name);
+      };
+    },
+    [name],
+  );
 }

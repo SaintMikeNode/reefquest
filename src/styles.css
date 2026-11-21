@@ -1830,9 +1830,33 @@ html.lite .org-more, html.lite .org-toggle svg { transition: none; }
 
   /* Top row: the island's name where the way back was, help and the view reset on the right. */
   .plate > .island-back { display: none; }
-  .plate:has(> .island-back) h1 { min-height: var(--pill-m); display: flex; align-items: center; }
+  .plate:is(:has(> .island-back), :has(> .plate-actions)) h1 { min-height: var(--pill-m); display: flex; align-items: center; max-width: calc(100vw - 34px - var(--tools-w, 120px)); }
   .island-tools .lang.chips { display: none; }
 }
 @media (max-width: 760px) and (prefers-reduced-motion: reduce) {
   .hud.timebar { transition: none; }
+}
+
+/* ---------- Boat view on phones: the same bottom bar ----------
+   The way back (to the island, or to the surface under the water), tools (the dock: arrival, logbook
+   or field guide, actions), photos (the place's gallery; under the water the camera) and the sonda.
+   Tools and the sonda are sheets on the bar, one at a time; the instrument pill stays at the top
+   right and opens the sonda too. The bar hides while the camera is up (the viewfinder has its own
+   way out). Messages stand on whatever is open: --bb (tools), --sb (sonda) or --nb (the bar). */
+@media (max-width: 760px) {
+  .plate > .plate-actions { display: none; }
+  .scene-nav > button:disabled { opacity: 0.4; cursor: default; }
+  .hud.scene-nav.cam-hidden { visibility: hidden; pointer-events: none; }
+  .hud.boat-bottom { bottom: calc(var(--nb, 76px) + 8px); transition: opacity 0.22s ease, transform 0.32s var(--ease-out), visibility 0.22s; }
+  .hud.boat-bottom.closed { opacity: 0; transform: translateY(12px); visibility: hidden; pointer-events: none; }
+  .hud.boat-bottom.closed * { pointer-events: none !important; }
+  /* The sonda opens on the bar whichever button opened it (the tab or the instrument pill at the top),
+     in place of anything else down there, and leaves room above it for the title and a message. */
+  .hud.hud-right.sounder.open { top: auto; bottom: calc(var(--nb, 76px) + 8px); max-height: calc(100% - var(--nb, 76px) - 250px); }
+  .hud.top-stack { bottom: calc(var(--nb, 76px) + 10px); }
+  .scene-root:has(.boat-bottom:not(.closed)) .hud.top-stack { bottom: calc(var(--bb, 200px) + 10px); }
+  .scene-root:has(.sounder.open) .hud.top-stack { bottom: calc(var(--sb, 200px) + 10px); }
+}
+@media (max-width: 760px) and (prefers-reduced-motion: reduce) {
+  .hud.boat-bottom { transition: none; }
 }

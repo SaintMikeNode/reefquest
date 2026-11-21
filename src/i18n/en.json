@@ -323,5 +323,7 @@
   "nav.layers": "Layers",
   "nav.heat": "Heat",
   "nav.lang": "Idioma / Language",
-  "scene.guide3Phone": "<b>Watch the heat.</b> Tap “Heat” in the bar at the bottom to open the timeline; tap a year or press ▶ to see the heat that bleaches corals build up."
+  "scene.guide3Phone": "<b>Watch the heat.</b> Tap “Heat” in the bar at the bottom to open the timeline; tap a year or press ▶ to see the heat that bleaches corals build up.",
+  "nav.boat": "Boat controls",
+  "nav.tools": "Tools"
 }

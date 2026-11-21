@@ -34,6 +34,12 @@ export const IconIslands = (p: SVGProps<SVGSVGElement>) => (
 export const IconGlobe = (p: SVGProps<SVGSVGElement>) => (
   <svg {...base(p)}><circle cx="12" cy="12" r="8.5" /><path d="M12 3.5c-2.3 2.5-3.3 5.3-3.3 8.5s1 6 3.3 8.5M12 3.5c2.3 2.5 3.3 5.3 3.3 8.5s-1 6-3.3 8.5M4 9.2h16M4 14.8h16" /></svg>
 );
+export const IconTools = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base(p)}><path d="M4 7h10M18 7h2M4 17h2M10 17h10" /><circle cx="16" cy="7" r="2" /><circle cx="8" cy="17" r="2" /></svg>
+);
+export const IconPhotos = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base(p)}><rect x="3.5" y="5" width="17" height="14" rx="2.5" /><circle cx="9" cy="10" r="1.6" /><path d="M4 17l5-4.5 3.5 3 3-2.5 4.5 4" /></svg>
+);
 export const IconLayers = (p: SVGProps<SVGSVGElement>) => (
   <svg {...base(p)}><path d="M12 4l9 5-9 5-9-5 9-5z" /><path d="M3 14l9 5 9-5" /></svg>
 );

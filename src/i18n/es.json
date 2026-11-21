@@ -323,5 +323,7 @@
   "nav.layers": "Capas",
   "nav.heat": "Calor",
   "nav.lang": "Idioma / Language",
-  "scene.guide3Phone": "<b>Mira el calor.</b> Toca «Calor» en la barra de abajo para abrir la línea de tiempo; toca un año o pulsa ▶ para ver cómo se acumuló el calor que blanquea los corales."
+  "scene.guide3Phone": "<b>Mira el calor.</b> Toca «Calor» en la barra de abajo para abrir la línea de tiempo; toca un año o pulsa ▶ para ver cómo se acumuló el calor que blanquea los corales.",
+  "nav.boat": "Controles del barco",
+  "nav.tools": "Equipo"
 }
