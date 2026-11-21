@@ -2,32 +2,30 @@ import * as THREE from "three";
 import { mergeGeometries, mergeVertices } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { LITE } from "../lib/device";
 
-// The research vessel R/V Arrecife, stylized like a game boat (Tulio's reference: a chunky cartoon
-// tugboat) but in research-ship blues and whites and kitted out for ocean science: a stout ~24 m hull with a bold sheer rising
-// to the bow, thick white gunwale trim, tire fenders, a white wheelhouse with portholes under an
-// overhanging roof, a banded funnel, a radar mast with a radome, and an aft science
-// deck with a white A-frame (the CTD rosette hangs from it), crane, winch, ROV and sample crates.
-// Toon shading (three light bands) and dark ink outlines give it the illustrated look; everything
-// is built from shapes and primitives, no model download. Forward is +z, the waterline is y = 0.
-// The hull keeps the old size (bow +12.5, stern −12, draft ~2 m), which the physics relies on.
+// The research vessel R/V Arrecife, stylized like a game boat (toon shading, ink outlines, chunky
+// shapes) but shaped like a modern coastal research ship (Tulio's reference: a French
+// oceanographic fleet vessel; an earlier version after a cartoon tugboat, with a funnel and tire
+// fenders, read as another kind of boat). A ~24 m hull with a high bow: dark navy below a yellow
+// line that rises toward the bow, blue topsides, and the white of the bow sweeping down
+// diagonally; a white deckhouse with square windows, a bridge with a wraparound band of raked
+// windows under a yellow brow, a railed top deck with two radomes and a tall white mast; a long
+// open working deck aft with a navy A-frame (the CTD rosette hangs from it), a navy side gantry,
+// crane, winch, ROV and an orange rescue boat. No funnel. Everything is built from shapes and
+// primitives, no model download. Forward is +z, the waterline is y = 0. The hull keeps the old
+// size (bow +12.5, stern −12, draft ~2 m), which the physics relies on.
 
-// Blues and whites, like a real research ship (a first coral/terracotta palette read as a toy).
 const C = {
-  hull: "#1f5fae", // royal blue
-  hullDark: "#1a4f93",
-  trim: "#f4f7fa", // white gunwale rail and stripe
-  boot: "#0f2a4d", // deep navy below the waterline
-  deck: "#b9c3cc", // light grey non-slip deck
-  house: "#f7f9fb", // white wheelhouse
-  roof: "#d6e2ee", // pale blue-grey
-  glass: "#1d2f4a",
-  funnel: "#1f5fae",
-  band: "#f7f9fb",
-  science: "#eef2f5", // white A-frame and crane
-  rov: "#f2c230", // the one yellow accent: the ROV
+  hull: "#1f4a95", // blue topsides
+  navy: "#14203a", // dark lower hull
+  frame: "#1d3570", // navy A-frame and gantry
+  white: "#f4f7fa",
+  yellow: "#f2c230", // the hull line, the bridge brow and the ROV
+  deck: "#aeb8c2", // light grey non-slip deck
+  topDeck: "#c4ccd4",
+  glass: "#17233a",
   steel: "#9aa6ae",
-  rubber: "#26282c",
-  buoy: "#f2622e", // orange lifebuoys (safety color)
+  rubber: "#22252b", // rub rail
+  buoy: "#f2622e", // orange lifebuoys and rescue boat (safety color)
   ink: "#16202e",
 };
 
@@ -67,22 +65,85 @@ function part(geo: THREE.BufferGeometry, color: string, ink = 0.07) {
 }
 
 /** Top-view outline (x across, y = forward) of a hull or deckhouse. */
-function plan(halfW: number, stern: number, bowStart: number, bow: number, sternRound = 0.6) {
+function plan(halfW: number, stern: number, bowStart: number, bow: number, sternRound = 0.6, step = 0) {
   const s = new THREE.Shape();
+  // Straight sides get a point every `step` m, so a part can be cut or shaped along the length.
+  const side = (x: number, from: number, to: number) => {
+    if (step > 0) for (let n = Math.ceil(Math.abs(to - from) / step), i = 1; i < n; i++) s.lineTo(x, from + ((to - from) * i) / n);
+    s.lineTo(x, to);
+  };
   s.moveTo(-halfW + sternRound, stern);
   s.lineTo(halfW - sternRound, stern);
   s.quadraticCurveTo(halfW, stern, halfW, stern + sternRound);
-  s.lineTo(halfW, bowStart);
+  side(halfW, stern + sternRound, bowStart);
   s.bezierCurveTo(halfW, bowStart + (bow - bowStart) * 0.6, halfW * 0.45, bow - 0.3, 0, bow);
   s.bezierCurveTo(-halfW * 0.45, bow - 0.3, -halfW, bowStart + (bow - bowStart) * 0.6, -halfW, bowStart);
-  s.lineTo(-halfW, stern + sternRound);
+  side(-halfW, bowStart, stern + sternRound);
   s.quadraticCurveTo(-halfW, stern, -halfW + sternRound, stern);
   return s;
 }
 
+/** A copy of the hull with every point's height held between lo(z) and hi(z), pushed out a little:
+ *  a painted band on the hull (the navy bottom, the yellow line, the white bow). */
+function hullBand(hull: THREE.BufferGeometry, lo: (z: number) => number, hi: (z: number) => number, grow: number) {
+  const b = hull.clone();
+  const p = b.getAttribute("position") as THREE.BufferAttribute;
+  for (let i = 0; i < p.count; i++) {
+    const z = p.getZ(i);
+    p.setY(i, Math.min(hi(z), Math.max(lo(z), p.getY(i))));
+  }
+  b.scale(1 + grow, 1, 1 + grow / 2);
+  b.computeVertexNormals();
+  return b;
+}
+
+/** One piece of a deck-edge wall: the band between an outer and an inner plan, aft of z = cut or
+ *  forward of it, as its own outline (cutting a whole ring's triangles mixed colors on its top). */
+function wallPiece(outer: THREE.Shape, inner: THREE.Shape, cut: number, aft: boolean) {
+  const run = (sh: THREE.Shape) => {
+    const pts = sh.getPoints(12);
+    if (pts[0].distanceTo(pts[pts.length - 1]) < 1e-6) pts.pop();
+    const n = pts.length, isAft = (i: number) => pts[((i % n) + n) % n].y < cut;
+    // The outline runs stern → port side (+x) → bow → starboard side → stern: the aft part starts where
+    // the starboard side crosses `cut`, the forward part where the port side does.
+    let start = 0;
+    while (!(isAft(start) === aft && isAft(start - 1) !== aft)) start++;
+    const out: THREE.Vector2[] = [];
+    for (let i = start; isAft(i) === aft; i++) out.push(pts[i % n]);
+    return out;
+  };
+  const xo = Math.max(...outer.getPoints(4).map((p) => p.x)), xi = Math.max(...inner.getPoints(4).map((p) => p.x));
+  const o = run(outer), ins = run(inner).reverse();
+  const sa = aft ? -1 : 1; // the outer run starts on this side
+  const pts = [new THREE.Vector2(sa * xo, cut), ...o, new THREE.Vector2(-sa * xo, cut), new THREE.Vector2(-sa * xi, cut), ...ins, new THREE.Vector2(sa * xi, cut)];
+  return new THREE.Shape(pts);
+}
+
+/** Thin railings (no outline) along a path of [x, z] points at height y. */
+function railing(pts: [number, number][], y: number, closed = true, h = 0.9) {
+  const parts: THREE.BufferGeometry[] = [];
+  const n = closed ? pts.length : pts.length - 1;
+  for (let i = 0; i < n; i++) {
+    const [x0, z0] = pts[i], [x1, z1] = pts[(i + 1) % pts.length];
+    const len = Math.hypot(x1 - x0, z1 - z0), ang = Math.atan2(x1 - x0, z1 - z0);
+    for (const yy of [h, h * 0.5]) {
+      const bar = new THREE.BoxGeometry(0.06, 0.06, len);
+      bar.rotateY(ang);
+      bar.translate((x0 + x1) / 2, y + yy, (z0 + z1) / 2);
+      parts.push(bar);
+    }
+    for (let k = 0, m = Math.max(1, Math.round(len / 1.3)); k < m; k++) {
+      const post = new THREE.BoxGeometry(0.07, h, 0.07);
+      post.translate(x0 + ((x1 - x0) * k) / m, y + h / 2, z0 + ((z1 - z0) * k) / m);
+      parts.push(post);
+    }
+  }
+  return new THREE.Mesh(mergeGeometries(parts)!, toon(C.white));
+}
+
 /** Extrude a plan upward: shape (x, y=forward) → geometry with x, y = height (0…h), z = forward. */
-function extrudeUp(shape: THREE.Shape, height: number, bevel = 0.08, curveSegments = 12) {
-  const g = new THREE.ExtrudeGeometry(shape, { depth: height, bevelEnabled: bevel > 0, bevelSize: bevel, bevelThickness: bevel, bevelSegments: 2, curveSegments });
+function extrudeUp(shape: THREE.Shape, height: number, bevel = 0.08, curveSegments = 12, steps = 1) {
+  const g = new THREE.ExtrudeGeometry(shape, { depth: height, steps, bevelEnabled: bevel > 0, bevelSize: bevel, bevelThickness: bevel, bevelSegments: 2, curveSegments });
   g.rotateX(Math.PI / 2);
   g.translate(0, height, 0);
   g.deleteAttribute("uv");
@@ -167,46 +228,69 @@ export function makeVessel(): Vessel {
     return o;
   };
   const DECK_Y = 1.9;
+  const deckAt = (z: number) => DECK_Y + sheer(z);
 
-  // ---- Hull: a stout V-bottomed block up to the deck, bent with the sheer.
-  const hull = extrudeUp(plan(4.0, -12, 2.0, 12.5, 1.4), 3.8, 0.18);
-  hull.translate(0, -1.9, 0);
+  // ---- Hull: a V-bottomed block up to the deck (its top just under the deck), bent with the sheer.
+  // Rings every 0.6 m up the side keep it vertical above the waterline, so the painted bands
+  // below sit flush on it.
+  const block = extrudeUp(plan(4.0, -12, 2.0, 12.5, 1.0, 0.75), 3.6, 0.18, 12, 6);
+  block.translate(0, -1.9, 0);
   {
-    const p = hull.getAttribute("position") as THREE.BufferAttribute;
+    const p = block.getAttribute("position") as THREE.BufferAttribute;
     for (let i = 0; i < p.count; i++) {
       const y = p.getY(i);
       if (y < -0.4) p.setX(i, p.getX(i) * (0.45 + 0.55 * Math.min(1, (y + 1.95) / 1.55))); // V bottom
     }
   }
+  // Open at the top (the deck closes it): a top face only has points along its edge, so it can't
+  // follow the sheer's curve and poked up through the deck in patches.
+  const hull = new THREE.BufferGeometry();
+  {
+    const p = block.getAttribute("position") as THREE.BufferAttribute;
+    const keep: number[] = [];
+    for (let i = 0; i < p.count; i += 3)
+      if (Math.min(p.getY(i), p.getY(i + 1), p.getY(i + 2)) < 1.69)
+        for (let k = 0; k < 3; k++) keep.push(p.getX(i + k), p.getY(i + k), p.getZ(i + k));
+    hull.setAttribute("position", new THREE.Float32BufferAttribute(keep, 3));
+  }
   bend(hull, -1.9, DECK_Y);
   add(part(hull, C.hull, 0.09));
-  // Navy bottom below the waterline, and a white stripe along the side.
-  const boot = hull.clone();
-  const bp = boot.getAttribute("position") as THREE.BufferAttribute;
-  for (let i = 0; i < bp.count; i++) bp.setY(i, Math.min(bp.getY(i), 0.15 + sheer(bp.getZ(i)) * 0.15));
-  boot.computeVertexNormals();
-  const bootMesh = new THREE.Mesh(boot, toon(C.boot));
-  bootMesh.scale.set(1.012, 1, 1.006);
-  add(bootMesh);
-  const stripe = extrudeUp(plan(4.04, -11.97, 2.0, 12.46, 1.4), 0.32, 0);
-  stripe.translate(0, 1.0, 0);
-  bend(stripe, -1.9, DECK_Y); // same bend as the hull at that height
-  add(new THREE.Mesh(stripe, toon(C.trim)));
+  // Painted bands: navy bottom up to a yellow line that rises toward the bow, and the white of the
+  // bow sweeping down diagonally to it (blue stays between them aft).
+  const line = (z: number) => 0.35 + sheer(z) * 0.45;
+  const top = (z: number) => 1.7 + sheer(z); // the hull side's upper edge (the bulwark goes on from there)
+  add(new THREE.Mesh(hullBand(hull, () => -9, line, 0.012), toon(C.navy)));
+  add(new THREE.Mesh(hullBand(hull, line, (z) => line(z) + 0.17, 0.02), toon(C.yellow)));
+  const sweep = (z: number) => {
+    const k = Math.min(1, Math.max(0, (z + 4.8) / 6.5)); // 0 aft of the deckhouse, 1 from z ≈ 1.7
+    return Math.min(top(z), top(z) + 0.4 - k * (top(z) + 0.4 - (line(z) + 0.75)));
+  };
+  add(new THREE.Mesh(hullBand(hull, sweep, top, 0.014), toon(C.white)));
+  // Dark rub rail along the deck edge.
+  add(new THREE.Mesh(hullBand(hull, (z) => top(z) - 0.14, (z) => top(z) + 0.02, 0.026), toon(C.rubber)));
+  // Portholes along the white band.
+  const port = new THREE.CircleGeometry(0.17, 12);
+  for (const sx of [-1, 1])
+    for (const z of [-2.6, -1.4, -0.2, 1.0]) {
+      const d = port.clone();
+      d.rotateY(sx * (Math.PI / 2));
+      add(new THREE.Mesh(d, toon(C.glass)), sx * 4.27, line(z) + 0.95 + sheer(z) * 0.15, z);
+    }
 
-  // ---- Bulwark: a wall around the deck, blue, capped with a thick white rail.
-  const ring = plan(4.0, -12, 2.0, 12.5, 1.4);
-  ring.holes.push(plan(3.55, -11.55, 2.2, 11.6, 1.1) as unknown as THREE.Path);
-  const bulwark = bend(extrudeUp(ring, 1.0, 0.04), -2, -1); // the whole wall rides on the sheer
-  bulwark.translate(0, DECK_Y, 0);
-  add(part(bulwark, C.hullDark, 0.06));
-  const capRing = plan(4.15, -12.15, 2.0, 12.7, 1.5);
-  capRing.holes.push(plan(3.45, -11.45, 2.2, 11.5, 1.0) as unknown as THREE.Path);
-  const cap = bend(extrudeUp(capRing, 0.28, 0.06), -2, -1);
-  cap.translate(0, DECK_Y + 1.0, 0);
-  add(part(cap, C.trim, 0.05));
+  // ---- Bulwark: navy and low around the working deck aft, white and higher around the forecastle.
+  const CUT = -4.6; // where the deckhouse starts
+  const wall = (aft: boolean, h: number) => {
+    const shape = wallPiece(plan(4.14, -12.14, 2.0, 12.64, 1.1, 0.75), plan(3.78, -11.78, 2.2, 11.9, 0.8, 0.75), CUT, aft);
+    // From just under the hull side's upper edge (so no gap shows) to h above the deck.
+    const geo = bend(extrudeUp(shape, h + 0.3, 0.04), -2, -1); // the whole wall rides on the sheer
+    geo.translate(0, DECK_Y - 0.3, 0);
+    return geo;
+  };
+  add(part(wall(true, 0.9), C.frame, 0.05));
+  add(part(wall(false, 1.25), C.white, 0.05));
 
-  // ---- Deck: wood, following the sheer.
-  const deck = new THREE.ShapeGeometry(plan(3.6, -11.6, 2.2, 11.7, 1.1), 12);
+  // ---- Deck: light grey, following the sheer.
+  const deck = new THREE.ShapeGeometry(plan(3.8, -11.8, 2.2, 11.95, 0.8, 1.5), 12);
   deck.rotateX(-Math.PI / 2);
   deck.scale(1, 1, -1); // shape y → +z forward
   const dp = deck.getAttribute("position") as THREE.BufferAttribute;
@@ -216,97 +300,102 @@ export function makeVessel(): Vessel {
   const deckMesh = new THREE.Mesh(deck, toon(C.deck));
   (deckMesh.material as THREE.Material).side = THREE.DoubleSide;
   add(deckMesh);
-  // Plank lines.
-  for (let x = -3; x <= 3; x += 1) {
-    const plank = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.02, 20), toon("#a87745"));
-    add(plank, x, DECK_Y + 0.05, 0);
-  }
 
-  // ---- Tire fenders hanging over the sides.
-  const tire = new THREE.TorusGeometry(0.42, 0.2, 8, 16);
-  tire.rotateY(Math.PI / 2);
+  // ---- Deckhouse: white, square windows along the sides.
+  const houseY = deckAt(1) - 0.05;
+  const HOUSE_H = 2.5;
+  add(part(extrudeUp(plan(3.25, CUT, 3.6, 7.0, 0.5), HOUSE_H, 0.1), C.white, 0.08), 0, houseY, 0);
+  const win = new THREE.BoxGeometry(0.06, 0.6, 0.7);
   for (const sx of [-1, 1])
-    for (const z of [-6.5, -1.5, 3.5]) {
-      add(part(tire, C.rubber, 0.04), sx * 4.25, 1.15 + sheer(z) * 0.8, z);
-      const rope = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 1.4, 4), toon("#d9c79e"));
-      add(rope, sx * 4.2, 2.3 + sheer(z) * 0.8, z);
-    }
-
-  // ---- Wheelhouse: white, rounded, big front windows and round portholes, overhanging roof.
-  const houseY = DECK_Y + sheer(3) * 0.9;
-  const house = extrudeUp(plan(2.5, -0.5, 4.2, 6.4, 0.9), 3.1, 0.18);
-  add(part(house, C.house, 0.08), 0, houseY, 0);
-  // Wraparound windows across the rounded front.
-  const glassBand = extrudeUp(plan(2.56, 3.0, 4.2, 6.48, 0.9), 1.1, 0.04);
-  add(part(glassBand, C.glass, 0.04), 0, houseY + 1.6, 0);
-  for (const sx of [-1, 1])
-    for (const z of [0.6, 2.2]) {
-      const rim = new THREE.TorusGeometry(0.42, 0.11, 8, 18);
-      rim.rotateY(Math.PI / 2);
-      add(part(rim, C.trim, 0.03), sx * 2.6, houseY + 2.0, z);
-      const pane = new THREE.CircleGeometry(0.36, 18);
-      pane.rotateY(sx * (Math.PI / 2));
-      add(new THREE.Mesh(pane, toon("#7fb8d8")), sx * 2.62, houseY + 2.0, z);
-    }
-  const roof = extrudeUp(plan(3.05, -1.2, 4.4, 7.3, 1.0), 0.4, 0.2);
-  add(part(roof, C.roof, 0.08), 0, houseY + 3.1, 0);
-  const roof2 = extrudeUp(plan(1.9, -0.2, 3.6, 5.6, 0.7), 0.5, 0.18);
-  add(part(roof2, C.roof, 0.07), 0, houseY + 3.55, 0);
-  // Lifebuoys on the wheelhouse sides.
-  const buoy = new THREE.TorusGeometry(0.55, 0.17, 8, 20);
+    for (const z of [-3.6, -2.4, -1.2, 0, 1.2, 2.4]) add(new THREE.Mesh(win, toon(C.glass)), sx * 3.37, houseY + 1.45, z);
+  // Lifebuoys on the deckhouse sides.
+  const buoy = new THREE.TorusGeometry(0.42, 0.13, 8, 20);
   buoy.rotateY(Math.PI / 2);
-  for (const sx of [-1, 1]) add(part(buoy, C.buoy, 0.04), sx * 2.62, houseY + 1.0, 3.6);
+  for (const sx of [-1, 1]) add(part(buoy, C.buoy, 0.03), sx * 3.42, houseY + 1.35, -4.0);
+  const roofY = houseY + HOUSE_H + 0.1;
+  add(railing([[-3.2, -4.5], [3.2, -4.5], [3.2, -1.9]], roofY, false));
+  add(railing([[-3.2, -1.9], [-3.2, -4.5]], roofY, false));
 
-  // ---- Funnel: stands on the deck just aft of the wheelhouse (not on its roof) and rises above it,
-  // tilted back, blue with a white band and a dark rim at the top where the smoke comes out.
-  const fz = -2.7, fBase = DECK_Y + sheer(fz), fH = 5.3, tilt = -0.12;
-  const fun = new THREE.CylinderGeometry(0.7, 0.85, fH, 16);
-  const funnel = part(fun, C.funnel, 0.06);
-  funnel.rotation.x = tilt;
-  add(funnel, 0, fBase + fH / 2, fz);
-  // Points along the tilted axis, measured from the funnel's middle.
-  const onAxis = (d: number) => [fBase + fH / 2 + d * Math.cos(tilt), fz + d * Math.sin(tilt)] as const;
-  const band = new THREE.Mesh(new THREE.CylinderGeometry(0.76, 0.78, 0.5, 16), toon(C.band));
-  band.rotation.x = tilt;
-  const [by, bz] = onAxis(fH / 2 - 0.9);
-  add(band, 0, by, bz);
-  const fRim = new THREE.TorusGeometry(0.7, 0.12, 6, 18);
-  fRim.rotateX(Math.PI / 2);
-  const rim = part(fRim, C.ink, 0);
-  rim.rotation.x = tilt;
-  const [ry, rz] = onAxis(fH / 2);
-  add(rim, 0, ry, rz);
-
-  // ---- Mast on the roof: radar bars (spinning), a white radome, antennas.
-  const mastY = houseY + 4.05;
-  add(part(new THREE.CylinderGeometry(0.12, 0.18, 4.2, 8), "#f7f9fb", 0.04), 0, mastY + 2.1, 3.4);
-  add(part(new THREE.BoxGeometry(2.6, 0.16, 0.22), "#f7f9fb", 0.04), 0, mastY + 2.9, 3.4);
+  // ---- Bridge: a deck higher, with a wraparound band of raked dark windows under a yellow brow.
+  const BRIDGE_H = 2.1;
+  add(part(extrudeUp(plan(2.75, -1.9, 3.4, 6.2, 0.5), BRIDGE_H, 0.1), C.white, 0.08), 0, roofY, 0);
+  const glass = extrudeUp(plan(2.8, 0.4, 3.4, 6.27, 0.5), 1.05, 0.03);
+  {
+    // Rake: the top of the windows leans out over the deck, as on real bridges.
+    const p = glass.getAttribute("position") as THREE.BufferAttribute;
+    for (let i = 0; i < p.count; i++) {
+      const t = p.getY(i) / 1.05;
+      if (t > 0.5) {
+        p.setX(i, p.getX(i) * 1.06);
+        p.setZ(i, p.getZ(i) + (p.getZ(i) > 3 ? 0.22 : 0));
+      }
+    }
+    glass.computeVertexNormals();
+  }
+  add(part(glass, C.glass, 0.03), 0, roofY + 0.75, 0);
+  const browY = roofY + BRIDGE_H + 0.05;
+  add(part(extrudeUp(plan(3.05, -2.1, 3.4, 6.75, 0.55), 0.36, 0.06), C.yellow, 0.06), 0, browY, 0);
+  const topY = browY + 0.42;
+  add(new THREE.Mesh(extrudeUp(plan(2.85, -1.9, 3.4, 6.5, 0.5), 0.02, 0), toon(C.topDeck)), 0, topY - 0.01, 0);
+  add(railing([[-2.8, -1.8], [2.8, -1.8], [2.8, 3.4], [2.4, 5.6], [0, 6.4], [-2.4, 5.6], [-2.8, 3.4]], topY));
+  // A small white cabin on top, the mast behind its front, and two radomes.
+  add(part(new THREE.BoxGeometry(2.4, 1.5, 2.2), C.white, 0.06), 0, topY + 0.75, 0.6);
+  const mastZ = 0.9, mastBase = topY + 1.5;
+  add(part(new THREE.CylinderGeometry(0.13, 0.22, 4.6, 8), C.white, 0.04), 0, mastBase + 2.3, mastZ);
+  add(part(new THREE.BoxGeometry(2.4, 0.16, 0.22), C.white, 0.04), 0, mastBase + 3.2, mastZ);
+  add(part(new THREE.CylinderGeometry(0.03, 0.04, 1.6, 5), C.steel, 0), 0.9, mastBase + 4.0, mastZ);
+  for (const [x, z] of [[-1.7, 4.2], [1.6, 3.0]] as const) {
+    add(part(new THREE.CylinderGeometry(0.09, 0.11, 0.55, 6), C.white, 0.03), x, topY + 0.28, z);
+    add(part(new THREE.SphereGeometry(0.52, 16, 12), C.white, 0.04), x, topY + 0.95, z);
+  }
   const radar: THREE.Object3D[] = [];
-  for (const [y, w, z] of [[mastY + 4.3, 2.2, 3.4], [mastY + 0.55, 1.4, 5.0]] as const) {
+  for (const [y, w, z] of [[mastBase + 4.65, 2.2, mastZ], [mastBase + 0.3, 1.5, 2.4]] as const) {
     const r = new THREE.Group();
-    r.add(part(new THREE.BoxGeometry(w, 0.18, 0.32), "#f7f9fb", 0.04));
+    r.add(part(new THREE.BoxGeometry(w, 0.18, 0.32), C.white, 0.04));
     r.position.set(0, y, z);
     g.add(r);
     radar.push(r);
   }
-  add(part(new THREE.SphereGeometry(0.7, 16, 12), "#ffffff", 0.05), -1.2, mastY + 0.75, 1.4);
-  add(part(new THREE.CylinderGeometry(0.035, 0.05, 2.4, 5), C.steel, 0), 1.0, mastY + 1.2, 1.2);
 
-  // ---- Aft science deck.
+  // ---- Orange rescue boat on the deckhouse roof (starboard side, aft), under a white davit.
+  const rb = new THREE.SphereGeometry(1, 16, 10);
+  rb.scale(0.75, 0.42, 1.75);
+  add(part(rb, C.buoy, 0.05), -1.9, roofY + 0.5, -3.2);
+  add(part(new THREE.BoxGeometry(1.0, 0.25, 1.8), C.white, 0.03), -1.9, roofY + 0.85, -3.4);
+  const davitPost = part(new THREE.BoxGeometry(0.28, 2.1, 0.28), C.white, 0.04);
+  add(davitPost, -0.6, roofY + 1.05, -3.2);
+  const davitArm = part(new THREE.BoxGeometry(1.6, 0.24, 0.24), C.white, 0.04);
+  davitArm.rotation.z = -0.25;
+  add(davitArm, -1.25, roofY + 2.0, -3.2);
+
+  // ---- Bow: windlass and a jackstaff.
+  for (const sx of [-1, 1]) {
+    const w = part(new THREE.CylinderGeometry(0.32, 0.32, 0.6, 12), C.steel, 0.04);
+    w.rotation.z = Math.PI / 2;
+    add(w, sx * 0.75, deckAt(8.6) + 0.4, 8.6);
+  }
+  add(part(new THREE.BoxGeometry(0.9, 0.55, 0.8), C.white, 0.04), 0, deckAt(8.6) + 0.3, 8.6);
+  const jack = part(new THREE.CylinderGeometry(0.04, 0.05, 1.8, 5), C.white, 0);
+  jack.rotation.x = 0.35;
+  add(jack, 0, deckAt(12) + 1.45, 12.1);
+
+  // ---- Aft working deck.
   const aftY = DECK_Y + sheer(-9) + 0.05;
-  // A-frame: chunky white legs and crossbar at the stern, as one group that pivots at the foot of
+  // A-frame: chunky navy legs and crossbar at the stern, as one group that pivots at the foot of
   // its legs (it swings out over the stern for a cast, so the rosette clears the hull).
   const aframe = new THREE.Group();
   aframe.position.set(0, aftY, -10.61);
   for (const sx of [-1, 1]) {
-    const leg = part(new THREE.CylinderGeometry(0.22, 0.28, 5.4, 10), C.science, 0.05);
+    const leg = part(new THREE.BoxGeometry(0.5, 5.4, 0.5), C.frame, 0.05);
     leg.rotation.x = -0.26;
     leg.rotation.z = sx * 0.06;
     leg.position.set(sx * 2.4, 2.6, -0.69);
     aframe.add(leg);
+    const foot = part(new THREE.BoxGeometry(0.8, 0.5, 0.9), C.frame, 0.04);
+    foot.position.set(sx * 2.4, 0.15, 0);
+    aframe.add(foot);
   }
-  const aTop = part(new THREE.CylinderGeometry(0.26, 0.26, 5.2, 10), C.science, 0.05);
-  aTop.rotation.z = Math.PI / 2;
+  const aTop = part(new THREE.BoxGeometry(5.5, 0.55, 0.6), C.frame, 0.05);
   aTop.position.set(0, 7.35 - aftY, -1.39);
   aframe.add(aTop);
   const sheaveWheel = part(new THREE.TorusGeometry(0.3, 0.08, 6, 14), C.steel, 0.03);
@@ -333,35 +422,40 @@ export function makeVessel(): Vessel {
     r.position.y = y;
     rosette.add(r);
   }
-  rosette.add(new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 1.2, 10), toon(C.rov)));
+  rosette.add(new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 1.2, 10), toon(C.yellow)));
   rosette.position.copy(ctdTop).add(new THREE.Vector3(0, -1.2, 0));
   g.add(rosette);
   const cable = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 1, 5), toon(C.ink));
   g.add(cable);
 
-  // Crane (starboard), winch drum, ROV, sample crates.
-  add(part(new THREE.CylinderGeometry(0.45, 0.6, 1.0, 12), C.science, 0.05), 2.4, aftY + 0.5, -4.4);
-  const boom = part(new THREE.BoxGeometry(0.42, 0.42, 4.6), C.science, 0.05);
-  boom.rotation.x = 0.5;
-  add(boom, 2.4, aftY + 1.9, -6.0);
+  // Side gantry (port, +x): a navy frame whose arm reaches out over the side.
+  for (const z of [-8.0, -6.4]) add(part(new THREE.BoxGeometry(0.34, 3.4, 0.34), C.frame, 0.04), 3.45, aftY + 1.7, z);
+  add(part(new THREE.BoxGeometry(0.36, 0.36, 2.0), C.frame, 0.04), 3.45, aftY + 3.4, -7.2);
+  add(part(new THREE.BoxGeometry(1.5, 0.32, 0.32), C.frame, 0.04), 4.05, aftY + 3.4, -7.2);
+
+  // Crane (starboard, behind the deckhouse), winch drum, ROV, sample crates.
+  add(part(new THREE.CylinderGeometry(0.42, 0.55, 1.1, 12), C.white, 0.05), -2.5, aftY + 0.55, -5.3);
+  const boom = part(new THREE.BoxGeometry(0.4, 0.4, 4.2), C.white, 0.05);
+  boom.rotation.x = 0.45;
+  add(boom, -2.5, aftY + 1.9, -6.9);
   const drum = part(new THREE.CylinderGeometry(0.55, 0.55, 1.3, 14), C.steel, 0.05);
   drum.rotation.z = Math.PI / 2;
-  add(drum, -1.8, aftY + 0.6, -8.2);
+  add(drum, -1.6, aftY + 0.6, -8.6);
   const rov = new THREE.Group();
-  rov.add(part(new THREE.BoxGeometry(1.7, 0.55, 2.0), C.rov, 0.05));
-  const rovFrame = part(new THREE.BoxGeometry(1.6, 0.6, 1.9), "#3a3f47", 0.04);
-  rovFrame.position.y = -0.55;
+  rov.add(part(new THREE.BoxGeometry(1.5, 0.5, 1.8), C.yellow, 0.05));
+  const rovFrame = part(new THREE.BoxGeometry(1.4, 0.55, 1.7), "#3a3f47", 0.04);
+  rovFrame.position.y = -0.5;
   rov.add(rovFrame);
-  add(rov, 0.3, aftY + 1.0, -3.8);
-  for (const [x, z, col, s] of [[-2.2, -3.4, "#4f8fd9", 0.9], [-2.4, -4.6, "#f7f9fb", 0.75], [-1.3, -3.6, "#2b6cb8", 0.65]] as const)
+  add(rov, 0.6, aftY + 0.95, -6.6);
+  for (const [x, z, col, s] of [[2.3, -5.3, "#4f8fd9", 0.85], [2.5, -4.9 - 0.9, C.white, 0.7], [1.5, -5.2, "#2b6cb8", 0.6]] as const)
     add(part(new THREE.BoxGeometry(s, s * 0.8, s), col, 0.04), x, aftY + s * 0.4, z);
 
-  // Name boards on both bows.
+  // Name boards on both bows, on the white.
   const nameMat = new THREE.MeshBasicMaterial({ map: nameTexture("R/V ARRECIFE"), transparent: true });
   for (const sx of [-1, 1]) {
-    const p = new THREE.Mesh(new THREE.PlaneGeometry(4.2, 0.92), nameMat);
-    p.position.set(sx * 3.95, 2.4, 6.4);
-    p.rotation.y = sx * (Math.PI / 2 - 0.12);
+    const p = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 0.79), nameMat);
+    p.position.set(sx * 3.98, 2.55, 6.6);
+    p.rotation.y = sx * (Math.PI / 2 - 0.16);
     g.add(p);
   }
 

@@ -211,11 +211,18 @@ place name gives NOAA's alert wording. All of it follows the selected date and i
   light bands; sea surface stylized, not photo-real (Tulio: "punchy", not generic): flat color bands
   by depth with thin contours, a drifting cell ripple pattern in patches (skipped on lite), foam
   stripes rolling onto beaches and reef crests, toon sun highlight and round glints; sky; abyss
-  floor), `boatModel.ts` (stylized game-like research vessel after a cartoon-tugboat reference,
-  in blues and whites (a coral/terracotta version read as a toy): chunky hull with a rising sheer,
-  white rail, tire fenders, white wheelhouse with portholes, funnel aft of the wheelhouse, radar
-  mast and radome, white A-frame with the CTD rosette, crane, winch, yellow ROV; toon shading with
-  ink outlines (none on lite); static parts merged into one mesh per material, ~50 draw calls),
+  floor), `boatModel.ts` (R/V Arrecife: toon-stylized like a game boat but shaped like a modern
+  coastal research ship, after a French oceanographic fleet vessel Tulio picked (a cartoon-tugboat
+  version with a funnel and tire fenders read as another kind of boat; a coral/terracotta one as a
+  toy). High bow; hull painted in bands (`hullBand`): dark navy below a yellow line rising to the
+  bow, blue topsides, the bow's white sweeping down diagonally, dark rub rail, portholes; white
+  forecastle bulwark, navy bulwark round the open grey working deck aft; white deckhouse with
+  square windows, bridge with a raked wraparound window band under a yellow brow, railed top deck
+  with two radomes and a tall white mast (two spinning radars); navy A-frame with the CTD rosette,
+  navy side gantry, crane, winch, yellow ROV, orange rescue boat on a davit. No funnel. The hull is
+  open at the top (the deck closes it) and has rings up its side so the bands sit flush. Toon
+  shading with ink outlines (none on lite); static parts merged into one mesh per material: ~24k
+  triangles, 30 draw calls),
   `sonar.ts` (multibeam swath ≈ 3.5 × depth per side, coverage on a 20 m grid saved in localStorage
   `rq-survey-<zone>`, drawn on the seafloor with the turbo depth ramp; sonar fan mesh), `echo.ts` +
   `Echogram.tsx` (scrolling echo sounder), `corals.ts` (stylized Caribbean reef life: 11 species
