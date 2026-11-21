@@ -12,11 +12,25 @@
 // With reduced motion the scene simply switches.
 // The per-pack files of transition-style 0.1.4 leave out the shape variables the keyframes use
 // (so their effects did nothing): the hackpack file carries them.
+//
+// Phones and tablets draw the same shapes another way (FAST below). transition-style animates
+// `clip-path`, which the browser repaints on the main thread every frame: three full-screen layers
+// of it stutter on a phone, and freeze whenever the page is busy (which is exactly when a scene
+// changes). There the layers are real shapes (discs, sheets with a wavy edge) moved only with
+// `transform`, which the GPU compositor animates by itself: nothing is repainted and a busy page
+// can't stall them. Desktops keep the library's effects.
+//
+// The curtain opens only when the new scene is ready: no loading screen, the 3D view has drawn its
+// first frames (holdCurtain / releaseCurtain) and the page has stopped doing heavy work for a
+// moment. Opening earlier made the reveal run while the scene was still being built, so it stuck.
 import "transition-style/transition.hackpack.min.css";
 import "transition-style/transition.circles.min.css";
 import { useEffect } from "react";
 import { create } from "zustand";
-import { REDUCED_MOTION } from "../lib/device";
+import { MOBILE, REDUCED_MOTION } from "../lib/device";
+
+/** Compositor-only curtain (see above). */
+const FAST = MOBILE;
 
 export type TransitionKind = "island" | "page" | "board" | "leave" | "dive" | "surface";
 
@@ -30,20 +44,49 @@ export interface TransitionSpec {
 interface Look {
   in: string;
   out: string;
+  /** The same effect as a transformed shape (FAST). */
+  shape: "iris" | "swoop" | "wave-up" | "wave-down";
   inSeconds: number;
   outSeconds: number;
   fx: "sonar" | "bubbles";
 }
 const LOOKS: Record<TransitionKind, Look> = {
-  island: { in: "in:circle:center", out: "out:circle:hesitate", inSeconds: 0.75, outSeconds: 1.35, fx: "sonar" },
-  page: { in: "in:custom:swoop", out: "out:custom:swoop", inSeconds: 0.7, outSeconds: 1.05, fx: "sonar" },
-  board: { in: "in:custom:wave-up", out: "out:custom:wave-up", inSeconds: 0.75, outSeconds: 1.1, fx: "bubbles" },
-  leave: { in: "in:custom:wave-down", out: "out:custom:wave-down", inSeconds: 0.75, outSeconds: 1.1, fx: "sonar" },
-  dive: { in: "in:custom:wave-down", out: "out:custom:wave-down", inSeconds: 0.55, outSeconds: 0.95, fx: "bubbles" },
-  surface: { in: "in:custom:wave-up", out: "out:custom:wave-up", inSeconds: 0.55, outSeconds: 0.95, fx: "bubbles" },
+  island: { in: "in:circle:center", out: "out:circle:hesitate", shape: "iris", inSeconds: 0.75, outSeconds: 1.35, fx: "sonar" },
+  page: { in: "in:custom:swoop", out: "out:custom:swoop", shape: "swoop", inSeconds: 0.7, outSeconds: 1.05, fx: "sonar" },
+  board: { in: "in:custom:wave-up", out: "out:custom:wave-up", shape: "wave-up", inSeconds: 0.75, outSeconds: 1.1, fx: "bubbles" },
+  leave: { in: "in:custom:wave-down", out: "out:custom:wave-down", shape: "wave-down", inSeconds: 0.75, outSeconds: 1.1, fx: "sonar" },
+  dive: { in: "in:custom:wave-down", out: "out:custom:wave-down", shape: "wave-down", inSeconds: 0.55, outSeconds: 0.95, fx: "bubbles" },
+  surface: { in: "in:custom:wave-up", out: "out:custom:wave-up", shape: "wave-up", inSeconds: 0.55, outSeconds: 0.95, fx: "bubbles" },
 };
 const STAGGER = 0.09; // seconds between the three layers
 const LAYERS = 3;
+
+// When to open: the page must run smoothly (every frame under CALM_FRAME_MS) for CALM_MS in a row,
+// with no loading screen and no 3D view still drawing its first frames. Never longer than MAX_HOLD_MS.
+const CALM_FRAME_MS = 50;
+const CALM_MS = 120;
+const MAX_HOLD_MS = 7000;
+
+// A 3D view holds the curtain closed from the moment it starts mounting until it has drawn
+// (scenes/AdaptiveQuality.tsx: SceneReady). One view is on screen at a time, so one flag is enough.
+let sceneHeld = false;
+export const holdCurtain = () => {
+  sceneHeld = true;
+};
+export const releaseCurtain = () => {
+  sceneHeld = false;
+};
+
+// Wavy edge of the FAST water sheets: one SVG path (0–100 wide, 0–10 tall, filled below the line).
+const WAVE = (() => {
+  let d = "M0,10";
+  for (let i = 0; i <= 48; i++) {
+    const x = i / 48;
+    const y = 4.6 + 2.9 * Math.sin(2 * Math.PI * (x * 1.55 + 0.12)) + 1.3 * Math.sin(2 * Math.PI * (x * 3.7 + 0.4));
+    d += `L${(x * 100).toFixed(2)},${y.toFixed(2)}`;
+  }
+  return d + "L100,10Z";
+})();
 
 interface Shot extends TransitionSpec {
   key: number;
@@ -74,13 +117,18 @@ export function Curtain() {
     if (!shot || shot.phase !== "hold") return;
     shot.apply();
     const start = performance.now();
-    let raf = 0;
-    const wait = () => {
-      const loading = document.querySelector(".loading-screen");
-      if (loading && performance.now() - start < 4000) raf = requestAnimationFrame(wait);
-      else raf = requestAnimationFrame(() => useCurtain.setState((s) => (s.shot?.key === shot.key ? { shot: { ...shot, phase: "out" } } : s)));
+    let raf = 0, last = start, calmSince = 0;
+    const wait = (now: number) => {
+      const smooth = now - last < CALM_FRAME_MS;
+      last = now;
+      const busy = sceneHeld || !!document.querySelector(".loading-screen");
+      if (busy || !smooth) calmSince = 0;
+      else if (!calmSince) calmSince = now;
+      if ((calmSince && now - calmSince >= CALM_MS) || now - start > MAX_HOLD_MS)
+        useCurtain.setState((s) => (s.shot?.key === shot.key ? { shot: { ...shot, phase: "out" } } : s));
+      else raf = requestAnimationFrame(wait);
     };
-    raf = requestAnimationFrame(() => requestAnimationFrame(wait));
+    raf = requestAnimationFrame(wait);
     return () => cancelAnimationFrame(raf);
   }, [shot]);
 
@@ -101,6 +149,71 @@ export function Curtain() {
       return s;
     });
 
+  const fx =
+    look.fx === "sonar" ? (
+      <div className="curtain-rings">
+        <span />
+        <span />
+        <span />
+      </div>
+    ) : (
+      <div className="curtain-bubbles">
+        {(FAST ? BUBBLES.slice(0, 10) : BUBBLES).map((b, k) => (
+          <i key={k} style={{ "--x": `${b.x}%`, "--s": `${b.s}px`, "--d": `${b.d}s`, "--delay": `${b.delay}s`, "--w": `${b.w}px` } as React.CSSProperties} />
+        ))}
+      </div>
+    );
+
+  if (FAST) {
+    const wave = look.shape === "wave-up" || look.shape === "wave-down";
+    const w = window.innerWidth, h = window.innerHeight;
+    return (
+      <div
+        key={shot.key}
+        className={`curtain fast k-${look.shape} fx-${look.fx} ${opening ? "opening" : "closing"}${shot.phase === "hold" ? " held" : ""}`}
+        aria-hidden="true"
+        style={
+          {
+            "--diag": `${Math.ceil(Math.hypot(w, h))}px`,
+            "--vh": `${h}px`,
+            "--dur": `${seconds}s`,
+            "--ease": opening ? "cubic-bezier(.25,1,.3,1)" : "cubic-bezier(.65,0,.35,1)",
+            // The name and the rings or bubbles come in once the navy layer is over the middle.
+            "--label-delay": `${STAGGER * 2 + seconds * 0.6}s`,
+          } as React.CSSProperties
+        }
+      >
+        {Array.from({ length: LAYERS }, (_, i) => (
+          <div
+            key={i}
+            className={`cshape l${i + 1}${wave ? " sheet" : ""}`}
+            style={{ animationDelay: `${delayOf(i)}s` }}
+            onAnimationEnd={i === last ? (e) => e.target === e.currentTarget && ended() : undefined}
+          >
+            {wave && (
+              <>
+                <svg className="cap" viewBox="0 0 100 10" preserveAspectRatio="none">
+                  <path d={WAVE} />
+                </svg>
+                <div className="body" />
+                <svg className="cap b" viewBox="0 0 100 10" preserveAspectRatio="none">
+                  <path d={WAVE} />
+                </svg>
+              </>
+            )}
+          </div>
+        ))}
+        <div className="curtain-content">
+          {fx}
+          <div className="curtain-title">
+            {shot.sub && <small>{shot.sub}</small>}
+            <span>{shot.label}</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div key={shot.key} className={`curtain fx-${look.fx}${opening ? " opening" : ""}`} aria-hidden="true">
       {Array.from({ length: LAYERS }, (_, i) => (
@@ -120,19 +233,7 @@ export function Curtain() {
         >
           {i === LAYERS - 1 && (
             <>
-              {look.fx === "sonar" ? (
-                <div className="curtain-rings">
-                  <span />
-                  <span />
-                  <span />
-                </div>
-              ) : (
-                <div className="curtain-bubbles">
-                  {BUBBLES.map((b, k) => (
-                    <i key={k} style={{ "--x": `${b.x}%`, "--s": `${b.s}px`, "--d": `${b.d}s`, "--delay": `${b.delay}s`, "--w": `${b.w}px` } as React.CSSProperties} />
-                  ))}
-                </div>
-              )}
+              {fx}
               <div className="curtain-title" style={{ "--label-delay": `${STAGGER * 2 + seconds * 0.35}s` } as React.CSSProperties}>
                 {shot.sub && <small>{shot.sub}</small>}
                 <span>{shot.label}</span>

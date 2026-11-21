@@ -1,11 +1,11 @@
 import type { Transition } from "motion/react";
-import { LITE } from "../lib/device";
+import { MOBILE } from "../lib/device";
 
 // Shared motion for panels in the 3D views (story cards, readout, guide, galleries), so everything
 // moves alike: a spring with no wobble that rises in through a light blur, and a quick fade out.
-// Lite devices skip the blur (a full-panel filter costs too much there). Motion itself honors
-// reduced motion.
-const blur = (px: number) => (LITE ? {} : { filter: `blur(${px}px)` });
+// Phones and tablets skip the blur: an animated filter repaints the whole panel every frame, over
+// a 3D canvas, and that is where panels stuttered. Motion itself honors reduced motion.
+const blur = (px: number) => (MOBILE ? {} : { filter: `blur(${px}px)` });
 
 export const spring: Transition = { type: "spring", visualDuration: 0.42, bounce: 0.08 };
 

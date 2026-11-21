@@ -566,8 +566,9 @@ div.pin { pointer-events: none; }
 .hero-content { text-align: center; padding: clamp(96px, 13vh, 132px) 20px 0; max-width: 780px; margin: 0 auto; color: var(--white); }
 .hero-badge { display: inline-flex; align-items: center; gap: 9px; margin: 0 0 18px; font-size: 14.5px; font-weight: 600; letter-spacing: -0.01em; color: var(--white); text-shadow: 0 1px 10px rgba(4, 30, 90, 0.45); }
 .hero-badge svg { color: #bcd6ff; width: 18px; height: 30px; }
-.hero-content h1 { font-size: clamp(40px, 6vw, 74px); line-height: 0.98; margin: 0 0 18px; color: var(--white); text-shadow: 0 2px 22px rgba(4, 30, 90, 0.35); }
-.hero-content h1 .it { display: block; font-size: 1.1em; line-height: 0.95; }
+/* Lines break only between words and are balanced, so a narrow screen never leaves one word alone. */
+.hero-content h1 { font-size: clamp(40px, 6vw, 74px); line-height: 0.98; margin: 0 0 18px; color: var(--white); text-shadow: 0 2px 22px rgba(4, 30, 90, 0.35); text-wrap: balance; overflow-wrap: normal; word-break: normal; hyphens: manual; }
+.hero-content h1 .it { display: block; font-size: 1.1em; line-height: 0.95; text-wrap: balance; }
 .hero-sub { font-size: clamp(16px, 1.5vw, 18.5px); line-height: 1.45; max-width: 500px; margin: 0 auto; color: var(--white); text-shadow: 0 1px 12px rgba(4, 30, 90, 0.55); }
 .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-top: 26px; }
 /* Room between the buttons and the cards: the islands' skyline shows there. */
@@ -609,7 +610,8 @@ div.pin { pointer-events: none; }
   .art-credit { display: none; }
 }
 @media (max-width: 520px) {
-  .hero-content h1 { font-size: 40px; }
+  /* Follows the screen width below ~410 px, so the longest word always fits with room for the wave. */
+  .hero-content h1 { font-size: clamp(28px, 9.7vw, 40px); }
   .seg { border-radius: 16px; }
   .strip { height: 38px; gap: 1px; }
 }
@@ -716,6 +718,56 @@ div.pin { pointer-events: none; }
   border: 1.5px solid rgba(200, 240, 255, 0.7); background: radial-gradient(circle at 32% 30%, rgba(255, 255, 255, 0.75) 0 12%, rgba(255, 255, 255, 0.08) 45%, transparent 70%);
   animation: rq-bubble var(--d) cubic-bezier(0.45, 0, 0.6, 1) var(--delay) infinite; }
 @keyframes rq-bubble { 0% { transform: translate(0, 0) scale(0.6); opacity: 0; } 12% { opacity: 1; } 50% { transform: translate(var(--w), -55vh) scale(1); } 100% { transform: translate(calc(var(--w) * -0.4), -115vh) scale(1.15); opacity: 0.15; } }
+
+/* Phones and tablets (.curtain.fast): the same three layers as real shapes moved only with
+   `transform` and `opacity`, which the compositor animates without repainting (clip-path, used on
+   desktops, is repainted every frame). Discs for the iris and the swoop, sheets with a wavy top and
+   bottom edge for the water line. The name and the rings or bubbles sit in their own layer on top. */
+.curtain.fast .cshape { position: absolute; will-change: transform; backface-visibility: hidden; animation-duration: var(--dur); animation-timing-function: var(--ease); animation-fill-mode: both; }
+.curtain.fast .cshape.l1 { --c1: #6ff0ff; --c2: #2bb8d8; background: linear-gradient(160deg, var(--c1), var(--c2)); }
+.curtain.fast .cshape.l2 { --c1: #2f8bff; --c2: #0a55d6; background: linear-gradient(160deg, var(--c1), var(--c2)); }
+.curtain.fast .cshape.l3 { --c1: #0b46a3; --c2: #03132f; background: radial-gradient(circle at 50% 50%, #0b46a3 0%, #062a66 55%, #03132f 100%); }
+/* Closed: only the top layer needs drawing. */
+.curtain.fast.held .cshape.l1, .curtain.fast.held .cshape.l2 { visibility: hidden; }
+/* Iris: a disc a little larger than the screen's diagonal, growing from and shrinking to the center. */
+.curtain.fast.k-iris .cshape { left: 50%; top: 50%; width: calc(var(--diag) * 1.2); height: calc(var(--diag) * 1.2); margin: calc(var(--diag) * -0.6) 0 0 calc(var(--diag) * -0.6); border-radius: 50%; }
+.curtain.fast.k-iris.closing .cshape { animation-name: rq-iris-in; }
+.curtain.fast.k-iris.opening .cshape { animation-name: rq-iris-out; }
+@keyframes rq-iris-in { from { transform: scale(0); } to { transform: scale(1); } }
+@keyframes rq-iris-out { 0% { transform: scale(1); } 40% { transform: scale(0.47); } to { transform: scale(0); } }
+/* Swoop: a disc centered on a top corner that slides down that edge as it grows (in, from the
+   right) or shrinks (out, on the left). */
+.curtain.fast.k-swoop .cshape { top: 0; width: calc(var(--diag) * 2.06); height: calc(var(--diag) * 2.06); margin: calc(var(--diag) * -1.03) 0 0 calc(var(--diag) * -1.03); border-radius: 50%; }
+.curtain.fast.k-swoop.closing .cshape { left: 100%; animation-name: rq-disc-in; }
+.curtain.fast.k-swoop.opening .cshape { left: 0; animation-name: rq-disc-out; }
+@keyframes rq-disc-in { from { transform: translate3d(0, 0, 0) scale(0); } to { transform: translate3d(0, var(--vh), 0) scale(1); } }
+@keyframes rq-disc-out { from { transform: translate3d(0, 0, 0) scale(1); } to { transform: translate3d(0, var(--vh), 0) scale(0); } }
+/* Water line: a sheet 1.4 screens tall with a wavy top and bottom (SVG caps, drawn once), rising
+   or falling across the screen. The middle layer's wave is mirrored so the three don't line up. */
+.curtain.fast .cshape.sheet { left: 0; width: 100%; top: -20%; height: 140%; display: flex; flex-direction: column; background: none; }
+.curtain.fast .sheet .cap { flex: none; display: block; width: 100%; height: 8%; fill: var(--c1); }
+.curtain.fast .sheet .cap.b { fill: var(--c2); transform: scaleY(-1); }
+.curtain.fast .sheet.l2 .cap { transform: scaleX(-1); }
+.curtain.fast .sheet.l2 .cap.b { transform: scale(-1, -1); }
+.curtain.fast .sheet .body { flex: 1; margin: -1px 0; background: linear-gradient(180deg, var(--c1), var(--c2)); }
+.curtain.fast.k-wave-up.closing .cshape { animation-name: rq-sheet-below-in; }
+.curtain.fast.k-wave-up.opening .cshape { animation-name: rq-sheet-above-out; }
+.curtain.fast.k-wave-down.closing .cshape { animation-name: rq-sheet-above-in; }
+.curtain.fast.k-wave-down.opening .cshape { animation-name: rq-sheet-below-out; }
+@keyframes rq-sheet-below-in { from { transform: translate3d(0, 88%, 0); } to { transform: translate3d(0, 0, 0); } }
+@keyframes rq-sheet-above-out { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(0, -88%, 0); } }
+@keyframes rq-sheet-above-in { from { transform: translate3d(0, -88%, 0); } to { transform: translate3d(0, 0, 0); } }
+@keyframes rq-sheet-below-out { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(0, 88%, 0); } }
+/* Name, rings and bubbles: fade and rise only (no blur or letter-spacing, which repaint). */
+.curtain.fast .curtain-content { position: absolute; inset: 0; display: grid; place-items: center; overflow: hidden; }
+.curtain.fast .curtain-rings, .curtain.fast .curtain-bubbles { animation: rq-fade-in 0.3s ease-out var(--label-delay) both; }
+.curtain.fast .curtain-rings span { box-shadow: none; }
+.curtain.fast .curtain-title span, .curtain.fast .curtain-title small { animation-name: rq-title-in-fast; text-shadow: none; }
+@keyframes rq-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes rq-title-in-fast { from { opacity: 0; transform: translate3d(0, 24px, 0) scale(0.95); } to { opacity: 1; transform: none; } }
+.curtain.fast.opening .curtain-content { animation: rq-content-out 0.26s cubic-bezier(0.4, 0, 1, 1) both; }
+.curtain.fast.opening .curtain-title, .curtain.fast.opening .curtain-rings, .curtain.fast.opening .curtain-bubbles { animation: none; }
+@keyframes rq-content-out { to { opacity: 0; transform: translate3d(0, -14px, 0) scale(1.04); } }
 
 /* Custom transition-style effects (its "hackpack" approach: our own keyframes on the attribute). */
 @keyframes rq-swoop-in { from { clip-path: circle(0% at 100% 0%); } to { clip-path: circle(150% at 100% 100%); } }
@@ -1184,8 +1236,10 @@ html.lite .curve-nav { -webkit-backdrop-filter: none; backdrop-filter: none; bac
 .btn.light.specular:hover, .btn.light.specular:focus-visible { background: var(--white); border-color: var(--white); color: var(--brand); }
 .hero-cta:hover, .hero-cta:focus-visible { box-shadow: 0 0 0 4px rgba(127, 190, 255, 0.45), 0 0 28px 4px rgba(47, 134, 255, 0.7), 0 16px 36px -12px rgba(10, 102, 240, 0.9); }
 .btn.light.cta.specular:hover, .btn.light.cta.specular:focus-visible { box-shadow: 0 0 0 3px rgba(127, 190, 255, 0.4), 0 0 20px 2px rgba(47, 134, 255, 0.6); }
-/* Hero headline wave: each letter rises and settles with the swell (--ft-y, set by floodtext). */
-.hero-content h1 .ft-char { display: inline-block; translate: 0 var(--ft-y, 0); }
+/* Hero headline wave: each letter rises and settles with the swell (--ft-y, set by floodtext).
+   The letters stay inline (moved with `top`, not as inline-blocks): an inline-block per letter lets
+   the browser break a line in the middle of a word, which floodtext then locks in. */
+.hero-content h1 .ft-char { position: relative; top: var(--ft-y, 0); }
 /* Tabs that read as tabs (Tulio: the two looked the same): the tab you're not on sits on a lighter,
    blue-grey frosted strip behind, with muted text; the open tab is the dark folder joined to the
    panel, its label white and its icon sky blue. */
@@ -1264,3 +1318,24 @@ html.lite .pc-ring { animation: none; transform: rotateX(-10deg) rotateY(-22deg)
 .masonry-col li { margin: 0; }
 .masonry-photo { height: auto; }
 @media (max-width: 520px) { .masonry { gap: 0 10px; } .masonry-col { gap: 12px; } }
+/* Narrow phones: the header row (wordmark, ES/EN, Menu) tightens so the Menu button stays inside
+   the frame (it ran past the edge below ~378 px). */
+@media (max-width: 400px) {
+  .site-header .inner, .site-header.on-hero .inner { gap: 8px; padding-left: 12px; padding-right: 12px; }
+  .wordmark { gap: 7px; }
+  .site-header .wordmark svg { width: 26px; height: 26px; }
+  .site-header .wordmark b { font-size: 19px; }
+  .header-end { gap: 8px; }
+  .site-header .lang.chips { gap: 5px; }
+  .site-header .lang.chips button { padding: 6px 9px; }
+  .menu-toggle { padding: 8px 12px; }
+}
+@media (max-width: 345px) {
+  .site-header .inner, .site-header.on-hero .inner { gap: 6px; padding-left: 10px; padding-right: 10px; }
+  .site-header .wordmark svg { width: 22px; height: 22px; }
+  .site-header .wordmark b { font-size: 17px; }
+  .header-end { gap: 6px; }
+  .site-header .lang.chips { gap: 4px; }
+  .site-header .lang.chips button { padding: 6px 7px; }
+  .menu-toggle { padding: 8px 10px; font-size: 13px; }
+}

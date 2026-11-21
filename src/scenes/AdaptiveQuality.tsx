@@ -1,6 +1,7 @@
 import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useRef } from "react";
 import { pick } from "../lib/device";
+import { releaseCurtain } from "../ui/SceneTransition";
 
 // Canvas resolution follows the frame rate actually measured on the device. The tier only sets the
 // range: a phone that can't hold ~35 fps steps its resolution down (the HUD stays sharp, it is
@@ -61,5 +62,20 @@ export function FrameCap({ fps }: { fps: number }) {
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
   }, [fps, invalidate]);
+  return null;
+}
+
+/** Lets the transition curtain open once this view has really drawn: the first frame compiles the
+ *  shaders and uploads the geometry (a long stall on phones), so the curtain is released after the
+ *  third. Mount it inside the view it stands for (it draws those frames even with frameloop="demand").
+ *  It must not release on unmount: the view it leaves is unmounted after the next one has taken the
+ *  hold (IslandScene releases when the whole scene goes away). */
+export function SceneReady() {
+  const n = useRef(0);
+  useFrame((st) => {
+    if (n.current > 3) return;
+    if (++n.current <= 3) st.invalidate();
+    else releaseCurtain();
+  });
   return null;
 }

@@ -1,4 +1,5 @@
 import { AnimatePresence, motion, type Transition, type Variants } from "motion/react";
+import { MOBILE } from "../lib/device";
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 
 // Liquid tabs (after pinui's "Liquid Tabs", Tulio's pick; rebuilt in our dark HUD style): the panel
@@ -17,10 +18,12 @@ export interface LiquidTab {
 const TAB_H = 46;
 const blobSpring: Transition = { type: "spring", visualDuration: 0.5, bounce: 0.12 };
 const smooth: Transition = { type: "spring", visualDuration: 0.4, bounce: 0 };
+// Phones and tablets slide and fade only: an animated blur repaints the panel every frame.
+const soft = (px: number) => (MOBILE ? {} : { filter: `blur(${px}px)` });
 const panelVariants: Variants = {
-  initial: (dir: number) => ({ opacity: 0, x: dir * 22, filter: "blur(4px)" }),
-  animate: { opacity: 1, x: 0, filter: "blur(0px)", transition: { type: "spring", visualDuration: 0.42, bounce: 0 } },
-  exit: (dir: number) => ({ opacity: 0, x: dir * -22, filter: "blur(4px)", transition: { duration: 0.18, ease: [0.4, 0, 0.2, 1] } }),
+  initial: (dir: number) => ({ opacity: 0, x: dir * 22, ...soft(4) }),
+  animate: { opacity: 1, x: 0, ...soft(0), transition: { type: "spring", visualDuration: 0.42, bounce: 0 } },
+  exit: (dir: number) => ({ opacity: 0, x: dir * -22, ...soft(4), transition: { duration: 0.18, ease: [0.4, 0, 0.2, 1] } }),
 };
 
 export function LiquidTabs({ tabs, active, onSelect, label, children }: { tabs: LiquidTab[]; active: string; onSelect: (id: string) => void; label: string; children: ReactNode }) {

@@ -1,15 +1,15 @@
 import { MapControls } from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import type { MapControls as MapControlsImpl } from "three-stdlib";
 import { useLang, useT } from "../i18n";
 import { rampTable } from "../lib/alert";
 import { navGuard } from "../lib/router";
-import { transition } from "../ui/SceneTransition";
+import { holdCurtain, releaseCurtain, transition } from "../ui/SceneTransition";
 import { loadHeatIndex, loadLatest, loadSceneMeta, loadYearGrid, type HeatIndex } from "../lib/data";
 import { MOBILE, pick, REDUCED_MOTION } from "../lib/device";
-import { AdaptiveQuality, DPR, FrameCap } from "./AdaptiveQuality";
+import { AdaptiveQuality, DPR, FrameCap, SceneReady } from "./AdaptiveQuality";
 import { BoatHud } from "../boat/BoatHud";
 import { zoneName, type ZoneIndexEntry } from "../boat/zone";
 import { Hud } from "./Hud";
@@ -46,6 +46,12 @@ export default function IslandScene({ island }: { island: string }) {
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [boatWanted]);
+  // The transition curtain stays closed while this view (the island, or the boat's zone) loads and
+  // draws its first frames; SceneReady, inside the view, releases it.
+  useLayoutEffect(() => {
+    holdCurtain();
+    return releaseCurtain;
+  }, [island, boat]);
   const [zoneEntry, setZoneEntry] = useState<ZoneIndexEntry | null>(null);
   const lang = useLang((s) => s.lang);
 
@@ -389,6 +395,7 @@ function World({ td, index }: { td: TerrainData; index: HeatIndex }) {
 
   return (
     <>
+      <SceneReady key={td.meta.name} />
       <mesh geometry={geometry} material={terrainMat} />
       <mesh rotation-x={-Math.PI / 2} position-y={0.02} material={waterMat} renderOrder={2}>
         <planeGeometry args={[td.sizeX, td.sizeZ]} />

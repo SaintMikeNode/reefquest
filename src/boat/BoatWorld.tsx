@@ -6,6 +6,7 @@ import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import { SITES } from "../content/sites";
 import { LITE, MOBILE, pick, REDUCED_MOTION } from "../lib/device";
+import { SceneReady } from "../scenes/AdaptiveQuality";
 import { clearLabels, LabelProjector, setLabelAnchor } from "../scenes/labels";
 import { CANOPY_GREENS, canopyGeometry, h01, PALM_GREENS, palmGeometry, vegetationMaterial } from "../scenes/nature";
 import { abyssMaterial, seafloorMaterial, seaMaterial, skyMaterial, SKY_HORIZON, SUN } from "./boatMaterials";
@@ -166,6 +167,7 @@ function Scene({ zone, start }: { zone: Zone; start: { lon: number; lat: number 
 
   return (
     <>
+      <SceneReady />
       <mesh ref={skyMesh} material={sky} renderOrder={-1}>
         <sphereGeometry args={[9000, 32, 16]} />
       </mesh>

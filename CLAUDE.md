@@ -269,6 +269,17 @@ Interaction feel (Tulio: "smooth and interactive like an Apple app", on phones a
 - Every clickable thing shares one feel (`--spring`, `--ease-out` in styles.css): colors ease and a
   press sinks it slightly. Reduced motion turns all of this off.
 
+Transition smoothness (Tulio: they stuttered and got stuck on phones). Two rules:
+(1) **The curtain opens only when the new scene is ready**: no `.loading-screen`, the 3D view has
+drawn three frames (`holdCurtain()` in IslandScene, released by `<SceneReady />` inside each 3D view;
+a new 3D view needs one), and frames have stayed under 50 ms for 120 ms (capped at 7 s). Opening while
+the scene was still compiling shaders froze the reveal for 0.8–1.4 s.
+(2) **Phones and tablets (`MOBILE`) never animate `clip-path`, `filter` or layout properties**: the
+curtain there (`.curtain.fast`) is the same three layers as real shapes (discs, sheets with SVG wavy
+caps) moved only with `transform`/`opacity`, which the compositor runs without repainting; desktops
+keep transition-style's clip-path effects. A new transition kind needs both: a `transition-style`
+effect and a `shape` in `LOOKS`. Motion panels and LiquidTabs skip their blur on `MOBILE` too.
+
 Scene transitions: `ui/SceneTransition.tsx` with transition-style (Tulio's pick), in two phases: a
 curtain animates closed over the old scene ("in:" effect), the scene switches behind it (`apply`), and
 it animates open ("out:"), waiting while a 3D loading screen is up. The curtain is three layers (aqua,
