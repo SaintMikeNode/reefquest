@@ -708,7 +708,8 @@ div.pin { pointer-events: none; }
   .dock-only.arrive-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--hair); font-size: 14px; white-space: nowrap; }
   .arrive-row strong { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
   .arrive-row .hbtn { padding: 6px 12px; font-size: 13.5px; }
-  .boat-bottom > .controls-hint { display: none; }
+  .dock-center { display: contents; }
+  .dock-center > .controls-hint { display: none; }
   .boat-actions { padding-top: 12px; border-top: 1px solid var(--hair); }
 }
 @media (max-width: 760px) { .hud.hud-right.sounder.open { background: #071420; } }
@@ -1526,18 +1527,29 @@ html.lite .org-more, html.lite .org-toggle svg { transition: none; }
    The mouse actions and the keys used to be a card plus a loose line of text that wrapped around
    it (Tulio: controls all over the place). Now the keys are a second row of the same card, and the
    card sits on the bottom bar's baseline, between the logbook and the action buttons. */
-.boat-bottom > .controls-hint { align-self: flex-end; display: flex; justify-content: center; flex: 1 1 0; min-width: 0; container-type: inline-size; }
+.dock-center > .controls-hint { display: flex; justify-content: center; min-width: 0; max-width: 100%; }
 .mouse-guide.inline { margin: 0; }
 .mouse-guide .mg-keys { margin-top: 9px; padding-top: 9px; border-top: 1px solid var(--hair); gap: 16px; }
 .mouse-guide .mg-keys li { gap: 7px; font-size: 12.5px; color: var(--hud-text); white-space: nowrap; }
 .mouse-guide .mg-keys .caps { display: inline-flex; gap: 3px; }
 .mouse-guide .mg-keys .mg-key { margin-right: 0; min-width: 20px; text-align: center; }
-/* Not enough room between the logbook and the buttons (a narrower window, longer Spanish labels):
-   the card's rows wrap to fit the room it has, and under 380 px it steps aside rather than overlap.
-   Judged by the room it actually has, not by the window's width. */
+/* Not enough room beside the logbook (a narrower window, longer Spanish labels): the card's rows
+   wrap to fit, and in a narrow window it steps aside rather than squeeze the logbook. */
 .mouse-guide.inline { max-width: 100%; }
 .mouse-guide.inline ul { flex-wrap: wrap; row-gap: 8px; }
-@container (max-width: 380px) { .mouse-guide.inline { display: none; } }
+@media (min-width: 761px) and (max-width: 1099px) { .dock-center > .controls-hint { display: none; } }
+/* Computers: three columns at the bottom, the logbook (or field guide) on the left and, centered on
+   the screen, the action buttons with the controls card under them (Tulio: the buttons sat too far
+   in the corner). The right column only balances the left, so the middle stays centered while
+   there is room; when there isn't, the logbook keeps at least 300 px and the middle moves over. */
+@media (min-width: 761px) {
+  .boat-bottom { display: grid; grid-template-columns: minmax(300px, 1fr) auto minmax(0, 1fr); column-gap: 16px; align-items: end; }
+  .boat-bottom > .logbook-panel { grid-column: 1; justify-self: start; }
+  .dock-center { grid-column: 2; display: flex; flex-direction: column; align-items: center; gap: 10px; min-width: 0; pointer-events: none; }
+  .dock-center > * { pointer-events: auto; }
+}
+/* The sounder's survey block, inside its fold. */
+.sounder .survey-section { border-top: 1px solid var(--hair); padding-top: 12px; margin-top: 12px; }
 /* A short window: the sounder panel scrolls inside itself instead of running into the action
    buttons under it (it used to cover them below about 650 px of height). */
 @media (min-width: 761px) { .hud-right.sounder { max-height: calc(100% - 72px - 92px); overflow-y: auto; } }

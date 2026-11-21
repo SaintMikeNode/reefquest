@@ -15,6 +15,7 @@ import { AlertChip } from "../ui/AlertChip";
 import { IconBack, IconBook, IconCamera, IconCast, IconCheck, IconClose, IconDive, IconDownload, IconShark, IconPhotos, IconSonar, IconSurface, IconTools, IconTurtle, IconWhaleShark, IconWreck } from "../ui/Icons";
 import { PhotoStrip, usePhotos } from "../ui/PhotoStrip";
 import { panelMotion } from "../ui/motionPresets";
+import { Fold } from "../ui/Fold";
 import { LangToggle } from "../ui/LangToggle";
 import { MouseGuide } from "../scenes/MouseGuide";
 import { useBottomInset, useInsetRef, useMedia, useWidthVar } from "../scenes/useBottomInset";
@@ -395,92 +396,88 @@ export function BoatHud({ index, zoneName, islandName }: { index: HeatIndex; zon
               <h4>{t("boat.sounder")}</h4>
               <Chevron open={sonarOpen} />
             </button>
-            {tele && !sonarOpen && (
+            {tele && (
               <div className="depth" title={estimated ? t("scene.depthModel") : undefined}>
                 {estimated && tele.depth > 0 ? "≈ " : ""}
                 {fmtNum(tele.depth, lang, tele.depth < 30 ? 1 : 0)}
                 <small>m</small>
               </div>
             )}
-            {tele && sonarOpen && (
-              <>
-                <div className="depth" title={estimated ? t("scene.depthModel") : undefined}>
-                  {estimated && tele.depth > 0 ? "≈ " : ""}
-                  {fmtNum(tele.depth, lang, tele.depth < 30 ? 1 : 0)}
-                  <small>m</small>
+            {/* Open, the sounder folds out (echogram, readout, survey) instead of jumping. */}
+            <Fold open={sonarOpen}>
+              {tele && (
+                <>
+                  <Echogram />
+                  <dl className="readout">
+                    <dt>{t("scene.habitat")}</dt>
+                    <dd className="txt">{habitatName(tele.benthic, tele.depth)}</dd>
+                    {tele.geomorphic > 0 && (
+                      <>
+                        <dt className="wide">{t("scene.zone")}</dt>
+                        <dd className="wide">{GEOMORPHIC[tele.geomorphic] ? L(GEOMORPHIC[tele.geomorphic]) : "–"}</dd>
+                      </>
+                    )}
+                    {dhw !== null && (
+                      <>
+                        <dt>{t("scene.dhw")}</dt>
+                        <dd>
+                          <AlertChip dhw={dhw} />
+                        </dd>
+                      </>
+                    )}
+                    <dt className="wide">{t("boat.position")}</dt>
+                    <dd className="wide" style={{ fontWeight: 400 }}>
+                      {fmtLat(tele.lat, lang)}
+                      <br />
+                      {fmtLon(tele.lon, lang)}
+                    </dd>
+                  </dl>
+                </>
+              )}
+              <div className="hud-section survey-section">
+                <h4>{t("boat.survey")}</h4>
+                {/* The figure stays on one line; a long label ("Plataforma cartografiada") wraps instead. */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 10, fontSize: 13.5 }}>
+                  <span className="hud-faint">{t("boat.surveyed")}</span>
+                  <span className="hud-value" style={{ whiteSpace: "nowrap", flex: "none" }}>
+                    {fmtNum(surveyHa, lang, surveyHa < 100 ? 1 : 0)} ha · {fmtNum(surveyPct, lang, surveyPct < 1 ? 2 : 1)} %
+                  </span>
                 </div>
-                <Echogram />
-                <dl className="readout">
-                  <dt>{t("scene.habitat")}</dt>
-                  <dd className="txt">{habitatName(tele.benthic, tele.depth)}</dd>
-                  {tele.geomorphic > 0 && (
-                    <>
-                      <dt className="wide">{t("scene.zone")}</dt>
-                      <dd className="wide">{GEOMORPHIC[tele.geomorphic] ? L(GEOMORPHIC[tele.geomorphic]) : "–"}</dd>
-                    </>
-                  )}
-                  {dhw !== null && (
-                    <>
-                      <dt>{t("scene.dhw")}</dt>
-                      <dd>
-                        <AlertChip dhw={dhw} />
-                      </dd>
-                    </>
-                  )}
-                  <dt className="wide">{t("boat.position")}</dt>
-                  <dd className="wide" style={{ fontWeight: 400 }}>
-                    {fmtLat(tele.lat, lang)}
-                    <br />
-                    {fmtLon(tele.lon, lang)}
-                  </dd>
-                </dl>
-              </>
-            )}
-          </div>
-          {sonarOpen && (
-          <div className="hud-section">
-            <h4>{t("boat.survey")}</h4>
-            {/* The figure stays on one line; a long label ("Plataforma cartografiada") wraps instead. */}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 10, fontSize: 13.5 }}>
-              <span className="hud-faint">{t("boat.surveyed")}</span>
-              <span className="hud-value" style={{ whiteSpace: "nowrap", flex: "none" }}>
-                {fmtNum(surveyHa, lang, surveyHa < 100 ? 1 : 0)} ha · {fmtNum(surveyPct, lang, surveyPct < 1 ? 2 : 1)} %
-              </span>
-            </div>
-            <div className="progress">
-              <i style={{ width: `${Math.min(100, surveyPct)}%` }} />
-            </div>
-            {sonar && (
-              <div className="depth-key" aria-label={t("boat.depthKey")}>
-                <span className="bar" />
-                <span className="ticks num">
-                  <span>0</span>
-                  <span>10</span>
-                  <span>20</span>
-                  <span>30 m</span>
-                </span>
+                <div className="progress">
+                  <i style={{ width: `${Math.min(100, surveyPct)}%` }} />
+                </div>
+                {sonar && (
+                  <div className="depth-key" aria-label={t("boat.depthKey")}>
+                    <span className="bar" />
+                    <span className="ticks num">
+                      <span>0</span>
+                      <span>10</span>
+                      <span>20</span>
+                      <span>30 m</span>
+                    </span>
+                  </div>
+                )}
+                <button className="toggle" aria-pressed={sonar} onClick={() => toggle("sonar")}>
+                  {t("boat.multibeam")}
+                  <span className="check">
+                    <IconCheck />
+                  </span>
+                </button>
+                <button className="toggle" aria-pressed={grid} onClick={() => toggle("grid")}>
+                  {t("boat.grid")}
+                  <span className="check">
+                    <IconCheck />
+                  </span>
+                </button>
+                <button className="toggle" aria-pressed={mapColors} onClick={() => useBoat.getState().toggleMapColors()}>
+                  {t("boat.colors")}
+                  <span className="check">
+                    <IconCheck />
+                  </span>
+                </button>
               </div>
-            )}
-            <button className="toggle" aria-pressed={sonar} onClick={() => toggle("sonar")}>
-              {t("boat.multibeam")}
-              <span className="check">
-                <IconCheck />
-              </span>
-            </button>
-            <button className="toggle" aria-pressed={grid} onClick={() => toggle("grid")}>
-              {t("boat.grid")}
-              <span className="check">
-                <IconCheck />
-              </span>
-            </button>
-            <button className="toggle" aria-pressed={mapColors} onClick={() => useBoat.getState().toggleMapColors()}>
-              {t("boat.colors")}
-              <span className="check">
-                <IconCheck />
-              </span>
-            </button>
+            </Fold>
           </div>
-          )}
         </motion.aside>
       )}
       </AnimatePresence>
@@ -539,122 +536,126 @@ export function BoatHud({ index, zoneName, islandName }: { index: HeatIndex; zon
             </span>
             <Chevron open={logOpen} />
           </button>
-          {logOpen && (
-          <div className="log-tabs" role="tablist">
-            <button role="tab" aria-selected={logTab === "habitats"} onClick={() => setLogTab("habitats")}>
-              {t("log.habitats")}
-            </button>
-            <button role="tab" aria-selected={logTab === "photos"} onClick={() => setLogTab("photos")}>
-              <IconCamera />
-              {t("shot.tab")}
-              <span className="num">
-                {MISSION_SITES.filter((s) => shots[s.id]).length}/{MISSION_SITES.length}
-              </span>
-            </button>
-          </div>
-          )}
-          {logOpen && logTab === "photos" && <PhotoAlbum shots={shots} />}
-          {logOpen && logTab === "habitats" && (
-          <>
-          <div className="hud-faint" style={{ fontSize: 12.5, lineHeight: 1.45 }}>
-            {done ? t("boat.missionDone") : t("boat.mission")}
-          </div>
-          <div className="checklist">
-            {present.map((c) => (
-              <span key={c} className={sampled.has(c) ? "done" : undefined} style={{ "--c": BENTHIC[c]?.color ?? "#999" } as React.CSSProperties}>
-                <i />
-                {BENTHIC[c] ? L(BENTHIC[c]) : c}
-              </span>
-            ))}
-          </div>
-          {/* Wildlife documented in this zone: seen once the boat has met it (whale shark: by the rules). */}
-          {wild.length > 0 && (
-            <div className="checklist sightings">
-              <span className="hud-faint">{t("boat.sightings")}</span>
-              {wild.map((id) => {
-                const place = SITES.find((s) => s.id === id);
-                const scene = place?.wreck ? "wreck" : place?.scene;
-                // Each one says how far and which way it is, and a press sails the boat there.
-                return scene ? (
-                  <button key={id} type="button" className={sightings.includes(id) ? "done" : undefined} style={{ "--c": "#7fd6ff" } as React.CSSProperties} onClick={() => sailTo(id)} title={t("boat.sailTo")}>
-                    <i />
-                    <span>{t(`boat.scene.${scene}`)}</span>
-                    <span className="where">{whereIs(id)}</span>
-                  </button>
-                ) : null;
-              })}
+          <Fold open={logOpen} gap={10}>
+            <div className="log-tabs" role="tablist">
+              <button role="tab" aria-selected={logTab === "habitats"} onClick={() => setLogTab("habitats")}>
+                {t("log.habitats")}
+              </button>
+              <button role="tab" aria-selected={logTab === "photos"} onClick={() => setLogTab("photos")}>
+                <IconCamera />
+                {t("shot.tab")}
+                <span className="num">
+                  {MISSION_SITES.filter((s) => shots[s.id]).length}/{MISSION_SITES.length}
+                </span>
+              </button>
             </div>
-          )}
-          {samples.length > 0 && (
-            <div className="samples">
-              {samples.slice(0, 5).map((s) => (
-                <div key={s.t}>
-                  <span className="sq" style={{ background: BENTHIC[s.benthic]?.color ?? "#6f8297" }} />
-                  <span>{habitatName(s.benthic, s.depth)}</span>
-                  <span className="hud-faint">
-                    {fmtNum(s.depth, lang)} m · {fmtLat(s.lat, lang)}
-                  </span>
-                </div>
+            {logTab === "photos" && <PhotoAlbum shots={shots} />}
+            {logTab === "habitats" && (
+            <>
+            <div className="hud-faint" style={{ fontSize: 12.5, lineHeight: 1.45 }}>
+              {done ? t("boat.missionDone") : t("boat.mission")}
+            </div>
+            <div className="checklist">
+              {present.map((c) => (
+                <span key={c} className={sampled.has(c) ? "done" : undefined} style={{ "--c": BENTHIC[c]?.color ?? "#999" } as React.CSSProperties}>
+                  <i />
+                  {BENTHIC[c] ? L(BENTHIC[c]) : c}
+                </span>
               ))}
             </div>
-          )}
-          <div className="notes">
-            {t("boat.illustrative")} {t("boat.compressed")} {estimated && t("scene.depthModel")}
-          </div>
-          </>
-          )}
-        </div>
-        )}
-        {/* Every control in one card (Tulio: the keys were a loose line of text around it). */}
-        <div className="controls-hint">
-          {!under && !TOUCH && (
-            <MouseGuide
-              inline
-              items={[
-                { part: "left", label: t("boat.mouse.look"), how: t("boat.mouse.lookHow") },
-                { part: "left", label: t("boat.mouse.sail"), how: t("boat.mouse.sailHow") },
-                { part: "wheel", label: t("scene.mouse.zoom"), how: t("scene.mouse.zoomHow") },
-              ]}
-              keys={[
-                { caps: ["W", "A", "S", "D"], label: t("boat.key.sail") },
-                { caps: [t("boat.key.space")], label: t("boat.key.cast") },
-                { caps: ["U"], label: t("boat.key.under") },
-                { caps: ["F"], label: t("shot.open") },
-              ]}
-            />
-          )}
-        </div>
-        <div className="boat-actions">
-        {/* Under the water the way up is the title plate's "Back to the surface": the dock keeps
-            only the camera and the CTD (Tulio). */}
-        {!under && (
-          <button className="hbtn cast-btn" onClick={toggleDive}>
-            <IconDive />
-            <span>{t("boat.dive")}</span>
-          </button>
-        )}
-        {under && (
-          <button className="hbtn primary cast-btn" aria-pressed={camOn} onClick={toggleCamera}>
-            <IconCamera />
-            <span>{t("shot.open")}</span>
-          </button>
-        )}
-        <button className={under ? "hbtn cast-btn" : "hbtn primary cast-btn"} onClick={startCast} disabled={!tele || tele.depth <= 1 || casting}>
-          <IconCast />
-          {casting
-            ? (
-              <>
-                <span className="lbl-long">{`${t(cast.phase === "up" ? "boat.castUp" : cast.phase === "hold" ? "boat.castHold" : "boat.castDown")} ${fmtNum(cast.depth, lang)} m`}</span>
-                <span className="lbl-short">{`${fmtNum(cast.depth, lang)} m`}</span>
-              </>
-            )
-            : (
-              <>
-                <span className="lbl-long">{t("boat.cast")}</span>
-                <span className="lbl-short">{under ? "CTD" : t("boat.cast")}</span>
-              </>
+            {/* Wildlife documented in this zone: seen once the boat has met it (whale shark: by the rules). */}
+            {wild.length > 0 && (
+              <div className="checklist sightings">
+                <span className="hud-faint">{t("boat.sightings")}</span>
+                {wild.map((id) => {
+                  const place = SITES.find((s) => s.id === id);
+                  const scene = place?.wreck ? "wreck" : place?.scene;
+                  // Each one says how far and which way it is, and a press sails the boat there.
+                  return scene ? (
+                    <button key={id} type="button" className={sightings.includes(id) ? "done" : undefined} style={{ "--c": "#7fd6ff" } as React.CSSProperties} onClick={() => sailTo(id)} title={t("boat.sailTo")}>
+                      <i />
+                      <span>{t(`boat.scene.${scene}`)}</span>
+                      <span className="where">{whereIs(id)}</span>
+                    </button>
+                  ) : null;
+                })}
+              </div>
             )}
-        </button>
+            {samples.length > 0 && (
+              <div className="samples">
+                {samples.slice(0, 5).map((s) => (
+                  <div key={s.t}>
+                    <span className="sq" style={{ background: BENTHIC[s.benthic]?.color ?? "#6f8297" }} />
+                    <span>{habitatName(s.benthic, s.depth)}</span>
+                    <span className="hud-faint">
+                      {fmtNum(s.depth, lang)} m · {fmtLat(s.lat, lang)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="notes">
+              {t("boat.illustrative")} {t("boat.compressed")} {estimated && t("scene.depthModel")}
+            </div>
+            </>
+            )}
+          </Fold>
+        </div>
+        )}
+        {/* Computers: the action buttons stand at the bottom center, the controls card under them
+            (Tulio: they sat too far in the corner). Phones: display: contents, the dock as before. */}
+        <div className="dock-center">
+          <div className="boat-actions">
+          {/* Under the water the way up is the title plate's "Back to the surface": the dock keeps
+              only the camera and the CTD (Tulio). */}
+          {!under && (
+            <button className="hbtn cast-btn" onClick={toggleDive}>
+              <IconDive />
+              <span>{t("boat.dive")}</span>
+            </button>
+          )}
+          {under && (
+            <button className="hbtn primary cast-btn" aria-pressed={camOn} onClick={toggleCamera}>
+              <IconCamera />
+              <span>{t("shot.open")}</span>
+            </button>
+          )}
+          <button className={under ? "hbtn cast-btn" : "hbtn primary cast-btn"} onClick={startCast} disabled={!tele || tele.depth <= 1 || casting}>
+            <IconCast />
+            {casting
+              ? (
+                <>
+                  <span className="lbl-long">{`${t(cast.phase === "up" ? "boat.castUp" : cast.phase === "hold" ? "boat.castHold" : "boat.castDown")} ${fmtNum(cast.depth, lang)} m`}</span>
+                  <span className="lbl-short">{`${fmtNum(cast.depth, lang)} m`}</span>
+                </>
+              )
+              : (
+                <>
+                  <span className="lbl-long">{t("boat.cast")}</span>
+                  <span className="lbl-short">{under ? "CTD" : t("boat.cast")}</span>
+                </>
+              )}
+          </button>
+          </div>
+          {/* Every control in one card (Tulio: the keys were a loose line of text around it). */}
+          <div className="controls-hint">
+            {!under && !TOUCH && (
+              <MouseGuide
+                inline
+                items={[
+                  { part: "left", label: t("boat.mouse.look"), how: t("boat.mouse.lookHow") },
+                  { part: "left", label: t("boat.mouse.sail"), how: t("boat.mouse.sailHow") },
+                  { part: "wheel", label: t("scene.mouse.zoom"), how: t("scene.mouse.zoomHow") },
+                ]}
+                keys={[
+                  { caps: ["W", "A", "S", "D"], label: t("boat.key.sail") },
+                  { caps: [t("boat.key.space")], label: t("boat.key.cast") },
+                  { caps: ["U"], label: t("boat.key.under") },
+                  { caps: ["F"], label: t("shot.open") },
+                ]}
+              />
+            )}
+          </div>
         </div>
       </div>
 

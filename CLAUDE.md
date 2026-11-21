@@ -404,6 +404,12 @@ Interaction feel (Tulio: "smooth and interactive like an Apple app", on phones a
   a goo filter so the tab is a folder tab that flows to the next label; the tab not open sits on a lighter
   blue-grey strip with muted text, the open one is the dark folder with a white label and sky-blue icon; content slides out/in by
   direction through a blur, height eases. One tab is always open (no second-tap collapse).
+- Folding panels (the boat's logbook and sounder) open and close with `ui/Fold.tsx`: on computers
+  the height eases (~0.3 s) while the content fades; phones and tablets only fade and slide it
+  (no layout animation there); still with reduced motion. Use it for any new fold-out section.
+- Boat view on computers: the action buttons (Dive / Camera, Cast CTD) stand at the bottom center
+  with the controls card under them (Tulio: they sat too far in the corner); the logbook or field
+  guide is on the left (at least 300 px); under 1100 px of width the controls card steps aside.
 - Map layers fade (~350 ms ease-out) instead of switching: the shaders blend by `uShowHabitat`,
   `uShowContours`, `uShowHeat` (0..1), and dive sites by `sitesFade` (boats scale, markers and labels
   fade; always mounted, unclickable while off).
