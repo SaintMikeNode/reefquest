@@ -1339,3 +1339,68 @@ html.lite .pc-ring { animation: none; transform: rotateX(-10deg) rotateY(-22deg)
   .site-header .lang.chips button { padding: 6px 7px; }
   .menu-toggle { padding: 8px 10px; font-size: 13px; }
 }
+
+/* ---------- Learn hub: the liquid tabs at page size (ui/LiquidTabs.tsx `page`) ----------
+   One long panel in the HUD's dark navy with two folder tabs (heat data | lessons). Only the top
+   of the panel is drawn through the goo filter; `.ltabs-sheet` is the rest. The page scrolls, the
+   panel doesn't, and its height is never animated. */
+.hub .page-head { padding-bottom: 34px; }
+/* (The modifier is `full`, not `page`: `.page` is the site's page-width wrapper and would pad it.) */
+.ltabs.full { display: block; margin-top: 6px; }
+.ltabs.full .ltabs-strip { border-radius: 24px 24px 0 0; -webkit-backdrop-filter: none; backdrop-filter: none; background: linear-gradient(180deg, rgba(96, 140, 200, 0.4), rgba(60, 100, 160, 0.3)); }
+.ltabs.full .ltabs-surface { bottom: auto; filter: none; }
+.ltabs.full .ltabs-goo { opacity: 1; }
+.ltabs.full .ltabs-body { border-radius: 24px 24px 0 0; }
+.ltabs.full .ltabs-blob { border-radius: 22px; }
+/* (1 px wider each side: the goo filter fattens the part above it by about that much.) */
+.ltabs-sheet { position: absolute; left: -1px; right: -1px; bottom: 0; background: #081624; border-radius: 0 0 24px 24px; box-shadow: 0 30px 60px -34px rgba(0, 0, 0, 0.8); }
+/* The two tabs share the panel's whole width (Tulio: a short tab row left a notch beside it). */
+.ltabs.full .ltabs-bar { padding: 0; }
+.ltabs.full .ltabs-tab { flex: 1 1 0; min-width: 0; justify-content: center; gap: 9px; padding: 0 12px; font-size: 16px; }
+.ltabs.full .ltabs-tab .icon, .ltabs.full .ltabs-tab svg { width: 19px; height: 19px; }
+.ltabs.full .ltabs-content { overflow: visible; padding: clamp(22px, 3.2vw, 38px) clamp(16px, 3.4vw, 40px) clamp(24px, 3.4vw, 44px); }
+.ltabs.full .ltabs-inner { padding: 0; }
+@media (max-width: 760px), (pointer: coarse) { .ltabs.full .ltabs-content { padding-right: clamp(16px, 3.4vw, 40px); } }
+@media (max-width: 420px) { .ltabs.full .ltabs-tab { font-size: 15px; gap: 7px; padding: 0 8px; } }
+/* A tab's own heading, inside the panel. */
+.pane-head { padding: 2px 0 4px; }
+.pane-head .eyebrow { margin-bottom: 12px; }
+.pane-head h2 { font-size: clamp(28px, 3.8vw, 44px); line-height: 1.04; margin: 0 0 14px; }
+.pane-head .standfirst { color: #c9d9f2; }
+.pane > .section:first-of-type { padding-top: 30px; }
+.pane > .article { margin-top: 14px; }
+.pane .lesson:last-child { border-bottom: 0; padding-bottom: 6px; }
+/* Cards inside the panel sit on solid navy: no glass needed (and none to pay for on phones). */
+.sea-bg .ltabs.full .figure { -webkit-backdrop-filter: none; backdrop-filter: none; background: linear-gradient(160deg, rgba(120, 175, 255, 0.1) 0%, rgba(50, 105, 220, 0.05) 55%, rgba(30, 75, 190, 0.08) 100%); }
+
+/* ---------- Cómo ayudar (pages/SupportPage.tsx) ---------- */
+.org-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; }
+@media (min-width: 860px) { .org-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.org-card { display: flex; flex-direction: column; }
+.org-kind { font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin: 0 0 10px; }
+.org-card h3 { font-size: 23px; letter-spacing: -0.025em; line-height: 1.15; margin: 0 0 8px; }
+.org-about { color: #d6e4fb; margin: 0 0 12px; font-size: 16.5px; }
+.org-does { margin: 0 0 14px; padding: 0; list-style: none; display: grid; gap: 7px; }
+.org-does li { position: relative; padding-left: 18px; font-size: 15.5px; line-height: 1.45; color: var(--ink); }
+.org-does li::before { content: ""; position: absolute; left: 2px; top: 0.62em; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+.org-how { font-size: 15px; line-height: 1.5; color: var(--muted); margin: 0 0 16px; padding-top: 12px; border-top: 1px solid var(--rule); }
+.org-how b { color: var(--ink); font-weight: 650; }
+.org-links { display: flex; flex-wrap: wrap; gap: 10px; margin-top: auto; }
+.org-card .sources { margin: 14px 0 0; }
+/* The independence note: small print under the page's intro. */
+.org-note { max-width: 620px; margin-top: 18px; }
+.org-note p { font-size: 13.5px; line-height: 1.5; color: rgba(214, 228, 251, 0.78); margin: 0 0 6px; }
+.org-note p:last-child { margin-bottom: 0; }
+.org-note b { color: var(--white); font-weight: 600; }
+
+/* Controls card, pointed out on entering a 3D view (scenes/MouseGuide.tsx `.spot`): an aqua ring
+   pulses twice around it and the three controls lift in turn. Transform and opacity only. */
+.mouse-guide.spot::after { content: ""; position: absolute; inset: -2px; border-radius: inherit; pointer-events: none; border: 1.5px solid var(--aqua);
+  box-shadow: 0 0 0 4px rgba(95, 208, 255, 0.2), 0 0 28px 4px rgba(95, 208, 255, 0.5); opacity: 0; animation: mg-spot 1.3s cubic-bezier(0.2, 0.7, 0.3, 1) 0.25s 2 both; }
+@keyframes mg-spot { 0% { opacity: 0; transform: scale(0.985); } 22% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(1.04); } }
+.mouse-guide.spot li { animation: mg-lift 0.6s cubic-bezier(0.3, 0.7, 0.3, 1) both; }
+.mouse-guide.spot li:nth-child(1) { animation-delay: 0.35s; }
+.mouse-guide.spot li:nth-child(2) { animation-delay: 0.6s; }
+.mouse-guide.spot li:nth-child(3) { animation-delay: 0.85s; }
+@keyframes mg-lift { 0%, 100% { transform: none; } 40% { transform: translate3d(0, -5px, 0); } }
+@media (prefers-reduced-motion: reduce) { .mouse-guide.spot::after, .mouse-guide.spot li { animation: none; } }

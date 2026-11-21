@@ -93,7 +93,7 @@ export function Home() {
                   {t("home.ctaIslands")} <IconArrow />
                 </SpecularButton>
               )}
-              <a className="btn primary" href={href.learn}>
+              <a className="btn primary" href={href.lessons}>
                 {t("home.ctaLearn")} <IconArrow />
               </a>
             </div>

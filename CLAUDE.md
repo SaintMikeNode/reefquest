@@ -44,7 +44,9 @@ Vite 8 + TypeScript + React 19 + React Three Fiber / drei (three.js), zustand fo
 same tools as CopánQuest (`../copanquest`, a useful reference, but don't share code across sites).
 Chunks: `index` (top bar, home map, cards; keep it small, ~80 KB gz) → `engine-3d` (three + R3F,
 ~250 KB gz) → `IslandScene` and each page, loaded with `React.lazy`. Hash routes: `#/`,
-`#/islands`, `#/island/roatan`, `#/heat`, `#/learn`, `#/about` (`src/lib/router.ts`).
+`#/islands`, `#/island/roatan`, `#/learn` (two tabs: `#/learn/heat`, the main one, and
+`#/learn/lessons`; the old `#/heat` opens the heat tab), `#/support`, `#/about`
+(`src/lib/router.ts`). Menu: Islas, Aprende, Cómo ayudar, Datos y créditos.
 
 Design (third direction, from a reference Tulio chose: the FlowOS Framer template; he wants the
 site to stop looking AI-made). One confident ocean blue (`--brand`), a rounded white-bordered
@@ -110,7 +112,14 @@ place name gives NOAA's alert wording. All of it follows the selected date and i
   stories), `learn.ts` (explainers; `src/ui/LessonFigures.tsx` draws the bleaching and DHW
   diagrams), `reefLife.ts` (underwater field guide: species names and how to recognize them). **Every fact needs a source**; don't add unsourced claims.
 - `src/pages/`: `IslandsPage` (`#/islands`: four frosted cards in a row (2 × 2 under 1180 px, one column on phones): the three islands and a photos card (a ring of reef photos turning in CSS 3D; opens the dome of every photo); every button sits at the bottom of its card so they line up; each island card shows its mapped reef area (`reef_km2` in meta.json, from `pipeline/reef_area.mjs` on the Allen Coral Atlas habitat map) before the record year, so it isn't all bad news. The island cards: text and button centered, with a pure-CSS blueprint texture (a faint grid fading to the edges and a wireframe floor in perspective under each island) that fit one screen on computers (Roatán, Utila, Guanaja; Cayos Cochinos left out until it has a 3D scene; the preview height follows the window height), each with a live 3D preview in blueprint line art (Tulio found the colored relief too much): coastline, survey grid, land contours and depth lines over a rising light shader with contour lines (our take on React Bits' paid "Shader Card"); hover lifts the light, speeds the turn and swings the camera toward the pointer, the text drifts the other way. All four share ONE fixed WebGL canvas through drei `<View>`; meshes are coarse samples of each island's terrain.png cropped by distance to the coast, deep water dropped; lite and reduced motion render still frames, redrawn on scroll), `Home` (hero whose copy leads with the place and its reefs, then learning, then heat: "Meet the reef around our islands", buttons to the islands page and Learn; Tulio picked this over a satellite-heat headline and a "map the reef" game headline; live SVG map with OSM coastlines + today's 5 km heat cells, island
-  cards, heat stripes), `HeatPage` (island comparison chart, worst years, alert scale), `LearnPage`,
+  cards, heat stripes), `LearnHub` ("Aprende": the heat data and the lessons as two liquid tabs, Tulio's call to merge
+  them; `LiquidTabs page` is the page-size version of the tabs on the 3D layers box: only the top of
+  the panel goes through the goo filter, no height or blur animation; switching tabs rewrites the
+  address with `replaceState` and plays no curtain) with its two panes `HeatPage` (island comparison
+  chart, worst years, alert scale) and `LearnPage` (lessons), `SupportPage` ("Cómo ayudar": the
+  conservation organizations by island from `src/content/support.ts`; every statement comes from the
+  organization's own site, read on `SUPPORT_CHECKED`; only organizations with a working website; the
+  page links out, handles no donations and says ReefQuest is independent),
   `AboutPage` (caveats, data credits and licenses).
 - `src/scenes/`: the 3D island scene. `terrain.ts` (decode heightmap, mesh, display scale: relief
   ×4 and depths beyond 40 m compressed; heightfield ray-march picking; lat/lon via the pipeline's

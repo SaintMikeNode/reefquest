@@ -14,8 +14,8 @@ export function TopBar({ route }: { route: Route }) {
   const [open, setOpen] = useState(false);
   const links: [string, string, boolean][] = [
     [href.home, t("nav.home"), route.page === "home" || route.page === "island" || route.page === "islands"],
-    [href.heat, t("nav.heat"), route.page === "heat"],
     [href.learn, t("nav.learn"), route.page === "learn"],
+    [href.support, t("nav.support"), route.page === "support"],
     [href.about, t("nav.about"), route.page === "about"],
   ];
   // On the home page the bar sits inside the illustrated hero frame.
@@ -67,7 +67,8 @@ export function Footer() {
     [href.home, t("nav.home")],
     [href.islands, t("nav.islands")],
     [href.heat, t("nav.heat")],
-    [href.learn, t("nav.learn")],
+    [href.lessons, t("nav.lessons")],
+    [href.support, t("nav.support")],
     [href.about, t("nav.about")],
   ];
   return (

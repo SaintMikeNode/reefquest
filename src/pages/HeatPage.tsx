@@ -10,6 +10,7 @@ import { HeatStripes } from "../ui/HeatStripes";
 const ISLAND_COLORS: Record<string, string> = { roatan: "#6fb6f2", utila: "#5fd0d6", guanaja: "#ff8a6e", "cayos-cochinos": "#b9a3ff" };
 const ORDER = ["roatan", "utila", "guanaja", "cayos-cochinos"];
 
+/** The heat-stress tab of the Learn hub (pages/LearnHub.tsx). */
 export function HeatPage() {
   const t = useT();
   const lang = useLang((s) => s.lang);
@@ -43,11 +44,9 @@ export function HeatPage() {
 
   if (!series || !index || !latest || !year || !stats)
     return (
-      <main className="page">
-        <div className="page-head">
-          <p className="muted">{t("heat.loading")}</p>
-        </div>
-      </main>
+      <div className="pane">
+        <p className="muted">{t("heat.loading")}</p>
+      </div>
     );
 
   const worst: Record<number, number> = {};
@@ -59,10 +58,10 @@ export function HeatPage() {
     .sort((a, b) => b - a);
 
   return (
-    <main className="page">
-      <header className="page-head page-band-head">
+    <div className="pane">
+      <header className="pane-head">
         <p className="eyebrow">{t("heat.kicker")}</p>
-        <h1>{accent(t("heat.title"))}</h1>
+        <h2>{accent(t("heat.title"))}</h2>
         <p className="standfirst">{t("heat.lead")}</p>
       </header>
 
@@ -207,7 +206,7 @@ export function HeatPage() {
           NOAA Coral Reef Watch (2023), <a href="https://coralreefwatch.noaa.gov/product/5km/methodology.php">coralreefwatch.noaa.gov</a>
         </p>
       </section>
-    </main>
+    </div>
   );
 }
 

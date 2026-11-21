@@ -14,8 +14,8 @@ const ISLAND_NAMES: Record<string, string> = { roatan: "Roatán", utila: "Utila"
 // only when visited.
 const IslandScene = lazy(() => import("./scenes/IslandScene"));
 const IslandsPage = lazy(() => import("./pages/IslandsPage").then((m) => ({ default: m.IslandsPage })));
-const HeatPage = lazy(() => import("./pages/HeatPage").then((m) => ({ default: m.HeatPage })));
-const LearnPage = lazy(() => import("./pages/LearnPage").then((m) => ({ default: m.LearnPage })));
+const LearnHub = lazy(() => import("./pages/LearnHub").then((m) => ({ default: m.LearnHub })));
+const SupportPage = lazy(() => import("./pages/SupportPage").then((m) => ({ default: m.SupportPage })));
 const AboutPage = lazy(() => import("./pages/AboutPage").then((m) => ({ default: m.AboutPage })));
 
 
@@ -88,7 +88,7 @@ export function App() {
           <Home />
         ) : (
           // Inner pages sit on the same dotted navy sea as the landing page.
-          <div className="sea-bg">{route.page === "heat" ? <HeatPage /> : route.page === "learn" ? <LearnPage /> : <AboutPage />}</div>
+          <div className="sea-bg">{route.page === "learn" ? <LearnHub tab={route.tab} /> : route.page === "support" ? <SupportPage /> : <AboutPage />}</div>
         )}
       </Suspense>
       <Footer />

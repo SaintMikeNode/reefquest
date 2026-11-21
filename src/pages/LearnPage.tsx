@@ -5,14 +5,15 @@ import { BleachingFigure, DhwFigure } from "../ui/LessonFigures";
 
 const FIGURES: Record<string, () => ReactElement> = { bleaching: BleachingFigure, dhw: DhwFigure };
 
+/** The lessons tab of the Learn hub (pages/LearnHub.tsx). */
 export function LearnPage() {
   const t = useT();
   const L = useL();
   return (
-    <main className="page">
-      <header className="page-head page-band-head">
+    <div className="pane">
+      <header className="pane-head">
         <p className="eyebrow">{t("learn.kicker")}</p>
-        <h1>{accent(t("learn.title"))}</h1>
+        <h2>{accent(t("hub.lessonsTitle"))}</h2>
         <p className="standfirst">{t("learn.lead")}</p>
       </header>
       <div className="article">
@@ -43,6 +44,6 @@ export function LearnPage() {
           </article>
         ))}
       </div>
-    </main>
+    </div>
   );
 }

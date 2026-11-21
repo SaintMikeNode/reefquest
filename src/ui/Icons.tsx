@@ -61,3 +61,12 @@ export const IconDive = (p: SVGProps<SVGSVGElement>) => (
 export const IconSurface = (p: SVGProps<SVGSVGElement>) => (
   <svg {...base(p)}><path d="M3 7c1.5 1.2 3 1.2 4.5 0s3-1.2 4.5 0 3 1.2 4.5 0 3-1.2 4.5 0" /><path d="M12 20v-9M8.5 14.5L12 11l3.5 3.5" /></svg>
 );
+export const IconHeat = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base(p)}><path d="M10 13.6V5.5a2 2 0 0 1 4 0v8.1a4 4 0 1 1-4 0z" /><path d="M12 9.5v6.5" /><circle cx="12" cy="17" r="1.2" /></svg>
+);
+export const IconHeart = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base(p)}><path d="M12 19.5s-7-4.2-7-9.4A3.9 3.9 0 0 1 12 7.6a3.9 3.9 0 0 1 7 2.5c0 5.2-7 9.4-7 9.4z" /></svg>
+);
+export const IconExternal = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base(p)}><path d="M9 6H6.5A1.5 1.5 0 0 0 5 7.5v10A1.5 1.5 0 0 0 6.5 19h10a1.5 1.5 0 0 0 1.5-1.5V15" /><path d="M13 5h6v6M19 5l-8 8" /></svg>
+);
