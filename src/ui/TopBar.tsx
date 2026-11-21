@@ -6,7 +6,7 @@ import { HAS_WEBGL } from "../webgl";
 import { Contact, Credit } from "./Credit";
 import { Logo } from "./Logo";
 import { SpecularButton } from "./SpecularButton";
-import { SupportButton } from "./Support";
+import { SupportLine } from "./Support";
 
 const SkyIslands = lazy(() => import("./SkyIslands"));
 
@@ -105,7 +105,7 @@ export function Footer() {
             Saint Mike Node
           </a>
           <Contact className="footer-credit footer-contact" />
-          <SupportButton className="btn primary small" />
+          <SupportLine className="footer-credit" />
         </div>
       </div>
       <div ref={land} className="footer-land">

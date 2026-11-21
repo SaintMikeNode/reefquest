@@ -5,8 +5,23 @@
 </p>
 
 <p align="center">
-  <a href="https://reefquest.todosenlaweb.com"><b>reefquest.todosenlaweb.com</b></a>
-  &nbsp;·&nbsp; Spanish first, English second &nbsp;·&nbsp; free and nonprofit &nbsp;·&nbsp; MIT license
+  <a href="https://reefquest.todosenlaweb.com"><img src="https://img.shields.io/badge/website-reefquest.todosenlaweb.com-0a66f0" alt="website: reefquest.todosenlaweb.com"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-0b4f8c" alt="license: MIT"></a>
+  <a href="https://todosenlaweb.com"><img src="https://img.shields.io/badge/part%20of-Todos%20en%20la%20Web-b3402a" alt="part of Todos en la Web"></a>
+  <a href="https://nerdypunk.dev"><img src="https://img.shields.io/badge/by-nerdypunkdev-e9b949" alt="by nerdypunkdev"></a>
+  <br>
+  <img src="https://img.shields.io/badge/languages-Espa%C3%B1ol%20%C2%B7%20English-0b4f8c" alt="languages: Español · English">
+  <img src="https://img.shields.io/badge/price-free%20%C2%B7%20nonprofit-1f8f96" alt="price: free, nonprofit">
+  <img src="https://img.shields.io/badge/privacy-no%20tracking-2f9a66" alt="privacy: no tracking">
+  <img src="https://img.shields.io/badge/plays%20on-phone%20%C2%B7%20desktop-084fc2" alt="plays on phone and desktop">
+  <br>
+  <img src="https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white" alt="TypeScript">
+  <img src="https://img.shields.io/badge/React-149ECA?logo=react&logoColor=white" alt="React">
+  <img src="https://img.shields.io/badge/three.js-000000?logo=threedotjs&logoColor=white" alt="three.js">
+  <img src="https://img.shields.io/badge/React%20Three%20Fiber-000000?logo=react&logoColor=white" alt="React Three Fiber">
+  <img src="https://img.shields.io/badge/Python-data%20pipeline-3776AB?logo=python&logoColor=white" alt="Python data pipeline">
+  <img src="https://img.shields.io/badge/Cloudflare%20Workers-F38020?logo=cloudflareworkers&logoColor=white" alt="Cloudflare Workers">
+  <img src="https://img.shields.io/badge/Vite-646CFF?logo=vite&logoColor=white" alt="Vite">
 </p>
 
 **ReefQuest** is a free, bilingual 3D web experience about the coral reefs of the **Bay Islands of
@@ -20,15 +35,19 @@ credited where it is shown, and every fact in the stories and lessons has its so
 
 ## What you can do
 
-- **See today's heat on the reef.** The home page shows each island's current NOAA alert level,
-  a live map of 5 km heat cells, and 42 years of heat as stripes.
+- **See the latest heat on the reef.** The home page shows each island's most recent NOAA alert
+  level, a map of 5 km heat cells, and 42 years of heat as stripes. The data is updated by a script,
+  not fetched live, so every figure carries its date.
 - **Fly over each island in 3D.** Real relief and reef shelf, habitat maps, depth contours and the
-  heat overlay, with a timeline you can scrub or play from 1985 to today. As the heat builds, the
+  heat overlay, with a timeline you can scrub or play from 1985 to the latest satellite day. As the heat builds, the
   water warms in color and coral areas pale.
 - **Take the research boat out.** Sail a stylized survey vessel over detailed reef zones, map the
   seafloor with its multibeam sonar, watch the echo sounder, lower the CTD, and keep a logbook.
 - **Dive.** Drop underwater among 11 kinds of Caribbean reef life placed by habitat and depth, with a
   field guide to what is nearby.
+- **Find things.** Whale sharks off Utila, met by the island's own encounter guidelines (go in
+  slowly, stay out of the feeding frenzy); sea turtles, reef sharks, and three shipwrecks on the
+  seafloor. Each one stands for something documented at that place, and its story has the sources.
 - **Learn.** Short explainers on corals, bleaching and degree heating weeks, stories from real
   places (each one sourced), and 71 openly licensed photos of the islands' reefs.
 

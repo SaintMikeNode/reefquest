@@ -16,6 +16,7 @@ import { Hud } from "./Hud";
 import { FOG_CALM, FOG_SEVERE, SCENE_FOG, terrainMaterial, waterMaterial } from "./materials";
 import { clearLabels, LabelProjector, labelRef, setLabelAnchor } from "./labels";
 import { CANOPY_GREENS, canopyGeometry, h01, PALM_GREENS, palmGeometry, vegetationMaterial } from "./nature";
+import { Plane } from "./plane";
 import { heatRef, useScene } from "./sceneStore";
 import { openSite, SiteBoats, sitesFade, usePlaces } from "./siteBoats";
 import { buildGeometry, displayY, homeDistance, homeOffset, habitatAt, heightAt, loadTerrain, pickHeightfield, uvToLonLat, type TerrainData } from "./terrain";
@@ -74,7 +75,7 @@ export default function IslandScene({ island }: { island: string }) {
       .then(([terrain, idx]) => {
         if (!alive) return;
         const last = idx.years[idx.years.length - 1];
-        useScene.setState({ year: last.year, day: last.days - 1, site: null, playing: false, intro: false, introPending: true, readout: null, boat: null });
+        useScene.setState({ year: last.year, day: last.days - 1, site: null, hover: null, playing: false, intro: false, introPending: true, readout: null, boat: null });
         setIndex(idx);
         setTd(terrain);
       })
@@ -104,7 +105,7 @@ export default function IslandScene({ island }: { island: string }) {
         camera={{ position: homeCamera(td), fov: 42, near: 0.5, far: 4000 }}
         frameloop={boat && !MOBILE ? "always" : "demand"}
         onCreated={(st) => {
-          if (import.meta.env.DEV) Object.assign(window, { __rqGl: st.gl, __rqScene: st.scene }); // dev: renderer.info for perf checks
+          if (import.meta.env.DEV) Object.assign(window, { __rqGl: st.gl, __rqScene: st.scene, __rqCam: () => st.camera }); // dev: renderer.info for perf checks
           // If the GPU drops the 3D context (driver reset, memory pressure), the view would freeze
           // and stop answering clicks. Rebuild it: when the browser restores the context, or after
           // 2 s if it doesn't.
@@ -128,7 +129,9 @@ export default function IslandScene({ island }: { island: string }) {
             <BoatWorld key={boat.zone + boat.lon} island={island} zoneId={boat.zone} start={boat} />
           </Suspense>
         ) : (
-          <World td={td} index={index} />
+          // Keyed by island: going straight from one island to another (the address bar, history)
+          // must start the world afresh, or the heat status and overlay stay the last island's.
+          <World key={td.meta.island} td={td} index={index} />
         )}
       </Canvas>
       {!boat && <PinOverlay td={td} />}
@@ -405,6 +408,7 @@ function World({ td, index }: { td: TerrainData; index: HeatIndex }) {
       {/* Always mounted: the "Dive sites" layer fades them (sitesFade) instead of removing them. */}
       <Pins td={td} />
       <SiteBoats td={td} />
+      <Plane td={td} />
       <Picker td={td} />
       <CameraRig td={td} />
       <LabelProjector />
@@ -534,6 +538,10 @@ function CameraRig({ td }: { td: TerrainData }) {
   const controls = useRef<MapControlsImpl>(null);
   const flyTo = useScene((s) => s.flyTo);
   const anim = useRef<{ fromT: THREE.Vector3; toT: THREE.Vector3; fromP: THREE.Vector3; toP: THREE.Vector3; t: number } | null>(null);
+  // The last fly-to this view has acted on. The store outlives the view, and its last order is in
+  // the coordinates of the island it was given on: replayed on the next island it flew the camera
+  // out over empty sea (Tulio: "the island was off camera").
+  const seen = useRef(useScene.getState().flyTo?.key ?? 0);
   const { camera, invalidate } = useThree();
 
   useEffect(() => {
@@ -544,6 +552,10 @@ function CameraRig({ td }: { td: TerrainData }) {
     cam.far = 4000;
     cam.fov = 42;
     cam.updateProjectionMatrix();
+    // Every island opens at its own default view, whatever was on screen before (another island,
+    // a place flown to, the boat).
+    anim.current = null;
+    seen.current = useScene.getState().flyTo?.key ?? 0;
     cam.position.set(...homeCamera(td));
     c.target.set(td.center.x, 0, td.center.z);
     c.update();
@@ -554,7 +566,8 @@ function CameraRig({ td }: { td: TerrainData }) {
   }, [invalidate, td, camera]);
 
   useEffect(() => {
-    if (!flyTo || !controls.current) return;
+    if (!flyTo || !controls.current || flyTo.key === seen.current) return;
+    seen.current = flyTo.key;
     const c = controls.current;
     const toT = new THREE.Vector3(flyTo.x, 0, flyTo.z);
     const dir = flyTo.home ? new THREE.Vector3(...homeOffset(td)).normalize() : camera.position.clone().sub(c.target).normalize();

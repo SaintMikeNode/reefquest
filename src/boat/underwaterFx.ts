@@ -1,8 +1,62 @@
 import * as THREE from "three";
-import { WATER } from "./props";
+import { WATER, WATER_GLSL } from "./props";
 
-// Two cheap effects for the underwater camera: shafts of sunlight from the surface (a few additive
-// quads that turn to face the camera) and marine snow (one point cloud that wraps around the camera).
+// Cheap effects for the underwater camera: the water itself as a backdrop (a dome whose color
+// follows the direction, with rays of sunlight fanning down through it), shafts of sunlight near
+// the camera (a few additive quads that turn to face it) and marine snow (one point cloud that
+// wraps around the camera).
+
+/** The water all around: one inside-out sphere centered on the camera, drawn first. Without it the
+ *  view below the horizon was one flat color (Tulio: "boring and lame"). */
+export class WaterDome {
+  mesh: THREE.Mesh;
+  private mat: THREE.ShaderMaterial;
+  constructor(rays: boolean) {
+    this.mat = new THREE.ShaderMaterial({
+      side: THREE.BackSide,
+      depthWrite: false,
+      depthTest: false,
+      uniforms: { uTime: { value: 0 }, uSun: { value: new THREE.Vector3(-0.32, 0.9, -0.28).normalize() }, uRays: { value: rays ? 1 : 0 }, ...WATER },
+      vertexShader: /* glsl */ `
+        varying vec3 vDir;
+        void main() {
+          vDir = position;
+          gl_Position = projectionMatrix * viewMatrix * vec4(position * 500.0 + cameraPosition, 1.0);
+        }`,
+      fragmentShader: /* glsl */ `
+        uniform float uTime;
+        uniform vec3 uSun;
+        uniform float uRays;
+        varying vec3 vDir;
+        ${WATER_GLSL}
+        void main() {
+          vec3 d = normalize(vDir);
+          vec3 c = rqWaterDir(d);
+          if (uRays > 0.5) {
+            // Rays fan out from the sun's direction: bands around that axis, drifting and
+            // breathing, strongest toward the sun and gone well below the horizon.
+            vec3 u = normalize(cross(uSun, vec3(0.0, 0.0, 1.0))), w = cross(uSun, u);
+            float ang = atan(dot(d, w), dot(d, u));
+            float toSun = dot(d, uSun) * 0.5 + 0.5;
+            float bands = sin(ang * 13.0 + uTime * 0.11) * 0.5 + sin(ang * 31.0 - uTime * 0.17 + 1.3) * 0.3 + sin(ang * 57.0 + uTime * 0.23) * 0.2;
+            float rays = pow(max(0.0, bands * 0.5 + 0.5), 3.0) * pow(toSun, 2.2) * smoothstep(-0.75, 0.15, d.y);
+            c += (uRqFog * 1.5 + vec3(0.05, 0.14, 0.16)) * rays * 0.42;
+            // A soft glow where the sun stands above the water.
+            c += vec3(0.5, 0.75, 0.8) * pow(toSun, 14.0) * 0.28;
+          }
+          gl_FragColor = vec4(c, 1.0);
+        }`,
+    });
+    this.mesh = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 12), this.mat);
+    this.mesh.frustumCulled = false;
+    this.mesh.renderOrder = -2;
+    this.mesh.visible = false;
+  }
+  update(t: number, visible: boolean) {
+    this.mesh.visible = visible;
+    if (visible) this.mat.uniforms.uTime.value = t;
+  }
+}
 
 export class LightShafts {
   group = new THREE.Group();
@@ -33,7 +87,7 @@ export class LightShafts {
           float edge = smoothstep(0.0, 0.5, vUv.x) * smoothstep(1.0, 0.5, vUv.x);
           float fall = pow(vUv.y, 1.6);                       // bright at the surface, fading down
           float flicker = 0.75 + 0.25 * sin(uTime * 0.8 + vUv.x * 6.0 + vUv.y * 3.0);
-          float a = edge * fall * flicker * 0.11 * exp(-vDist / (uRqVis * 1.8));
+          float a = edge * fall * flicker * 0.15 * exp(-vDist / (uRqVis * 1.8));
           gl_FragColor = vec4(vec3(0.75, 0.95, 1.0) * a, a);
         }`,
     });

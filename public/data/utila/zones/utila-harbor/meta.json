@@ -1,0 +1,55 @@
+{
+ "id": "utila-harbor",
+ "island": "utila",
+ "name": "Utila harbor \u00b7 Halliburton",
+ "size_m": [
+  4500.0,
+  4500.0
+ ],
+ "cell_m": 10.0,
+ "habitat_cell_m": 5.0,
+ "height": {
+  "file": "height.png",
+  "width": 450,
+  "height": 450,
+  "min_m": -94.5,
+  "max_m": 33.8
+ },
+ "habitat": {
+  "file": "habitat.png",
+  "width": 900,
+  "height": 900
+ },
+ "bathymetry_source": "nominal-by-zone",
+ "detail": "resampled from the island model (40 m relief), not the 10 m build",
+ "center": {
+  "lat": 16.083,
+  "lon": -86.9
+ },
+ "geo": {
+  "lonlat_to_uv": [
+   [
+    23.766094247567782,
+    -0.011879962300643076,
+    2065.9657075083355
+   ],
+   [
+    -0.01148602529418949,
+    -24.58120599889663,
+    394.84161247693504
+   ]
+  ],
+  "uv_to_lonlat": [
+   [
+    0.04207673972045425,
+    -2.0335458937667398e-05,
+    -86.92107246090968
+   ],
+   [
+    -1.9661137671791644e-05,
+    -0.040681476962873615,
+    16.1033592139924
+   ]
+  ]
+ }
+}

@@ -3,8 +3,14 @@
 // read on the date below; the page links out and ReefQuest never handles donations.
 // Only organizations with a working website are listed (Tulio). Checked and left out: Roatán
 // Institute for Marine Sciences (part of a resort, no nonprofit statement), Kanahau (its projects
-// are on land), ProTECTOR (site under construction), Utila Coral Foundation (no reachable site),
-// Centro de Estudios Marinos (its site describes mainland work only).
+// are on land), ProTECTOR (site under construction), Utila Coral Restoration / Utila Coral
+// Foundation (Instagram @utilacoral and GoFundMe only), Green Island Challenge on Guanaja and
+// Dive Scouts of Roatán (no website found), Centro de Estudios Marinos (its site describes
+// mainland work only).
+// How to look for new ones (the first pass missed Caribbean Reef Guardians, Tulio found it):
+// don't search by names already known. Check the US nonprofit registry (ProPublica Nonprofit
+// Explorer), the Global Fund for Coral Reefs' REEF+ list for Honduras, and search by activity
+// ("adopt a coral", "coral nursery", "sea turtle", "mangrove") island by island.
 import type { Source } from "./sites";
 
 /** When the organizations' websites were read. Update it when the entries are re-checked. */
@@ -38,7 +44,7 @@ export const ORGS: Org[] = [
     id: "rmp",
     name: "Roatán Marine Park",
     place: "roatan",
-    kind: { es: "Organización comunitaria sin fines de lucro", en: "Community-based nonprofit" },
+    kind: { es: "ONG comunitaria sin fines de lucro", en: "Community-based nonprofit" },
     about: {
       es: "Cuida el área marina y costera de Roatán, dentro del Parque Nacional Marino Islas de la Bahía.",
       en: "Looks after Roatán's marine and coastal area, inside the Bay Islands National Marine Park.",
@@ -58,8 +64,8 @@ export const ORGS: Org[] = [
       ],
     },
     support: {
-      es: "Donación en línea. Pasa por Roatan Marine Park International (EE. UU.) y solo es deducible de impuestos en EE. UU.; para donar desde Honduras, la organización pide escribirle.",
-      en: "Online donation. It goes through Roatan Marine Park International (USA) and is tax-deductible only in the USA; to give from Honduras, the organization asks you to write to it.",
+      es: "Donación en línea, vía su filial Roatan Marine Park International (EE. UU.); deducible solo en EE. UU. Desde Honduras, la organización pide escribirle.",
+      en: "Online donation through its US arm, Roatan Marine Park International; tax-deductible only in the USA. From Honduras, the organization asks you to write to it.",
     },
     links: [
       { kind: "donate", url: "https://www.roatanmarinepark.org/donate" },
@@ -74,7 +80,7 @@ export const ORGS: Org[] = [
     id: "bica-roatan",
     name: "BICA Roatán",
     place: "roatan",
-    kind: { es: "Organización hondureña sin fines de lucro, fundada en 1990", en: "Honduran nonprofit, founded in 1990" },
+    kind: { es: "ONG hondureña, desde 1990", en: "Honduran nonprofit, since 1990" },
     about: {
       es: "Bay Islands Conservation Association (BICA) tiene capítulos en Roatán, Utila y Guanaja.",
       en: "The Bay Islands Conservation Association (BICA) has chapters on Roatán, Utila and Guanaja.",
@@ -102,6 +108,81 @@ export const ORGS: Org[] = [
       { kind: "site", url: "https://www.bicainc.org/" },
     ],
     sources: [BICA_ABOUT, { label: "BICA Roatán, coral restoration", url: "https://www.bicainc.org/bica-roatan-coral-restoration" }, CORAL_ROATAN],
+  },
+  {
+    id: "crg",
+    name: "Caribbean Reef Guardians",
+    place: "roatan",
+    kind: { es: "Sin fines de lucro (EE. UU.), desde 2024", en: "US nonprofit, since 2024" },
+    about: {
+      es: "La fundaron instructores de buceo de Roatán que veían enfermar y blanquearse los corales. Su base de buceo está en West End.",
+      en: "Founded by scuba instructors on Roatán who watched the corals sicken and bleach. Its home dive base is in West End.",
+    },
+    does: {
+      es: [
+        "Santuarios de coral con 16 especies del Caribe, del cuerno de alce y el cuerno de ciervo al coral pilar, con fragmentos rotos o caídos rescatados de sitios de Roatán.",
+        "Cursos Reef Guardian para buzos (de cada uno, US$25 van al santuario) y sesiones de ciencia del coral para instructores y guías.",
+        "Educación con escuelas: el currículo oceánico de Island Academy y la formación de los Dive Scouts of Roatán.",
+        "Prepara un biobanco de genética de corales y un centro de educación marina en Roatán, con Branch Foundation.",
+      ],
+      en: [
+        "Coral sanctuaries with 16 Caribbean species, from elkhorn and staghorn to pillar coral, grown from broken and fallen fragments rescued around Roatán.",
+        "Reef Guardian courses for divers ($25 of each goes to the sanctuary) and coral science sessions for instructors and guides.",
+        "Education with schools: Island Academy's ocean curriculum and training for the Dive Scouts of Roatán.",
+        "Planning a coral genetics biobank and a marine education center on Roatán, with Branch Foundation.",
+      ],
+    },
+    support: {
+      es: "Adopta un coral desde US$35, dona por PayPal o hazte voluntario. Deducible de impuestos en EE. UU.",
+      en: "Adopt a coral from $35, donate through PayPal or volunteer. Tax-deductible in the USA.",
+    },
+    links: [
+      { kind: "donate", url: "https://www.paypal.com/us/fundraiser/charity/5196503" },
+      { kind: "site", url: "https://caribbeanreefguardians.com/" },
+    ],
+    sources: [
+      { label: "Caribbean Reef Guardians", url: "https://caribbeanreefguardians.com/" },
+      { label: "Caribbean Reef Guardians, About us", url: "https://caribbeanreefguardians.com/pages/about-us" },
+      { label: "ProPublica Nonprofit Explorer (IRS data)", url: "https://projects.propublica.org/nonprofits/organizations/993032571" },
+      { label: "Global Fund for Coral Reefs (MAR Fund), REEF+", url: "https://globalfundcoralreefs.org/reef-plus/finance-solutions/caribbean-reef-guardians/" },
+    ],
+  },
+  {
+    id: "birr",
+    name: "Bay Islands Reef Restoration",
+    place: "roatan",
+    kind: { es: "ONG registrada en Honduras", en: "Honduran-registered NGO" },
+    about: {
+      es: "Programa de viveros y restauración de coral, apoyado por resorts y centros de buceo de Roatán.",
+      en: "A coral nursery and restoration program, backed by Roatán resorts and dive shops.",
+    },
+    does: {
+      es: [
+        "Viveros de “árboles” de coral desde 2016, instalados con Coral Restoration Foundation International; hoy en Turquoise Bay Channel, Seaquest Deep (West Bay) y White Hole.",
+        "Cultiva coral cuerno de alce y cuerno de ciervo a partir de colonias sanas de Roatán y los trasplanta al arrecife.",
+        "Educa a residentes, buzos y aprendices de divemaster, ofrece pasantías y la especialidad PADI de restauración, y recoge datos sobre la salud del coral.",
+        "Trabaja con dos licencias ambientales de MiAmbiente.",
+      ],
+      en: [
+        "Coral “tree” nurseries since 2016, set up with Coral Restoration Foundation International; now at Turquoise Bay Channel, Seaquest Deep (West Bay) and White Hole.",
+        "Grows elkhorn and staghorn coral from healthy Roatán colonies and plants it back on the reef.",
+        "Teaches residents, divers and divemaster trainees, offers internships and a PADI restoration specialty, and collects data on coral health.",
+        "Works under two environmental licenses from MiAmbiente.",
+      ],
+    },
+    support: {
+      es: "Adopta un árbol de coral o haz una inmersión de restauración. Para donar, la organización pide escribirle. Su sitio es de 2021: confirma que sigue activa.",
+      en: "Adopt a coral tree or join a restoration dive. To donate, the organization asks you to write to it. Its site is dated 2021: check it is still running.",
+    },
+    links: [
+      { kind: "donate", url: "https://bayislandsreefrestoration.org/donate" },
+      { kind: "site", url: "https://bayislandsreefrestoration.org/" },
+    ],
+    sources: [
+      { label: "Bay Islands Reef Restoration, Our history", url: "https://bayislandsreefrestoration.org/our-history" },
+      { label: "Bay Islands Reef Restoration, Our mission", url: "https://bayislandsreefrestoration.org/our-mission" },
+      { label: "Bay Islands Reef Restoration, Donate", url: "https://bayislandsreefrestoration.org/donate" },
+    ],
   },
   {
     id: "bica-utila",
@@ -141,7 +222,7 @@ export const ORGS: Org[] = [
     id: "wsorc",
     name: "Whale Shark & Oceanic Research Center",
     place: "utila",
-    kind: { es: "Organización sin fines de lucro registrada en Honduras, según su sitio", en: "Registered Honduran nonprofit, according to its site" },
+    kind: { es: "ONG hondureña, según su sitio", en: "Honduran nonprofit, per its site" },
     about: {
       es: "Centro de investigación del tiburón ballena en Utila.",
       en: "Whale shark research center on Utila.",
@@ -159,8 +240,8 @@ export const ORGS: Org[] = [
       ],
     },
     support: {
-      es: "Donación por PayPal a través de Bay Islands College of Diving, una escuela de buceo que el centro describe como su organización hermana. También ofrece pasantías.",
-      en: "PayPal donation through Bay Islands College of Diving, a dive school the center describes as its sister organization. It also offers internships.",
+      es: "Donación por PayPal a través de Bay Islands College of Diving, una escuela de buceo que el centro llama su organización hermana.",
+      en: "PayPal donation through Bay Islands College of Diving, a dive school the center calls its sister organization.",
     },
     links: [
       { kind: "support", url: "https://www.wsorc.org/about" },
@@ -209,19 +290,21 @@ export const ORGS: Org[] = [
     id: "fcc",
     name: "Fundación Cayos Cochinos",
     place: "cayos-cochinos",
-    kind: { es: "Fundación sin fines de lucro, creada en 1994 (Honduras Coral Reef Fund)", en: "Nonprofit foundation, created in 1994 (Honduras Coral Reef Fund)" },
+    kind: { es: "Fundación sin fines de lucro, desde 1994", en: "Nonprofit foundation, since 1994" },
     about: {
-      es: "Se creó para establecer el área protegida de Cayos Cochinos. Trabaja en coordinación con el ICF y la Fuerza Naval.",
-      en: "Created to establish the Cayos Cochinos protected area. Works in coordination with ICF and the Honduran Navy.",
+      es: "También llamada Honduras Coral Reef Fund. Se creó para establecer el área protegida de Cayos Cochinos.",
+      en: "Also called the Honduras Coral Reef Fund. Created to establish the Cayos Cochinos protected area.",
     },
     does: {
       es: [
+        "Trabaja en coordinación con el ICF y la Fuerza Naval.",
         "Rescate y restauración de coral en el Monumento Natural Marino Archipiélago Cayos Cochinos.",
         "Control del pez león.",
         "Monitoreo de la anidación de la tortuga carey con voluntarios.",
         "Planes de manejo, desarrollo comunitario y cultura garífuna.",
       ],
       en: [
+        "Works in coordination with ICF and the Honduran Navy.",
         "Coral rescue and restoration in the Cayos Cochinos Archipelago Natural Marine Monument.",
         "Lionfish control.",
         "Hawksbill turtle nesting monitoring with volunteers.",
@@ -245,7 +328,7 @@ export const ORGS: Org[] = [
     id: "coral",
     name: "Coral Reef Alliance",
     place: "all",
-    kind: { es: "ONG internacional sin fines de lucro, con sede en EE. UU.", en: "International nonprofit, based in the USA" },
+    kind: { es: "ONG internacional, con sede en EE. UU.", en: "International nonprofit, US-based" },
     about: {
       es: "Apoya a las organizaciones locales. Trabaja en Roatán desde 2005.",
       en: "Supports the local organizations. Has worked on Roatán since 2005.",
@@ -280,7 +363,7 @@ export const ORGS: Org[] = [
     id: "hrhp",
     name: "Healthy Reefs for Healthy People",
     place: "all",
-    kind: { es: "Equipo técnico regional del Arrecife Mesoamericano", en: "Regional technical team for the Mesoamerican Reef" },
+    kind: { es: "Equipo técnico regional", en: "Regional technical team" },
     about: {
       es: "Coordina la Healthy Reefs Initiative, con más de 70 organizaciones socias en México, Belice, Guatemala y Honduras.",
       en: "Leads the Healthy Reefs Initiative, with over 70 partner organizations in Mexico, Belize, Guatemala and Honduras.",
@@ -297,7 +380,7 @@ export const ORGS: Org[] = [
     id: "maralliance",
     name: "MarAlliance",
     place: "all",
-    kind: { es: "ONG internacional sin fines de lucro (EE. UU., Belice y Panamá)", en: "International nonprofit (USA, Belize and Panama)" },
+    kind: { es: "ONG internacional (EE. UU., Belice, Panamá)", en: "International nonprofit (USA, Belize, Panama)" },
     about: {
       es: "Estudia y protege tiburones, rayas y otra fauna marina grande.",
       en: "Studies and protects sharks, rays and other large marine wildlife.",

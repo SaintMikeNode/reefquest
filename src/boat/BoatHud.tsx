@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { REEF_LIFE, REEF_LIFE_NOTE, REEF_LIFE_SOURCES } from "../content/reefLife";
-import { SITES } from "../content/sites";
+import { siteName, SITES } from "../content/sites";
 import { fmtDate, fmtNum, useL, useLang, useT } from "../i18n";
 import { HeatStatus } from "../scenes/Hud";
 import { BLEACH } from "./corals";
@@ -12,14 +12,15 @@ import { BENTHIC, GEOMORPHIC } from "../scenes/materials";
 import { useScene } from "../scenes/sceneStore";
 import { fmtLat, fmtLon, SiteCard } from "../scenes/SiteCard";
 import { AlertChip } from "../ui/AlertChip";
-import { IconBack, IconCamera, IconCast, IconCheck, IconClose, IconDive, IconSurface } from "../ui/Icons";
+import { IconBack, IconBook, IconCamera, IconCast, IconCheck, IconClose, IconDive, IconDownload, IconShark, IconSurface, IconTurtle, IconWhaleShark, IconWreck } from "../ui/Icons";
 import { PhotoStrip, usePhotos } from "../ui/PhotoStrip";
 import { panelMotion } from "../ui/motionPresets";
 import { LangToggle } from "../ui/LangToggle";
 import { MouseGuide } from "../scenes/MouseGuide";
-import { useBottomInset } from "../scenes/useBottomInset";
+import { useBottomInset, useWidthVar } from "../scenes/useBottomInset";
 import { transition } from "../ui/SceneTransition";
-import { useBoat } from "./boatStore";
+import { useBoat, type MissionType } from "./boatStore";
+import { requestShot, useRoll } from "./photos";
 import { Echogram } from "./Echogram";
 
 const TOUCH = typeof matchMedia !== "undefined" && matchMedia("(pointer: coarse)").matches;
@@ -42,17 +43,48 @@ export function BoatHud({ index, zoneName, islandName }: { index: HeatIndex; zon
   const surveyHa = useBoat((s) => s.surveyHa);
   const cast = useBoat((s) => s.cast);
   const under = useBoat((s) => s.under);
+  const mission = useBoat((s) => s.mission);
+  const notice = useBoat((s) => s.notice);
+  const wild = useBoat((s) => s.wild);
+  const placePos = useBoat((s) => s.placePos);
+  const sightings = useBoat((s) => s.sightings);
   const bottomRef = useRef<HTMLDivElement>(null);
   // Diving and surfacing are animated: a water line sweeping down going under, up coming back, with bubbles.
+  const camOn = useRoll((s) => s.camera);
+  const shots = useRoll((s) => s.photos);
+  const [logTab, setLogTab] = useState<"habitats" | "photos">("habitats");
+  // The shutter: a photo of what is in frame, which completes that place's mission.
+  const shoot = () => {
+    const roll = useRoll.getState();
+    useRoll.setState({ flash: Date.now() });
+    const id = roll.aim;
+    if (!id) {
+      flash(t("shot.none"));
+      return;
+    }
+    const had = !!roll.photos[id];
+    const s = SITES.find((x) => x.id === id);
+    requestShot((url) => {
+      useRoll.getState().add(id, url);
+      flash(t(had ? "shot.again" : "shot.saved").replace("{name}", s ? siteName(s, lang) : ""));
+      window.setTimeout(() => useRoll.getState().last === id && useRoll.setState({ last: null }), 2600);
+    });
+  };
+  const toggleCamera = () => useRoll.getState().setCamera(!useRoll.getState().camera);
   const toggleDive = () => {
     const goUnder = !useBoat.getState().under;
     transition({
       kind: goUnder ? "dive" : "surface",
       label: goUnder ? t("boat.dive") : t("boat.surfaceShort"),
-      apply: () => useBoat.setState({ under: goUnder }),
+      apply: () => {
+        useBoat.setState({ under: goUnder });
+        if (!goUnder) useRoll.getState().setCamera(false); // the camera is for under the water
+      },
     });
   };
   useBottomInset(bottomRef, "--bb"); // the sounder and arrival bar stack above the bottom bar
+  const toolsRef = useRef<HTMLDivElement>(null);
+  useWidthVar(toolsRef, "--tools-w"); // phones: the way back takes only the room beside the tools
   const day = useScene((s) => s.day);
   const setBoat = useScene((s) => s.setBoat);
   const [story, setStory] = useState<string | null>(null);
@@ -88,6 +120,12 @@ export function BoatHud({ index, zoneName, islandName }: { index: HeatIndex; zon
     return BENTHIC[benthic] ? L(BENTHIC[benthic]) : t("boat.open");
   }
 
+  // Wildlife (boat/wildlife.tsx) asks for a message: flash it.
+  useEffect(() => {
+    if (notice) flash(t(notice.key as "boat.sight.saved"));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [notice]);
+
   // A cast finished: announce the sample (and the mission, if this completed it).
   useEffect(() => {
     if (samples.length > prevSamples.current && samples[0]) {
@@ -103,11 +141,24 @@ export function BoatHud({ index, zoneName, islandName }: { index: HeatIndex; zon
     useBoat.setState({ castReq: Date.now() });
   };
 
-  useEffect(() => () => useBoat.setState({ near: null, tele: null, target: null, under: false }), []);
+  useEffect(
+    () => () => {
+      useBoat.setState({ near: null, tele: null, target: null, under: false });
+      useRoll.getState().setCamera(false);
+    },
+    [],
+  );
 
   useEffect(() => {
     const on = (e: KeyboardEvent) => {
       if (e.code === "KeyU" && (e.target as HTMLElement)?.tagName !== "INPUT") toggleDive();
+      // F: camera (under the water); with the viewfinder up, F or Enter takes the photo, Esc closes.
+      if (useBoat.getState().under && (e.code === "KeyF" || (e.code === "Enter" && useRoll.getState().camera))) {
+        e.preventDefault();
+        if (useRoll.getState().camera) shoot();
+        else toggleCamera();
+      }
+      if (e.code === "Escape" && useRoll.getState().camera) useRoll.getState().setCamera(false);
       if (e.code === "Space" && (e.target as HTMLElement)?.tagName !== "BUTTON") {
         e.preventDefault();
         startCast();
@@ -119,17 +170,52 @@ export function BoatHud({ index, zoneName, islandName }: { index: HeatIndex; zon
 
   useEffect(() => {
     const s = SITES.find((x) => x.id === near);
-    if (s?.kind === "story" && tele) setStory(s.id);
+    // A story opens on arrival, except where there is something to find first (whale sharks,
+    // turtles, reef sharks, a wreck): there the arrival bar offers it, and the hint has the screen.
+    if (s?.kind === "story" && !s.scene && !s.wreck && tele) setStory(s.id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [near]);
 
+  // Things to find in this zone: how far and which way each one is from the boat ("1.7 km NE"),
+  // and sailing to it. For the whale sharks the boat stops well short of the contact zone.
+  const whereIs = (id: string) => {
+    const p = placePos[id];
+    if (!p || !tele) return "";
+    const dx = p.x - tele.x, dz = p.z - tele.z, d = Math.hypot(dx, dz); // +x east, +z south
+    if (d < 60) return t("boat.here");
+    const dir = (lang === "es" ? ["N", "NE", "E", "SE", "S", "SO", "O", "NO"] : ["N", "NE", "E", "SE", "S", "SW", "W", "NW"])[Math.round((Math.atan2(dx, -dz) / Math.PI) * 4 + 8) % 8];
+    return `${meters(d)} ${dir}`;
+  };
+  const howFar = (id: string) => {
+    const p = placePos[id];
+    return p && tele ? meters(Math.hypot(p.x - tele.x, p.z - tele.z)) : "";
+  };
+  const sailTo = (id: string) => {
+    const p = placePos[id];
+    if (!p || !tele) return;
+    const dx = tele.x - p.x, dz = tele.z - p.z, d = Math.hypot(dx, dz) || 1;
+    const k = Math.min(1, p.standoff / d);
+    useBoat.getState().setTarget({ x: p.x + dx * k, z: p.z + dz * k });
+  };
+  // On boarding: say what there is to find here (the list is in the logbook).
+  useEffect(() => {
+    if (!wild.length) return;
+    const names = [...new Set(wild.map((id) => SITES.find((s) => s.id === id)).map((s) => (s?.wreck ? t("boat.scene.wreck") : s?.scene ? t(`boat.scene.${s.scene}`) : "")))].filter(Boolean);
+    const timer = window.setTimeout(() => flash(`${t("boat.sightings")}: ${names.join(", ").toLowerCase()}`), 3200);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wild]);
+
   const storySite = SITES.find((s) => s.id === story);
+  const missionSite = mission ? SITES.find((s) => s.id === mission.id) : undefined;
   const nearSite = SITES.find((s) => s.id === near);
   // Photos: the zone's own gallery (from the title plate), and a site's photos from the arrival bar.
   const photos = usePhotos();
   const zoneId = useScene((s) => s.boat?.zone);
   const zonePhotos = zoneId ? photos?.places[`zone:${zoneId}`] : undefined;
   const [gallery, setGallery] = useState(false);
+  const stackRef = useRef<HTMLDivElement>(null);
+  useStackRoom(stackRef, `${lang}|${zoneName}|${instOpen}|${gallery}`);
   const nearHasPhotos = !!(nearSite && photos?.places[nearSite.id]?.length);
   const openNear = nearSite && (nearSite.kind === "story" || nearHasPhotos) ? () => (setGallery(false), setStory(nearSite.id)) : null;
   const openLabel = nearSite?.kind === "story" ? t("boat.readStory") : t("boat.seePhotos");
@@ -140,15 +226,25 @@ export function BoatHud({ index, zoneName, islandName }: { index: HeatIndex; zon
   return (
     <>
       <div className="label-layer" style={under ? { display: "none" } : undefined}>
+        {/* Every place of the zone as a tag over it: what it is, its name and how far it is. A press
+            sails the boat there. The projector (scenes/labels.tsx) keeps them from overlapping. */}
         {buoys.map((id) => {
           const s = SITES.find((x) => x.id === id);
-          return s ? (
+          if (!s) return null;
+          const kind = missionType(s) ?? s.kind;
+          const name = siteName(s, lang);
+          return (
             <div key={id} className="label-anchor" ref={labelRef(`buoy:${id}`)}>
-              <div className={[near === id ? "pin on" : "pin", s.kind === "dive" ? "dive" : ""].join(" ")}>
-                <span>{s.name}</span>
-              </div>
+              <button type="button" className={`tag k-${kind}${near === id ? " on" : ""}`} data-k={`${name}|${lang}`} onClick={() => sailTo(id)} title={t("boat.sailTo")}>
+                <span className="tag-mark" aria-hidden="true">
+                  <PlaceMark kind={kind} />
+                </span>
+                <span className="tag-name">{name}</span>
+                <span className="tag-dist">{howFar(id)}</span>
+              </button>
+              <i className="tag-stem" aria-hidden="true" />
             </div>
-          ) : null;
+          );
         })}
       </div>
       {loading && (
@@ -168,7 +264,11 @@ export function BoatHud({ index, zoneName, islandName }: { index: HeatIndex; zon
       <header className="hud plate">
         <div className="plate-actions">
           <button className="back-btn" onClick={() => setBoat(null)}>
-            <IconBack /> {t("boat.backTo").replace("{island}", islandName)}
+            <IconBack />
+            <span className="lbl">
+              <span className="back-long">{t("boat.backTo").replace("{island}", islandName)}</span>
+              <span className="back-short">{islandName}</span>
+            </span>
           </button>
           {zonePhotos && zonePhotos.length > 0 && (
             <button className="plate-chip" aria-pressed={gallery} onClick={() => (setStory(null), setGallery(!gallery))}>
@@ -194,7 +294,7 @@ export function BoatHud({ index, zoneName, islandName }: { index: HeatIndex; zon
         </div>
       </div>
 
-      <div className="hud tools">
+      <div ref={toolsRef} className="hud tools">
         {/* Phones: one instrument pill (heading, speed, depth); tapping it opens the sounder. */}
         <button className="panel instrument" aria-expanded={instOpen} onClick={() => setInstOpen(!instOpen)} title={t("boat.sounder")}>
           <span>
@@ -286,9 +386,10 @@ export function BoatHud({ index, zoneName, islandName }: { index: HeatIndex; zon
           {instOpen && (
           <div className="hud-section">
             <h4>{t("boat.survey")}</h4>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13.5 }}>
+            {/* The figure stays on one line; a long label ("Plataforma cartografiada") wraps instead. */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 10, fontSize: 13.5 }}>
               <span className="hud-faint">{t("boat.surveyed")}</span>
-              <span className="hud-value">
+              <span className="hud-value" style={{ whiteSpace: "nowrap", flex: "none" }}>
                 {fmtNum(surveyHa, lang, surveyHa < 100 ? 1 : 0)} ha · {fmtNum(surveyPct, lang, surveyPct < 1 ? 2 : 1)} %
               </span>
             </div>
@@ -330,20 +431,47 @@ export function BoatHud({ index, zoneName, islandName }: { index: HeatIndex; zon
       )}
       </AnimatePresence>
 
-      {nearSite && !storySite && (
-        <div className="hud arrive panel top-only">
-          <Arrival name={nearSite.name} onRead={openNear} label={openLabel} />
-        </div>
-      )}
+      {TOUCH && !under && !storySite && !mission && <TapHint />}
+      {/* Top center, one stack: the mission in range (or the plain arrival tag), then messages. */}
+      <div className="hud top-stack" ref={stackRef}>
+        {missionSite && mission && !storySite ? (
+          <MissionTag
+            key={mission.id}
+            type={mission.type}
+            name={siteName(missionSite, lang)}
+            line={
+              shots[mission.id] && mission.state !== "dived"
+                ? t("mission.done")
+                : t(`mission.${mission.type}.${mission.type === "whale-shark" && mission.state === "logged" && under ? "close" : mission.state}` as "mission.wreck.above")
+            }
+            warn={mission.state === "dived"}
+            steps={3}
+            done={
+              shots[mission.id] ? 3
+              : sightings.includes(mission.id) ? 2
+              : mission.type === "whale-shark" ? (mission.state === "watch" ? 1 : 0)
+              : 1
+            }
+            onRead={missionSite.kind === "story" ? () => (setGallery(false), setStory(missionSite.id)) : null}
+            readLabel={t("boat.readStory")}
+          />
+        ) : (
+          nearSite && !storySite && (
+            <div className="arrive panel top-only">
+              <Arrival name={siteName(nearSite, lang)} onRead={openNear} label={openLabel} />
+            </div>
+          )
+        )}
+        {tele?.aground ? <div className="toast warn">{t("boat.aground")}</div> : toast && <div className="toast">{toast}</div>}
+      </div>
 
-      {tele?.aground && <div className="hud toast warn">{t("boat.aground")}</div>}
-      {toast && !tele?.aground && <div className="hud toast">{toast}</div>}
+      {under && camOn && <Viewfinder onShoot={shoot} onClose={() => useRoll.getState().setCamera(false)} />}
 
-      <div className="hud boat-bottom" ref={bottomRef}>
+      <div className={camOn && under ? "hud boat-bottom cam-hidden" : "hud boat-bottom"} ref={bottomRef}>
         {/* Phones: everything at the bottom lives in this one dock (arrival, guide or logbook, actions). */}
-        {nearSite && !storySite && (
+        {nearSite && !storySite && !mission && (
           <div className="arrive-row dock-only">
-            <Arrival name={nearSite.name} onRead={openNear} label={openLabel} />
+            <Arrival name={siteName(nearSite, lang)} onRead={openNear} label={openLabel} />
           </div>
         )}
         {under ? (
@@ -358,6 +486,21 @@ export function BoatHud({ index, zoneName, islandName }: { index: HeatIndex; zon
             <Chevron open={logOpen} />
           </button>
           {logOpen && (
+          <div className="log-tabs" role="tablist">
+            <button role="tab" aria-selected={logTab === "habitats"} onClick={() => setLogTab("habitats")}>
+              {t("log.habitats")}
+            </button>
+            <button role="tab" aria-selected={logTab === "photos"} onClick={() => setLogTab("photos")}>
+              <IconCamera />
+              {t("shot.tab")}
+              <span className="num">
+                {MISSION_SITES.filter((s) => shots[s.id]).length}/{MISSION_SITES.length}
+              </span>
+            </button>
+          </div>
+          )}
+          {logOpen && logTab === "photos" && <PhotoAlbum shots={shots} />}
+          {logOpen && logTab === "habitats" && (
           <>
           <div className="hud-faint" style={{ fontSize: 12.5, lineHeight: 1.45 }}>
             {done ? t("boat.missionDone") : t("boat.mission")}
@@ -370,6 +513,24 @@ export function BoatHud({ index, zoneName, islandName }: { index: HeatIndex; zon
               </span>
             ))}
           </div>
+          {/* Wildlife documented in this zone: seen once the boat has met it (whale shark: by the rules). */}
+          {wild.length > 0 && (
+            <div className="checklist sightings">
+              <span className="hud-faint">{t("boat.sightings")}</span>
+              {wild.map((id) => {
+                const place = SITES.find((s) => s.id === id);
+                const scene = place?.wreck ? "wreck" : place?.scene;
+                // Each one says how far and which way it is, and a press sails the boat there.
+                return scene ? (
+                  <button key={id} type="button" className={sightings.includes(id) ? "done" : undefined} style={{ "--c": "#7fd6ff" } as React.CSSProperties} onClick={() => sailTo(id)} title={t("boat.sailTo")}>
+                    <i />
+                    <span>{t(`boat.scene.${scene}`)}</span>
+                    <span className="where">{whereIs(id)}</span>
+                  </button>
+                ) : null;
+              })}
+            </div>
+          )}
           {samples.length > 0 && (
             <div className="samples">
               {samples.slice(0, 5).map((s) => (
@@ -390,6 +551,7 @@ export function BoatHud({ index, zoneName, islandName }: { index: HeatIndex; zon
           )}
         </div>
         )}
+        {/* Every control in one card (Tulio: the keys were a loose line of text around it). */}
         <div className="controls-hint">
           {!under && !TOUCH && (
             <MouseGuide
@@ -399,9 +561,14 @@ export function BoatHud({ index, zoneName, islandName }: { index: HeatIndex; zon
                 { part: "left", label: t("boat.mouse.sail"), how: t("boat.mouse.sailHow") },
                 { part: "wheel", label: t("scene.mouse.zoom"), how: t("scene.mouse.zoomHow") },
               ]}
+              keys={[
+                { caps: ["W", "A", "S", "D"], label: t("boat.key.sail") },
+                { caps: [t("boat.key.space")], label: t("boat.key.cast") },
+                { caps: ["U"], label: t("boat.key.under") },
+                { caps: ["F"], label: t("shot.open") },
+              ]}
             />
           )}
-          {under ? "" : TOUCH ? t("boat.hintTouch") : t("boat.hintKeys")}
         </div>
         <div className="boat-actions">
         <button className="hbtn cast-btn" aria-pressed={under} onClick={toggleDive}>
@@ -415,15 +582,69 @@ export function BoatHud({ index, zoneName, islandName }: { index: HeatIndex; zon
             t("boat.dive")
           )}
         </button>
-        <button className="hbtn primary cast-btn" onClick={startCast} disabled={!tele || tele.depth <= 1 || casting}>
+        {under && (
+          <button className="hbtn primary cast-btn" aria-pressed={camOn} onClick={toggleCamera}>
+            <IconCamera />
+            {t("shot.open")}
+          </button>
+        )}
+        <button className={under ? "hbtn cast-btn" : "hbtn primary cast-btn"} onClick={startCast} disabled={!tele || tele.depth <= 1 || casting}>
           <IconCast />
           {casting
             ? `${t(cast.phase === "up" ? "boat.castUp" : cast.phase === "hold" ? "boat.castHold" : "boat.castDown")} ${fmtNum(cast.depth, lang)} m`
-            : t("boat.cast")}
+            : (
+              <>
+                <span className="lbl-long">{t("boat.cast")}</span>
+                <span className="lbl-short">{under ? "CTD" : t("boat.cast")}</span>
+              </>
+            )}
         </button>
         </div>
       </div>
     </>
+  );
+}
+
+// Touch screens: show that tapping the water sails the boat there (Tulio). A ripple on the water
+// with a short label, until the first tap on the water (remembered) or after a while. It takes no
+// taps itself.
+const TAP_KEY = "rq-tap-sail-1";
+function TapHint() {
+  const t = useT();
+  const [show, setShow] = useState(() => {
+    try {
+      return !localStorage.getItem(TAP_KEY);
+    } catch {
+      return true;
+    }
+  });
+  useEffect(() => {
+    if (!show) return;
+    const timer = window.setTimeout(() => setShow(false), 20000);
+    const unsub = useBoat.subscribe((s) => {
+      if (!s.target) return;
+      setShow(false);
+      try {
+        localStorage.setItem(TAP_KEY, "1");
+      } catch {
+        /* private mode: it shows again next time */
+      }
+    });
+    return () => {
+      clearTimeout(timer);
+      unsub();
+    };
+  }, [show]);
+  if (!show) return null;
+  return (
+    <div className="hud tap-hint" aria-live="polite">
+      <span className="tap-ripple" aria-hidden="true">
+        <i />
+        <i />
+        <b />
+      </span>
+      <span className="tap-label">{t("boat.tapHint")}</span>
+    </div>
   );
 }
 
@@ -551,5 +772,186 @@ function FieldGuide({ bleachNote }: { bleachNote: string | null }) {
         </>
       )}
     </aside>
+  );
+}
+
+/** A distance for a tag or a list: "480 m", "1.8 km". */
+const meters = (d: number) => (d < 950 ? `${Math.max(10, Math.round(d / 10) * 10)} m` : `${(d / 1000).toFixed(1)} km`);
+/** What there is to find at a place, if anything (content/sites.ts `scene`, or a `wreck`). */
+const missionType = (s: (typeof SITES)[number]): MissionType | undefined => (s.wreck ? "wreck" : s.scene);
+
+/** The mark of a place: its mission's own icon, a diamond for a story, a dot for a dive site. */
+function PlaceMark({ kind }: { kind: MissionType | "story" | "dive" }) {
+  if (kind === "whale-shark") return <IconWhaleShark />;
+  if (kind === "turtles") return <IconTurtle />;
+  if (kind === "reef-sharks") return <IconShark />;
+  if (kind === "wreck") return <IconWreck />;
+  return <i />;
+}
+
+/** The mission in range, top center: its icon, the place on a line of its own with the steps
+ *  done so far, what to do now, and the way to its story. In the family of the arrival tag (Tulio
+ *  found the first version, a bordered box with a colored label run into the text, generic). */
+function MissionTag({ type, name, line, warn, steps, done, onRead, readLabel }: { type: MissionType; name: string; line: string; warn: boolean; steps: number; done: number; onRead: (() => void) | null; readLabel: string }) {
+  return (
+    <div className={`mission panel m-${type}${warn ? " warn" : ""}`} role="status">
+      <span className="mission-icon" aria-hidden="true">
+        <PlaceMark kind={type} />
+      </span>
+      <span className="mission-body">
+        <span className="mission-kicker">
+          <span className="mission-name">{name}</span>
+          <span className="mission-steps" aria-hidden="true">
+            {Array.from({ length: steps }, (_, i) => (
+              <i key={i} className={i < done ? "done" : undefined} />
+            ))}
+          </span>
+        </span>
+        <span className="mission-line" key={line}>
+          {line}
+        </span>
+      </span>
+      {onRead && (
+        <button className="hbtn" onClick={onRead} title={readLabel}>
+          <IconBook />
+          <span className="lbl">{readLabel}</span>
+        </button>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Where the top stack (mission tag, arrival tag, messages) goes on computers: centered in the room
+ * between the title plate's text and the panel on the right when that room is wide enough for a
+ * mission tag, otherwise left-aligned right under the plate. Zone names are long ("Esquina noreste
+ * · Pumpkin Hill"), and a centered stack ran into them. Phones use the CSS (above the dock).
+ */
+function useStackRoom(ref: React.RefObject<HTMLDivElement | null>, key: string) {
+  useLayoutEffect(() => {
+    const stack = ref.current;
+    if (!stack) return;
+    const root = stack.parentElement!;
+    const place = () => {
+      const st = stack.style;
+      if (window.innerWidth <= 760) {
+        st.left = st.right = st.top = st.justifyItems = "";
+        return;
+      }
+      const box = root.getBoundingClientRect();
+      const plate = root.querySelector(".plate");
+      const right = root.querySelector(".hud-right, .site-card");
+      // The plate's text, not its box: walk its text nodes.
+      let textRight = 0, textBottom = 0;
+      if (plate) {
+        const walker = document.createTreeWalker(plate, NodeFilter.SHOW_TEXT);
+        const range = document.createRange();
+        for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+          if (!n.textContent?.trim()) continue;
+          range.selectNodeContents(n);
+          const r = range.getBoundingClientRect();
+          if (r.width) (textRight = Math.max(textRight, r.right - box.left)), (textBottom = Math.max(textBottom, r.bottom - box.top));
+        }
+      }
+      const rightEdge = right ? right.getBoundingClientRect().left - box.left : box.width - 18;
+      const free = rightEdge - textRight - 40;
+      if (free >= 470) {
+        st.left = `${Math.round(textRight + 20)}px`;
+        st.right = `${Math.round(box.width - rightEdge + 20)}px`;
+        st.top = "96px";
+        st.justifyItems = "center";
+      } else {
+        st.left = "22px";
+        st.right = `${Math.round(box.width - rightEdge + 18)}px`;
+        st.top = `${Math.round(textBottom + 16)}px`;
+        st.justifyItems = "start";
+      }
+    };
+    place();
+    const ro = new ResizeObserver(place);
+    const plate = stack.parentElement?.querySelector(".plate");
+    if (plate) ro.observe(plate);
+    ro.observe(stack.parentElement!);
+    return () => ro.disconnect();
+  }, [ref, key]);
+}
+
+/** Every place with something to photograph, in the album's order. */
+const MISSION_SITES = SITES.filter((s) => s.scene || s.wreck);
+const ISLAND_NAME: Record<string, string> = { roatan: "Roatán", utila: "Utila", guanaja: "Guanaja", "cayos-cochinos": "Cayos Cochinos" };
+
+/** The logbook's Fotos tab: one frame per place with something to photograph, the photo once taken
+ *  (saved with one press: a small JPEG), its outline until then. */
+function PhotoAlbum({ shots }: { shots: Record<string, { url: string }> }) {
+  const t = useT();
+  const lang = useLang((s) => s.lang);
+  return (
+    <>
+      <div className="album">
+        {MISSION_SITES.map((s) => {
+          const p = shots[s.id];
+          const name = siteName(s, lang);
+          return (
+            <figure key={s.id} className={p ? "shot" : "shot empty"}>
+              <div className="shot-img">
+                {p ? <img src={p.url} alt={name} loading="lazy" /> : <PlaceMark kind={missionType(s)!} />}
+                {p && (
+                  <a className="shot-save" href={p.url} download={`ReefQuest-${s.id}.jpg`} title={t("shot.save")} aria-label={`${t("shot.save")}: ${name}`}>
+                    <IconDownload />
+                  </a>
+                )}
+              </div>
+              <figcaption>
+                <b>{name}</b>
+                <span>{ISLAND_NAME[s.island] ?? s.island}</span>
+              </figcaption>
+            </figure>
+          );
+        })}
+      </div>
+      <p className="hud-faint album-note">{t("shot.hint")}</p>
+    </>
+  );
+}
+
+/** The viewfinder: the frame the photo keeps (a centered 16:9 crop), a reticle that closes on a
+ *  subject, its name, the shutter. The 3D view still turns under it (drag). */
+function Viewfinder({ onShoot, onClose }: { onShoot: () => void; onClose: () => void }) {
+  const t = useT();
+  const lang = useLang((s) => s.lang);
+  const aim = useRoll((s) => s.aim);
+  const flashAt = useRoll((s) => s.flash);
+  const last = useRoll((s) => s.last);
+  const lastUrl = useRoll((s) => (s.last ? s.photos[s.last]?.url : undefined));
+  const s = aim ? SITES.find((x) => x.id === aim) : undefined;
+  return (
+    <div className={aim ? "hud viewfinder on" : "hud viewfinder"}>
+      {flashAt > 0 && <div key={flashAt} className="vf-flash" />}
+      <div className="vf-frame" aria-hidden="true">
+        <i />
+        <i />
+        <i />
+        <i />
+        <b className="vf-reticle" />
+      </div>
+      <div className="vf-label" role="status">
+        {s ? (
+          <>
+            <PlaceMark kind={missionType(s)!} />
+            {siteName(s, lang)}
+          </>
+        ) : (
+          t("shot.none")
+        )}
+      </div>
+      {last && lastUrl && <img key={last + flashAt} className="vf-print" src={lastUrl} alt="" />}
+      <div className="vf-controls">
+        <button className="vf-close" onClick={onClose} aria-label={t("shot.close")} title={t("shot.close")}>
+          <IconClose />
+        </button>
+        <button className="vf-shutter" onClick={onShoot} aria-label={t("shot.take")} title={`${t("shot.take")} (F)`} />
+        <span className="vf-spacer" aria-hidden="true" />
+      </div>
+    </div>
   );
 }

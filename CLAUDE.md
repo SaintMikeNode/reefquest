@@ -19,9 +19,9 @@ dive shops, visitors. **The full spec is `docs/HANDOFF.md`; read it before plann
   lat 15.8–16.6, lon -87.1 to -85.7 (`pipeline/common.py`). No other part of the Mesoamerican Reef.
 - Static site; data is precomputed by scripts into `public/data/`, never fetched live from third-party
   servers in the browser.
-  One exception, Tulio's call: the "Support Saint Mike Node" button in the footer, and the sentence
-  "…, haz clic aquí" after the contact line on "Cómo ayudar" and "Datos y créditos" (he asked for
-  a sentence there, not a button), both in `src/ui/Support.tsx`, open Ko-fi's donation
+  One exception, Tulio's call: the sentence "Si quieres apoyar el hosting y el desarrollo de este
+  proyecto, haz clic aquí" after the contact line in the footer, on "Cómo ayudar" and on "Datos y
+  créditos" (`src/ui/Support.tsx`; he asked for a sentence, not a button) opens Ko-fi's donation
   panel (`ko-fi.com/saintmikenode`) in a window over the page, as on his Pipodojo site. Nothing
   from Ko-fi loads until a visitor presses it, and the window says the money goes to Saint Mike
   Node, not to the reef organizations. Contact: `hola@saintmikenode.org` (`Contact` in
@@ -93,7 +93,9 @@ Inter (text, headlines), Instrument Serif (italic accents, big numerals), IBM Pl
 Phones: bottom panels clear the gesture bar (`env(safe-area-inset-bottom)`, `viewport-fit=cover`)
 and sit 10 px from the sides; panels that stack above the timeline or the boat bar read its measured
 height (`--tb`, `--bb` via `useBottomInset`); pin names never overlap or get cut off (`labels.tsx`
-hides the lower-ranked name, its marker stays); the story card is opaque on phones; while diving the
+hides the lower-ranked name, its marker stays); the story card is opaque on phones, and its action ("Explore by boat") always stays beside the place
+name (a long name wraps in its own column; "By boat" on narrow cards; Tulio found it jumping below
+the name on some cards); while diving the
 research vessel is hidden (its hull filled the view like a red wall). Tables stack into label/value rows on phones; **no horizontally scrolling boxes** anywhere (check
 pages at 375 px). Heat colors follow NOAA's alert scale (`src/lib/alert.ts`); surveyed seafloor
 uses the turbo ramp (0–30 m).
@@ -116,7 +118,16 @@ place name gives NOAA's alert wording. All of it follows the selected date and i
 - `src/i18n/`: `es.json`, `en.json`, `useT()` / `useL()` (picks `{es, en}` pairs) / `useLang`
   (localStorage `rq-lang`; first visit is Spanish unless the browser prefers English).
 - `src/content/`: long-form bilingual content with sources: `sites.ts` (dive-site pins and their
-  stories), `learn.ts` (explainers; `src/ui/LessonFigures.tsx` draws the bleaching and DHW
+  stories: Roatán 12, Utila 14, Guanaja 20. A place can carry `nameEs` (label in Spanish when it has
+  no proper name), `approx` (shown as "approximate location"), `scene` (animals documented there,
+  drawn in the boat mode: `whale-shark`, `turtles`, `reef-sharks`) and `wreck` (length and how it
+  lies, for the ship on the seafloor). Where positions come from: Roatán, the marine park's mooring
+  list; Utila, survey sites printed in open-access papers and PADI's site pages; Guanaja has no
+  published GPS list, so every position there was read off two dive maps (Franko's Maps 2017, which
+  has a grid, and Clearwater Paradise Resort's), pinned only where the two agree and marked
+  approximate; the maps' artwork is not used. Left out on purpose: sites whose sources disagree on
+  the position, and coordinates that trace back to AGRRA. The dolphin lagoon on Roatán is a story
+  only, with no animals drawn: those dolphins are captive and the card says so), `learn.ts` (explainers; `src/ui/LessonFigures.tsx` draws the bleaching and DHW
   diagrams), `reefLife.ts` (underwater field guide: species names and how to recognize them). **Every fact needs a source**; don't add unsourced claims.
 - `src/pages/`: `IslandsPage` (`#/islands`: four frosted cards in a row (2 × 2 under 1180 px, one column on phones): the three islands and a photos card (a ring of reef photos turning in CSS 3D; opens the dome of every photo); every button sits at the bottom of its card so they line up; each island card shows its mapped reef area (`reef_km2` in meta.json, from `pipeline/reef_area.mjs` on the Allen Coral Atlas habitat map) before the record year, so it isn't all bad news. The island cards: text and button centered, with a pure-CSS blueprint texture (a faint grid fading to the edges and a wireframe floor in perspective under each island) that fit one screen on computers (Roatán, Utila, Guanaja; Cayos Cochinos left out until it has a 3D scene; the preview height follows the window height), each with a live 3D preview in blueprint line art (Tulio found the colored relief too much): coastline, survey grid, land contours and depth lines over a rising light shader with contour lines (our take on React Bits' paid "Shader Card"); hover lifts the light, speeds the turn and swings the camera toward the pointer, the text drifts the other way. All four share ONE fixed WebGL canvas through drei `<View>`; meshes are coarse samples of each island's terrain.png cropped by distance to the coast, deep water dropped; lite and reduced motion render still frames, redrawn on scroll), `Home` (hero whose copy leads with the place and its reefs, then learning, then heat: "Meet the reef around our islands", buttons to the islands page and Learn; Tulio picked this over a satellite-heat headline and a "map the reef" game headline; live SVG map with OSM coastlines + today's 5 km heat cells, island
   cards, heat stripes), `LearnHub` ("Aprende": the heat data and the lessons as two liquid tabs, Tulio's call to merge
@@ -138,7 +149,14 @@ place name gives NOAA's alert wording. All of it follows the selected date and i
   faceted hull in dark navy with a glowing fresnel rim, scan lines, bright edges, spinning radar;
   white waterline, mirrored reflection, a target reticle with a rotating dashed ring and a sonar
   ping on the water; hover lights it and the pin label, click opens the place; ~40 px on a 1080 px
-  screen at any zoom; dev `window.__rqBoatScale` enlarges them), `nature.ts` (instanced palms and forest canopy on land, by elevation and habitat),
+  screen at any zoom; dev `window.__rqBoatScale` enlarges them. Each boat is several draw calls and
+  an island has up to 21, so: the click target is `visible={false}` (pointer rays still hit it) and
+  phones skip the reflection and the ping, which would sit frozen there anyway), `nature.ts` (instanced palms and forest canopy on land, by elevation and habitat), `plane.tsx`
+  (a small Cessna-like high-wing plane, white with blue trim, flying a loop 1–3 km off each
+  island's coast at a fixed height above its highest ground, one lap in 70–100 s; built in code,
+  240 triangles, 3 draw calls, unlit, never catches the pointer; it adds no redraws: on phones and
+  with reduced motion it only moves when the island redraws anyway, parked with reduced motion;
+  dev `window.__rqPlaneScale` enlarges it),
   `Hud.tsx` (title plate, layers with inline keys, boat zones, readout, numbered first-visit guide
   `rq-guide-1` (on top of every panel with a dim backdrop, kept above the timeline and scrolling inside
   on short screens; the mouse controls card waits until it is closed), the timeline whose height is published as `--tb` so panels stop above it),
@@ -182,15 +200,75 @@ place name gives NOAA's alert wording. All of it follows the selected date and i
   top speed in a few seconds, quick turns, bow lift and lean at speed, a bump back off the shallows,
   and the chase camera swings behind the boat unless it is being dragged; throttle/drag/turn, grounding by depth ahead of the
   bow, tap-to-go, WASD/arrows, chase camera, foam collar with bob rings and a bow wave, wake with
-  foam edges, buoys at real moorings, fish schools; vegetation: chunky palms and trees near the boat
+  foam edges, buoys at the places (all of them in two instanced draw calls), fish schools; vegetation: chunky palms and trees near the boat
   and instanced forest clumps out to ~2–3.4 km so far hills aren't bare, distance-culled and capped
   per tier, one draw call per kind; the vessel is hidden while diving),
   `BoatHud.tsx` (title plate with "Back to <island>", heading tape, sounder, survey %, depth key,
   CTD cast button/space bar, logbook mission saved in localStorage `rq-log-<zone>`, field guide of
   nearby species when underwater; on phones: one instrument pill at the top (heading, speed,
   depth; tap for the sounder sheet) and one dock at the bottom (arrival, guide/logbook, actions)).
+  `places.ts` (`zonePlaces(zone)`: where each place of `sites.ts` sits in a zone, worked out once
+  and shared by buoys, tags, the arrival check, wildlife and wrecks; `subject`: what the mission in
+  range is about, which the underwater view starts out facing).
+  **Missions** (`wildlife.tsx`; Tulio: "each place has to feel original and individual, like a
+  game", and the first version, a speck of a shark in flat water, was "boring and lame"). Every
+  place with a `scene` or a `wreck` is a mission with three steps: find it, see it, photograph it
+  underwater. Each has its own cast, its own water (`MOODS` in `props.ts`: open cobalt water off the
+  shelf, bright turquoise shallows, steel blue over sand, deep blue-green by a hull; colors at eye
+  level and straight down, plus visibility, eased as the boat comes and goes) and its own rules:
+  - whale shark (Utila NE): at the surface a tuna boil (white water, leaping tuna, seabirds
+    wheeling, what captains look for) with the shark's dark shape under the surface; under it a
+    bait ball (a school moving entirely in its vertex shader), the shark and a pod of dolphins. The
+    island's guidelines are the rules: inside the 90 m contact zone under 3 knots (the speed limit
+    is the game's rule, the story says so) and out of the white water, or it dives for 30 s. Hold
+    still and it comes over and circles the boat at ~10 m; the snorkel view stays near the surface
+    (the guidelines allow snorkeling only) with the dolphins swinging in.
+  - turtles (Pumpkin Hill, the West End reserve) and reef sharks (Cara a Cara, with the bait
+    bucket the dive is named for): under the water they close in and circle at arm's length.
+  - wrecks (`wreck.ts`, Halliburton, Jado Trader, El Aguila): a small freighter built in code,
+    upright, on its side or in pieces as the sources describe, one mesh of ~400 triangles, unlit
+    with its shading baked into vertex colors, and a school of fish over the deck. The zones'
+    bathymetry is far smoother than the real reef, so a wreck is laid down the model's slope at its
+    documented depth (up to 520 m from its pin; its buoy and tag go with it). Underwater the view
+    stands off the hull's side and above the deck: it used to start inside the 73 m Jado Trader.
+  **Whatever there is to see comes close, and the player is always told what to do**: the mission
+  tag (`MissionTag` in BoatHud: icon, the place on its own line with three step bars, one line of
+  what to do now, the story button; in the family of the arrival tag, Tulio found the bordered box
+  with a colored label run into the text "vibe coded") replaces the arrival tag in range; on boarding
+  a message names what the zone has; the logbook lists it ("What to look for here") with distance and
+  bearing, and a press sails there (stopping short of the whale sharks' contact zone). A place with
+  a mission does not open its story card on arrival (the card would cover the tag). A new mission
+  needs its texts (`mission.<type>.<state>` in both languages), its icon (`PlaceMark`), its mood and
+  its photo subjects.
+  **Camera** (`photos.ts`, after CopánQuest's `game/camera.ts`): underwater only, button "Cámara" or
+  F; the viewfinder marks the part of the screen a photo keeps (a centered 16:9 box, the same numbers
+  in `cropShare` and `.vf-frame`), names the subject in frame (worked out 5×/s from
+  `photoSubjects`, which each scene keeps current: the shark, every turtle and shark, ten points
+  along each hull), and the shutter (or F / Enter) saves a 480 × 270 JPEG (~6–30 KB) right after a
+  frame is drawn (`fulfilShot`; the drawing buffer is only readable then). One photo per mission in
+  localStorage `rq-photos-v1`; the photo completes the mission. The logbook has two tabs, Habitats
+  and Photos (the album: seven frames, the photo or the mission's outline, a one-press save).
+  Camera mode hides the side panels, the title and the dock.
+  **Place tags**: every place of the zone is a tag over the water (icon by kind, name, distance; a
+  press sails there). `labels.tsx` lifts a tag above another where they would overlap, slides it in
+  from the screen edges, and hides it where it would sit on a HUD panel (it re-reads the HUD's boxes
+  twice a second). The top center is one stack (`.top-stack`: mission or arrival tag, then
+  messages), so they never cover each other; on computers `useStackRoom` puts it between the title's
+  text and the right panel, or under the title when that room is too narrow (zone names are long);
+  on phones it sits right above the dock (messages used to cover the title there).
+  **CTD**: the A-frame (its own group, pivoting at the foot of its legs) swings out over the stern
+  before the rosette goes down and back after it comes up: the sheave used to sit 0.15 m behind the
+  transom and the rosette cut through the hull.
+  **None of this costs anything away from its place**: every scene is hidden and its animation
+  skipped until the boat is within sight (1300 m for a boil's birds, 300–380 m for the rest). The
+  underwater view goes no deeper than 36 m (`DIVE_MAX`), not to a 300 m seabed. Underwater the
+  backdrop is `WaterDome` (`underwaterFx.ts`: the water's color by direction, with rays of sunlight;
+  no rays on lite). Sightings are saved in localStorage `rq-seen-<zone>`.
   Dev only:
-  `window.__rqBoat.current.x/z` moves the boat, `window.__boat` is the store.
+  `window.__rqBoat.current.x/z` moves the boat, `window.__boat` is the store, `window.__rqCam()`
+  is the camera, `window.__rqPlaces(zone)` and `window.__rqSubject` are the places and the mission
+  subject. Use these in tests, not `import()` of the modules: after a hot reload the app runs
+  modules with a `?t=` stamp, and a plain import gets a second, idle copy.
   Entered from a story card ("Explore by boat"), the "Explore by boat" tab of the layers panel
   (tabs: one open at a time, a second tap closes it), or a green ⛵ place on the island: every zone
   with no story/dive site in it gets a clickable place (`usePlaces` in `siteBoats.tsx`), so Utila
@@ -198,12 +276,16 @@ place name gives NOAA's alert wording. All of it follows the selected date and i
   listed in `pipeline/zones.json` and built by `pipeline/zone_tiles.py` (each ~80–350 KB, loaded
   only when entered). Roatán has 7 (West End, Cordelia, Mary's Place hand-picked around stories; Big
   Bight, Diamond Rock, Santa Elena, Pelican Point picked as the most coral-rich 4 km windows, named
-  after the nearest OSM place), Utila 1, Guanaja 2. The boat starts at the reef spot (4.5–14 m, coral
+  after the nearest OSM place), Utila 5, Guanaja 6: every place on those two islands is inside a
+  zone. The eight added on 2026-11-20 (Utila north-east, harbor, north, south; Guanaja Southwest
+  Cay, leeward, north, south-east cays) were built with `pipeline/zone_from_island.py`, which
+  resamples the island's own model and needs no Earth Engine: coarser seafloor, same files, and
+  `zone_tiles.py <id>` rebuilds any of them at full detail once Tulio has signed in again. The boat starts at the reef spot (4.5–14 m, coral
   or hard bottom around) nearest the site, anywhere in the zone.
 - `src/scenes/labels.tsx`: screen-space labels (one projector + plain DOM), used instead of drei
   `Html` (which threw removeChild errors on unmount with React 19).
 - `public/data/`: pipeline outputs (committed): `islands.json/.geojson`, `region.json` (GEBCO
-  contours + mainland coast) and `relief.bin` (coarse GEBCO elevation grid for the home hero), `heat/` (index, latest, per-island daily series, `grid/<year>.bin`;
+  contours + mainland coast) and `relief.bin` (elevation grid for the footer's contour landscape, 350 × 200 at ~430 m: GEBCO for the sea, each island's DEM for its land, built by `pipeline/relief_land.py` after `region_relief.py`; with GEBCO's coarse means alone Roatán drew as a few islets), `heat/` (index, latest, per-island daily series, `grid/<year>.bin`;
   all 42 NOAA years, 1985 → 2026-11-18), and one folder per island (`roatan/`, `utila/`,
   `guanaja/`, `cayos-cochinos/`: terrain.png, habitat.png, meta.json, `zones/` for boat tiles).
   To refresh heat: `crw_download.py --all` (skips years already downloaded; PacIOOS is slow, ~3–6 min
@@ -256,6 +338,10 @@ allocations, and underwater only within visibility; vegetation and reef use Lamb
 phones get 2-octave noise, no backdrop blur, no MSAA, HUD telemetry at 6 Hz, and redraw the island
 only on change. `AdaptiveQuality` lowers canvas resolution when frames stay above ~29 ms (and never
 climbs back to a level that failed); `FrameCap` holds the boat at 60 fps on 90/120 Hz phones.
+Missions, measured the same way (2026-11-21): beside the whale shark boil 140k / 74k / 56k
+triangles (full / phone / lite), 45–49 draw calls; snorkeling with it 6k / 4k (19 / 15 calls); a
+wreck from below 3–11k. The island view of Guanaja, with 21 places and the plane, draws 199 calls
+on computers.
 Keep new 3D features inside these budgets and check all three tiers. Not yet verified on a real
 low-end Android phone.
 
@@ -325,6 +411,24 @@ animation effects off) the scene just switches.
   constructor (as `ZoneLod` once did) ends up detached. Give such objects their own geometry.
 - Hot reload of shader or reef modules can leave instanced meshes empty (refs survive, new meshes
   don't); reload the page before judging a 3D change.
+- 3D views on phones: the way back (first row of the title plate) and the tools share the top row
+  as two separate boxes. The row may take only the room the tools leave (`--tools-w`, measured by
+  `useWidthVar`); under 360 px the label is short (`.back-short`). Check Spanish at 360 px, where
+  "Todas las islas" has 9 px to spare, before adding a tool or lengthening a label.
+- Earth Engine sign-in expires: `region_relief.py`, `terrain.py` and the Atlas scripts then fail
+  with "Please authorize access" and need Tulio to run `earthengine authenticate` (it had expired
+  on 2026-11-20). `relief_land.py`, `zone_from_island.py` and the heat scripts don't need it.
+- The scene store (`useScene`) outlives the island view, so anything left in it shows up on the
+  next island: a "fly to this place" order was replayed in the new island's coordinates and the
+  camera ended over empty sea (Tulio: "the island was off camera"). **Every island opens at its
+  default view**: `CameraRig` only acts on a fly-to newer than the one it saw when it mounted, and
+  `World` is keyed by island so the heat overlay and status are worked out again.
+- `mergeGeometries` returns null, with no error, when its parts don't carry the same attributes
+  (a `SphereGeometry` has normals and uvs, a hand-built fin only positions): strip them first. The
+  turtles crashed the whole boat view this way.
+- Don't center with `transform: translate(-50%)` something that also has an entrance animation on
+  `transform`: the animation wins and the element starts at the middle of the screen (the phone tap
+  hint ran off the right edge). Center with insets and `justify-items`.
 - A full-screen overlay that stops the page scrolling must use `lockScroll()` (`src/lib/scrollLock.ts`,
   counted, so overlays can nest), never save and restore `body.style.overflow` itself: the photo
   dome and the photo viewer each did, and opening a photo inside the dome left the page locked on
@@ -338,6 +442,13 @@ animation effects off) the scene just switches.
 - A page opened before a deploy asks for chunk files that no longer exist (the server answers with
   index.html). `main.tsx` reloads once on `vite:preloadError`; a second failure within 30 s shows
   the error card.
+- Never call the heat data "today", "now" or "live" (Tulio): it is the latest day a script
+  downloaded, not fetched by the day. Say "latest" / "más reciente" / "último dato" and show the
+  date next to it.
+- README badges (after CopánQuest's): three rows (who, what, built with) whose order is chosen so
+  each is one line on GitHub's desktop width (572 / 592 / 695 px of ~830) and on phone widths every
+  line still holds two or more: Tulio wants no badge alone on a line. Adding or renaming a badge
+  changes the wrapping, so check it at 832 and 328–398 px before committing.
 - Content must match the data: the full record shows 2024 hotter than 2023 around Roatán, Utila
   and Cayos Cochinos (2023 for Guanaja). Re-check lesson and story wording when heat data changes.
 

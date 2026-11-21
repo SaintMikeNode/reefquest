@@ -45,7 +45,22 @@ interface BoatState {
   cast: { phase: "idle" | "down" | "hold" | "up"; depth: number; target: number };
   castReq: number; // timestamp of the last "take sample" request
   resetSurveyReq: number;
-  buoys: string[]; // site ids with a buoy in this zone
+  buoys: string[]; // site ids with a floating label in this zone (a mooring buoy, or the whale shark waters)
+  /** Wildlife places in this zone (site ids with a `scene`), and the ones already seen (saved). */
+  wild: string[];
+  /** Where every named place of the zone is, and how far short of it "sail there" stops (the
+   *  whale sharks' contact zone). */
+  placePos: Record<string, { x: number; z: number; standoff: number }>;
+  sightings: string[];
+  /** The thing to find the boat is within range of, and how it is going (the HUD's mission tag,
+   *  the water's mood and the animals' behavior follow it). Whale shark: "near" coming up to the
+   *  contact zone; inside it "far" until the boat holds off slowly ("watch"), "logged" once seen,
+   *  "dived" when rushed. The others: "above" at the surface over it, "below" looking from under. */
+  mission: { id: string; type: MissionType; state: "near" | "far" | "watch" | "logged" | "dived" | "above" | "below" } | null;
+  /** A message for the HUD to flash (an i18n key); `n` makes repeats distinct. */
+  notice: { key: string; n: number } | null;
+  notify: (key: string) => void;
+  logSighting: (id: string) => void;
   setPresent: (p: number[]) => void;
   clearSamples: () => void;
   setKey: (k: keyof BoatState["keys"], v: boolean) => void;
@@ -58,7 +73,11 @@ interface BoatState {
   zoneKey: string;
 }
 
+/** The kinds of thing to find in a zone (content/sites.ts `scene`, or a `wreck`). */
+export type MissionType = "whale-shark" | "turtles" | "reef-sharks" | "wreck";
+
 const KEY = (z: string) => `rq-log-${z}`;
+const SEEN = (z: string) => `rq-seen-${z}`;
 
 export const useBoat = create<BoatState>((set, get) => ({
   keys: { up: false, down: false, left: false, right: false },
@@ -80,6 +99,22 @@ export const useBoat = create<BoatState>((set, get) => ({
   castReq: 0,
   resetSurveyReq: 0,
   buoys: [],
+  wild: [],
+  placePos: {},
+  sightings: [],
+  mission: null,
+  notice: null,
+  notify: (key) => set((s) => ({ notice: { key, n: (s.notice?.n ?? 0) + 1 } })),
+  logSighting: (id) => {
+    if (get().sightings.includes(id)) return;
+    const sightings = [...get().sightings, id];
+    set((s) => ({ sightings, notice: { key: "boat.sight.saved", n: (s.notice?.n ?? 0) + 1 } }));
+    try {
+      localStorage.setItem(SEEN(get().zoneKey), JSON.stringify(sightings));
+    } catch {
+      /* storage blocked */
+    }
+  },
   setPresent: (present) => set({ present }),
   clearSamples: () => {
     set({ samples: [] });
@@ -110,7 +145,13 @@ export const useBoat = create<BoatState>((set, get) => ({
     } catch {
       /* ignore */
     }
-    set({ samples, zoneKey: zone, target: null, near: null, tele: null });
+    let sightings: string[] = [];
+    try {
+      sightings = JSON.parse(localStorage.getItem(SEEN(zone)) || "[]");
+    } catch {
+      /* ignore */
+    }
+    set({ samples, sightings, mission: null, notice: null, zoneKey: zone, target: null, near: null, tele: null });
   },
   toggleMapColors: () => set((s) => ({ mapColors: !s.mapColors })),
 }));

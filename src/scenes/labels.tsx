@@ -38,11 +38,31 @@ const v = new THREE.Vector3();
 const sizes = new WeakMap<HTMLElement, { w: number; h: number }>();
 const placed: { x0: number; x1: number; y0: number; y1: number }[] = [];
 const EDGE = 6;
+// Boat view tags (ids "buoy:…"): measured once per text, re-measured when the text changes.
+const tagSize = new WeakMap<HTMLElement, { w: number; h: number; k: string }>();
+const tags: { el: HTMLElement; btn: HTMLElement; x: number; y: number; depth: number }[] = [];
+const TAG_GAP = 12; // px between a place and the bottom of its tag
+// The HUD's boxes, re-read twice a second (a tag that would sit on one is hidden, not drawn over
+// the title or a panel). Layout reads are cheap at that rate.
+let blocks: DOMRect[] = [];
+let blocksAt = 0;
+function readBlocks(root: Element | null) {
+  blocks = [];
+  if (!root) return;
+  for (const el of root.querySelectorAll(".hud")) {
+    const parts = el.matches(".top-stack, .boat-bottom") ? [...el.children] : el.matches(".plate") ? [...el.children] : [el];
+    for (const p of parts) {
+      const r = p.getBoundingClientRect();
+      if (r.width && r.height) blocks.push(r);
+    }
+  }
+}
 
 export function LabelProjector() {
-  const { camera, size } = useThree();
+  const { camera, size, gl } = useThree();
   useFrame(() => {
     const pins: { el: HTMLElement; btn: HTMLElement; x: number; y: number; rank: number }[] = [];
+    tags.length = 0;
     for (const [id, l] of labels) {
       if (!l.el) continue;
       if (l.y < -1e5) continue;
@@ -53,6 +73,7 @@ export function LabelProjector() {
       const x = ((v.x + 1) / 2) * size.width, y = ((1 - v.y) / 2) * size.height;
       l.el.style.transform = `translate(${x}px, ${y}px)`;
       const btn = l.el.firstElementChild as HTMLElement | null;
+      if (id.startsWith("buoy:") && btn) tags.push({ el: l.el, btn, x, y, depth: v.z });
       if (id.startsWith("pin:") && btn) {
         const c = btn.classList;
         pins.push({ el: l.el, btn, x, y, rank: (c.contains("on") ? 8 : 0) + (c.contains("hover") ? 4 : 0) + (c.contains("dive") ? 0 : 2) });
@@ -81,6 +102,46 @@ export function LabelProjector() {
       p.btn.classList.toggle("quiet", clash);
       span.style.transform = dx ? `translateX(${dx}px)` : "";
       if (!clash) placed.push(box);
+    }
+    // Boat view tags: none hidden and none overlapping. Nearest first; a tag that would cover one
+    // already placed is lifted above it on its stem (and so on up), and tags near a side of the
+    // screen slide inward.
+    if (tags.length) {
+      const now = performance.now();
+      if (now - blocksAt > 500) {
+        blocksAt = now;
+        readBlocks(gl.domElement.closest(".scene-root"));
+      }
+      const off = gl.domElement.getBoundingClientRect();
+      tags.sort((a, b) => a.depth - b.depth);
+      placed.length = 0;
+      for (const g of tags) {
+        const k = g.btn.dataset.k ?? "";
+        let sz = tagSize.get(g.btn);
+        if (!sz || sz.k !== k || !sz.w) {
+          sz = { w: g.btn.offsetWidth, h: g.btn.offsetHeight, k };
+          tagSize.set(g.btn, sz);
+        }
+        const x0 = Math.min(Math.max(g.x - sz.w / 2, EDGE), Math.max(EDGE, size.width - EDGE - sz.w));
+        let y1 = g.y - TAG_GAP;
+        for (let tries = 0; tries < 8; tries++) {
+          const hit = placed.find((q) => x0 < q.x1 + 6 && x0 + sz!.w > q.x0 - 6 && y1 - sz!.h < q.y1 + 4 && y1 > q.y0 - 4);
+          if (!hit) break;
+          y1 = hit.y0 - 6;
+        }
+        // Over a HUD panel: hidden (its marker on the water still shows where it is).
+        const ax = x0 + off.left, ay = y1 - sz.h + off.top;
+        if (blocks.some((r) => ax < r.right + 6 && ax + sz!.w > r.left - 6 && ay < r.bottom + 6 && ay + sz!.h > r.top - 6)) {
+          g.el.style.visibility = "hidden";
+          continue;
+        }
+        placed.push({ x0, x1: x0 + sz.w, y0: y1 - sz.h, y1 });
+        const tf = `translate(${Math.round(x0 - g.x)}px, ${Math.round(y1 - sz.h - g.y)}px)`;
+        if (g.btn.style.transform !== tf) g.btn.style.transform = tf;
+        const stem = g.btn.nextElementSibling as HTMLElement | null;
+        const sh = `${Math.max(0, Math.round(g.y - y1))}px`;
+        if (stem && stem.style.height !== sh) stem.style.height = sh;
+      }
     }
   });
   return null;

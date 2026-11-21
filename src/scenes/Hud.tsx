@@ -21,7 +21,7 @@ import { useScene } from "./sceneStore";
 import { fmtLat, fmtLon, SiteCard } from "./SiteCard";
 import { homeDistance, uvToLonLat, xzToUV, type TerrainData } from "./terrain";
 import { Timeline } from "./Timeline";
-import { useBottomInset } from "./useBottomInset";
+import { useBottomInset, useWidthVar } from "./useBottomInset";
 
 /** The boat zone containing a lon/lat, if any. */
 export function zoneFor(zones: ZoneIndexEntry[], lon: number, lat: number): ZoneIndexEntry | undefined {
@@ -48,6 +48,8 @@ export function Hud({ td, index }: { td: TerrainData; index: HeatIndex }) {
   const setBoat = useScene((s) => s.setBoat);
   const areaDhw = useScene((s) => s.areaDhw);
   const [showLayers, setShowLayers] = useState(false);
+  const toolsRef = useRef<HTMLDivElement>(null);
+  useWidthVar(toolsRef, "--tools-w");
   const [open, setOpen] = useState<SectionId>("layers");
   const [zones, setZones] = useState<ZoneIndexEntry[]>([]);
   const [hint, setHint] = useState(() => {
@@ -155,9 +157,15 @@ export function Hud({ td, index }: { td: TerrainData; index: HeatIndex }) {
       <div className="scrim-bottom" />
 
       <header className="hud plate">
-        {/* The way back comes first, above the name (Tulio: on top of everything). */}
+        {/* The way back comes first, above the name (Tulio: on top of everything). On phones it
+            shares its row with the tools and takes only the room they leave (--tools-w). */}
         <a className="back-btn" href={href.islands}>
-          <IconBack /> {t("scene.back")}
+          <IconBack />
+          {/* Screens narrower than 360 px show the short label (styles.css). */}
+          <span className="lbl">
+            <span className="back-long">{t("scene.back")}</span>
+            <span className="back-short">{t("scene.backShort")}</span>
+          </span>
         </a>
         <div className="kicker">{t("scene.region")}</div>
         <h1>{td.meta.name}</h1>
@@ -167,7 +175,7 @@ export function Hud({ td, index }: { td: TerrainData; index: HeatIndex }) {
         {layers.heat && <HeatStatus dhw={areaDhw} />}
       </header>
 
-      <div className="hud tools">
+      <div ref={toolsRef} className="hud tools">
         <button className="hbtn icon-only layers-toggle" aria-pressed={showLayers} onClick={() => setShowLayers(!showLayers)} aria-label={t("scene.layers")} title={t("scene.layers")}>
           <IconLayers />
         </button>
@@ -240,7 +248,10 @@ export function Hud({ td, index }: { td: TerrainData; index: HeatIndex }) {
           actions={
             siteZone && (
               <SpecularButton className="card-chip" onClick={() => setBoat({ zone: siteZone.id, lon: site.lon, lat: site.lat })} lineColor="#ffffff" baseColor="#bfe0ff">
-                <IconShip /> {t("boat.explore")} <IconArrow />
+                <IconShip />
+                <span className="chip-long">{t("boat.explore")}</span>
+                <span className="chip-short">{t("boat.exploreShort")}</span>
+                <IconArrow />
               </SpecularButton>
             )
           }

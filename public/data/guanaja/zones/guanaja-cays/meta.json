@@ -1,0 +1,55 @@
+{
+ "id": "guanaja-cays",
+ "island": "guanaja",
+ "name": "Southeast cays \u00b7 Half Moon Cay",
+ "size_m": [
+  5500.0,
+  5500.0
+ ],
+ "cell_m": 10.0,
+ "habitat_cell_m": 5.0,
+ "height": {
+  "file": "height.png",
+  "width": 550,
+  "height": 550,
+  "min_m": -319.2,
+  "max_m": 259.3
+ },
+ "habitat": {
+  "file": "habitat.png",
+  "width": 1100,
+  "height": 1100
+ },
+ "bathymetry_source": "nominal-by-zone",
+ "detail": "resampled from the island model (40 m relief), not the 10 m build",
+ "center": {
+  "lat": 16.452,
+  "lon": -85.845
+ },
+ "geo": {
+  "lonlat_to_uv": [
+   [
+    19.412008372339823,
+    -0.11486069541145155,
+    1668.8136722247568
+   ],
+   [
+    -0.11084085527120802,
+    -20.11602461538048,
+    321.9343875386141
+   ]
+  ],
+  "uv_to_lonlat": [
+   [
+    0.051512825029891685,
+    -0.00029413362958547644,
+    -85.87061560121012
+   ],
+   [
+    -0.00028383964096727034,
+    -0.04970999070213098,
+    16.47703094180011
+   ]
+  ]
+ }
+}

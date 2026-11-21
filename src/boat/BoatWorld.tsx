@@ -4,7 +4,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
-import { SITES } from "../content/sites";
 import { LITE, MOBILE, pick, REDUCED_MOTION } from "../lib/device";
 import { SceneReady } from "../scenes/AdaptiveQuality";
 import { clearLabels, LabelProjector, setLabelAnchor } from "../scenes/labels";
@@ -14,8 +13,10 @@ import { makeVessel } from "./boatModel";
 import { useBoat } from "./boatStore";
 import { echo } from "./echo";
 import { CAP, PALETTE, placeAround, reefCells, SIZE, SPECIES, speciesGeometries, speciesMaterial, type Species } from "./corals";
-import { underwater, WATER, waterColorAt } from "./props";
-import { LightShafts, MarineSnow } from "./underwaterFx";
+import { MOODS, underwater, WATER, waterColorAt } from "./props";
+import { subject, zonePlaces } from "./places";
+import { LightShafts, MarineSnow, WaterDome } from "./underwaterFx";
+import { Wildlife } from "./wildlife";
 import { SCENE_FOG } from "../scenes/materials";
 import { COV_CELL, makeCoverage, resetCoverage, saveCoverage, SonarFan, stamp, type Coverage } from "./sonar";
 import { floorY, habitatAtXZ, hash, heightAtXZ, loadZone, lonLatToXZ, xzToLonLat, ZoneLod, type Zone } from "./zone";
@@ -24,6 +25,9 @@ import { floorY, habitatAtXZ, hash, heightAtXZ, loadZone, lonLatToXZ, xzToLonLat
 // vessel cruises at ~4 m/s and turns slowly). Top speed ~26 m/s (~50 knots; Tulio found 31 knots
 // still too slow to be fun) reached in about three seconds, quick turns, bow lift and lean, and a bump back off the shallows.
 const V_MAX = 26;
+/** Straight down, reef water darkens toward this share of its color at eye level. */
+const DEEPEN = new THREE.Color(0.18, 0.3, 0.52);
+const DIVE_MAX = 36; // m: the deepest the underwater view goes (recreational diving depth; the wrecks lie at about 30)
 const V_REV = 7;
 const ACCEL = 14;
 const DRAG = 0.54; // terminal speed = ACCEL / DRAG; also how fast it coasts to a stop
@@ -34,6 +38,7 @@ const STERN = -12;
 const PROP_RADIUS = 380;
 const UP = new THREE.Vector3(0, 1, 0);
 const CAST_SPEED = 2.2; // m/s winch speed
+const SWING = 0.34; // rad the A-frame leans further aft for a cast: the sheave ends ~1.5 m past the transom
 
 export default function BoatWorld({ island, zoneId, start }: { island: string; zoneId: string; start: { lon: number; lat: number } }) {
   const [zone, setZone] = useState<Zone | null>(null);
@@ -82,6 +87,8 @@ function Scene({ zone, start }: { zone: Zone; start: { lon: number; lat: number 
   const abyssMesh = useRef<THREE.Mesh>(null);
   const shafts = useMemo(() => new LightShafts(pick(3, 5, 7)), []);
   const snow = useMemo(() => new MarineSnow(pick(300, 500, 900)), []);
+  const dome = useMemo(() => new WaterDome(!LITE), []); // sun rays through the water: not on lite
+  const mood = useMemo(() => ({ fog: new THREE.Color(), deep: new THREE.Color(), vis: 1, set: false }), []);
   const { gl } = useThree();
 
   useEffect(() => {
@@ -126,8 +133,18 @@ function Scene({ zone, start }: { zone: Zone; start: { lon: number; lat: number 
     // Underwater when the camera is below the surface: water fog instead of air haze.
     const under = camera.position.y < -0.05;
     WATER.uRqUnder.value = under ? 1 : 0;
-    waterColorAt(-camera.position.y, WATER.uRqFog.value);
-    WATER.uRqVis.value = LITE ? 18 : 26;
+    // The water: reef water by depth, or the look of the mission in range (open blue water around
+    // the whale sharks, bright shallows over the turtles, ...), eased from one to the other.
+    const m = MOODS[useBoat.getState().mission?.type as keyof typeof MOODS] as (typeof MOODS)[keyof typeof MOODS] | undefined;
+    if (m) (mood.fog.copy(m.fog), mood.deep.copy(m.deep));
+    else (waterColorAt(-camera.position.y, mood.fog), mood.deep.copy(mood.fog).multiply(DEEPEN));
+    const ease = mood.set ? 1 - Math.exp(-dt * 2.2) : 1;
+    mood.set = true;
+    WATER.uRqFog.value.lerp(mood.fog, ease);
+    WATER.uRqDeep.value.lerp(mood.deep, ease);
+    mood.vis += ((m?.vis ?? 1) - mood.vis) * ease;
+    WATER.uRqVis.value = (LITE ? 18 : 26) * mood.vis;
+    dome.update(t, under);
     if (skyMesh.current) skyMesh.current.visible = !under;
     if (abyssMesh.current) abyssMesh.current.visible = !under;
     (scene.background as THREE.Color).copy(under ? WATER.uRqFog.value : SKY_HORIZON);
@@ -181,11 +198,13 @@ function Scene({ zone, start }: { zone: Zone; start: { lon: number; lat: number 
         <planeGeometry args={[30000, 30000, 1, 1]} />
       </mesh>
       <Reef zone={zone} time={time.current} />
+      <primitive object={dome.mesh} />
       <primitive object={shafts.group} />
       <primitive object={snow.points} />
       <Fish zone={zone} />
       <Vegetation zone={zone} time={time.current} />
       <Buoys zone={zone} />
+      <Wildlife zone={zone} />
       <Boat zone={zone} start={startXZ} coverage={coverage} />
     </>
   );
@@ -199,12 +218,18 @@ function Boat({ zone, start, coverage }: { zone: Zone; start: { x: number; z: nu
   const orbiting = useRef(false); // the person is dragging the camera: no auto chase
   const st = useRef({ x: start.x, z: start.z, a: Math.PI, v: 0, aground: false, lastTele: 0, sx: start.x, sz: start.z, lastTex: 0, under: false });
   const diving = useBoat((b) => b.under);
-  const cast = useRef({ phase: "idle" as "idle" | "down" | "hold" | "up", L: 0, target: 0, t: 0, req: useBoat.getState().castReq });
+  const cast = useRef({ phase: "idle" as "idle" | "out" | "down" | "hold" | "up" | "in", L: 0, target: 0, t: 0, swing: 0, req: useBoat.getState().castReq });
   const wake = useMemo(() => new Wake(), []);
   const fan = useMemo(() => new SonarFan(), []);
   const foam = useMemo(() => hullFoam(), []);
   const marker = useRef<THREE.Mesh>(null);
-  const base = useMemo(() => vessel.rosette.position.clone(), [vessel]);
+  // The CTD hangs 1.2 m under the A-frame's sheave; for a cast the A-frame first swings out over
+  // the stern (SWING), then the rosette goes down clear of the hull and comes back the same way.
+  const sheaveAt = useMemo(() => {
+    const m = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), one = new THREE.Vector3(1, 1, 1), out = new THREE.Vector3();
+    return (k: number) => out.copy(vessel.sheave).applyMatrix4(m.compose(vessel.aframe.position, q.setFromEuler(e.set(-SWING * k, 0, 0)), one));
+  }, [vessel]);
+  const restOut = useMemo(() => sheaveAt(1).y - 1.2 + 0.6, [sheaveAt]); // rosette top, swung out
 
   useEffect(() => {
     const s = st.current;
@@ -216,7 +241,7 @@ function Boat({ zone, start, coverage }: { zone: Zone; start: { x: number; z: nu
 
   // Dev only: move the boat from the console (window.__rqBoat.current.x = …) and inspect the zone.
   useEffect(() => {
-    if (import.meta.env.DEV) Object.assign(window, { __rqBoat: st, __rqZone: zone });
+    if (import.meta.env.DEV) Object.assign(window, { __rqBoat: st, __rqZone: zone, __rqPlaces: zonePlaces, __rqSubject: subject });
   }, [zone]);
 
   // Keyboard.
@@ -276,16 +301,22 @@ function Boat({ zone, start, coverage }: { zone: Zone; start: { x: number; z: nu
     const depthHere = Math.max(0, -heightAtXZ(zone, s.x, s.z));
 
     // ---- CTD cast: hold station, lower the rosette to ~1.5 m above the bottom, record, recover.
-    const rest = base.y + 0.6; // rosette center above the waterline at rest
+    const rest = restOut; // rosette top above the waterline, hanging from the swung-out A-frame
     if (store.castReq !== c.req && c.phase === "idle" && depthHere > 1) {
       c.req = store.castReq;
-      c.phase = "down";
+      c.phase = "out";
       c.target = rest + Math.max(0.5, depthHere - 1.5);
       setTarget(null);
     }
     const casting = c.phase !== "idle";
     if (casting) {
-      if (c.phase === "down") {
+      if (c.phase === "out") {
+        c.swing = Math.min(1, c.swing + dt / 1.1);
+        if (c.swing >= 1) c.phase = "down";
+      } else if (c.phase === "in") {
+        c.swing = Math.max(0, c.swing - dt / 1.1);
+        if (c.swing <= 0) c.phase = "idle";
+      } else if (c.phase === "down") {
         c.L = Math.min(c.target, c.L + CAST_SPEED * dt);
         if (c.L >= c.target) (c.phase = "hold"), (c.t = 0);
       } else if (c.phase === "hold") {
@@ -298,14 +329,20 @@ function Boat({ zone, start, coverage }: { zone: Zone; start: { x: number; z: nu
         }
       } else {
         c.L = Math.max(0, c.L - CAST_SPEED * 1.3 * dt);
-        if (c.L <= 0) c.phase = "idle";
+        if (c.L <= 0) c.phase = "in";
       }
-      useBoat.setState({ cast: { phase: c.phase, depth: Math.max(0, c.L - rest), target: depthHere } });
+      const shown = c.phase === "out" ? "down" : c.phase === "in" ? "up" : c.phase;
+      useBoat.setState({ cast: { phase: c.phase === "idle" ? "idle" : shown, depth: Math.max(0, c.L - rest), target: depthHere } });
     }
-    vessel.rosette.position.set(base.x, base.y - c.L, base.z);
-    const cableTop = vessel.ctdTop.y, cableBottom = base.y - c.L + 0.6;
-    vessel.cable.scale.y = Math.max(0.01, cableTop - cableBottom);
-    vessel.cable.position.set(base.x, (cableTop + cableBottom) / 2, base.z);
+    // A-frame and CTD: the sheave follows the swing, the rosette hangs under it, the cable joins them.
+    const sw = c.swing * c.swing * (3 - 2 * c.swing);
+    vessel.aframe.rotation.x = -SWING * sw;
+    const sh = sheaveAt(sw);
+    const ry = sh.y - 1.2 - c.L;
+    vessel.rosette.position.set(sh.x, ry, sh.z);
+    const cableBottom = ry + 0.6;
+    vessel.cable.scale.y = Math.max(0.01, sh.y - cableBottom);
+    vessel.cable.position.set(sh.x, (sh.y + cableBottom) / 2, sh.z);
 
     // ---- Helm.
     let throttle = casting ? 0 : (keys.up ? 1 : 0) - (keys.down ? 1 : 0);
@@ -372,12 +409,27 @@ function Boat({ zone, start, coverage }: { zone: Zone; start: { x: number; z: nu
     const ctl = controls.current;
     if (ctl) {
       const diving = store.under;
-      const bottom = floorY(heightAtXZ(zone, s.x, s.z));
+      // How deep the view goes: to the seabed on the reef, but no deeper than a diver would
+      // (DIVE_MAX) over deep water, and just under the surface beside a whale shark, where the
+      // island's guidelines allow snorkeling only.
+      const snorkel = store.mission?.type === "whale-shark";
+      const bottom = Math.max(floorY(heightAtXZ(zone, s.x, s.z)), snorkel ? -4.2 : -DIVE_MAX);
+      // Over a wreck the view looks at its deck and stands off its side, above it.
+      const look = diving && subject.on && store.mission?.type === "wreck" ? subject.look : null;
+      const eyeY = look ? look.y : Math.min(-1.5, bottom + 1.6);
       if (diving !== s.under) {
         s.under = diving;
         if (diving) {
-          ctl.target.set(s.x, Math.min(-1.5, bottom + 1.6), s.z);
-          camera.position.set(s.x - dirx * 11 + dirz * 7, ctl.target.y + 2.2, s.z - dirz * 11 - dirx * 7);
+          ctl.target.set(s.x, eyeY, s.z);
+          // The view starts out facing what there is to see here (the whale shark, the wreck),
+          // from the far side of the boat; with nothing in range, from behind the boat.
+          let bx = -dirx * 11 + dirz * 7, bz = -dirz * 11 - dirx * 7, up = 2.2;
+          const sd = Math.hypot(subject.x - s.x, subject.z - s.z);
+          if (look) {
+            const px = Math.cos(look.yaw), pz = -Math.sin(look.yaw), side = Math.sign((s.x - subject.x) * px + (s.z - subject.z) * pz) || 1;
+            (bx = px * side * look.dist * 0.82), (bz = pz * side * look.dist * 0.82), (up = look.dist * 0.42);
+          } else if (subject.on && sd > 0.5) (bx = ((s.x - subject.x) / sd) * 11.5), (bz = ((s.z - subject.z) / sd) * 11.5);
+          camera.position.set(s.x + bx, ctl.target.y + up, s.z + bz);
         } else {
           ctl.target.set(s.x, 3, s.z);
           camera.position.set(s.x - dirx * 62 + 18, 30, s.z - dirz * 62);
@@ -400,7 +452,7 @@ function Boat({ zone, start, coverage }: { zone: Zone; start: { x: number; z: nu
       }
       if (diving) {
         // Follow the seafloor smoothly, and keep the camera in the water column.
-        const dy = (Math.min(-1.5, bottom + 1.6) - ctl.target.y) * Math.min(1, dt * 2);
+        const dy = (eyeY - ctl.target.y) * Math.min(1, dt * 2);
         ctl.target.y += dy;
         camera.position.y += dy;
       }
@@ -444,11 +496,7 @@ function Boat({ zone, start, coverage }: { zone: Zone; start: { x: number; z: nu
         depth: depthHere, benthic: hab.benthic, geomorphic: hab.geomorphic, lat: ll.lat, lon: ll.lon, aground: s.aground,
       });
       let near: string | null = null;
-      for (const site of SITES) {
-        if (site.island !== zone.meta.island) continue;
-        const p = lonLatToXZ(zone, site.lon, site.lat);
-        if (Math.hypot(p.x - s.x, p.z - s.z) < 80) near = site.id;
-      }
+      for (const p of zonePlaces(zone)) if (Math.hypot(p.x - s.x, p.z - s.z) < 80) near = p.site.id;
       if (near !== store.near) store.setNear(near);
     }
   });
@@ -809,52 +857,73 @@ function Vegetation({ zone, time }: { zone: Zone; time: { value: number } }) {
 
 /** Mooring buoys at the real dive-site positions inside this zone (labels: BoatHud overlay). */
 function Buoys({ zone }: { zone: Zone }) {
-  const sites = useMemo(
-    () =>
-      SITES.filter((s) => s.island === zone.meta.island)
-        .map((s) => ({ ...s, ...lonLatToXZ(zone, s.lon, s.lat) }))
-        .filter((s) => Math.abs(s.x) < zone.sizeX / 2 - 50 && Math.abs(s.z) < zone.sizeZ / 2 - 50),
-    [zone],
-  );
+  // (No mooring buoy at the whale shark place: it is open water, not a dive-site mooring. A wreck's
+  // buoy floats over the wreck.)
+  const sites = useMemo(() => zonePlaces(zone).filter((p) => p.site.scene !== "whale-shark"), [zone]);
   useEffect(() => {
-    for (const s of sites) setLabelAnchor(`buoy:${s.id}`, s.x, 3.6, s.z);
-    useBoat.setState({ buoys: sites.map((s) => s.id) });
+    // Every place gets its floating name, the whale shark waters too.
+    const named = zonePlaces(zone);
+    for (const s of named) setLabelAnchor(`buoy:${s.site.id}`, s.x, 3.6, s.z);
+    useBoat.setState({
+      buoys: named.map((s) => s.site.id),
+      // "Sail there" stops well short of the whale sharks' contact zone (wildlife.tsx APPROACH_R).
+      placePos: Object.fromEntries(named.map((s) => [s.site.id, { x: s.x, z: s.z, standoff: s.site.scene === "whale-shark" ? 156 : 0 }])),
+    });
     return () => {
       clearLabels("buoy:");
-      useBoat.setState({ buoys: [] });
+      useBoat.setState({ buoys: [], placePos: {} });
     };
+  }, [sites, zone]);
+  // Every buoy in two draw calls: the white float and its staff, and the colored band and light
+  // (red for places with a story, blue for dive sites).
+  const meshes = useMemo(() => {
+    const plain = (g: THREE.BufferGeometry, color: string) => {
+      const ng = g.index ? g.toNonIndexed() : g;
+      ng.deleteAttribute("uv");
+      const c = new THREE.Color(color), a = new Float32Array(ng.attributes.position.count * 3);
+      for (let i = 0; i < a.length; i += 3) a.set([c.r, c.g, c.b], i);
+      ng.setAttribute("color", new THREE.BufferAttribute(a, 3));
+      return ng;
+    };
+    const float = plain(new THREE.SphereGeometry(0.75, 14, 10).translate(0, 0.4, 0), "#f2f2f2");
+    const staff = plain(new THREE.CylinderGeometry(0.05, 0.05, 1.8, 5).translate(0, 1.7, 0), "#333333");
+    const band = plain(new THREE.CylinderGeometry(0.77, 0.77, 0.26, 14).translate(0, 0.45, 0), "#ffffff");
+    const light = plain(new THREE.SphereGeometry(0.12, 8, 6).translate(0, 2.65, 0), "#ffffff");
+    const mat = () => (MOBILE ? new THREE.MeshLambertMaterial({ vertexColors: true }) : new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.45 }));
+    const n = Math.max(1, sites.length);
+    const body = new THREE.InstancedMesh(mergeGeometries([float, staff])!, mat(), n);
+    const marks = new THREE.InstancedMesh(mergeGeometries([band, light])!, mat(), n);
+    const col = new THREE.Color();
+    sites.forEach((s, i) => marks.setColorAt(i, col.set(s.site.kind === "story" ? "#c2412d" : "#1d4e89")));
+    body.count = marks.count = sites.length;
+    body.frustumCulled = marks.frustumCulled = false;
+    for (const g of [float, staff, band, light]) g.dispose();
+    return { body, marks };
   }, [sites]);
-  const refs = useRef<(THREE.Group | null)[]>([]);
+  useEffect(
+    () => () => {
+      for (const m of [meshes.body, meshes.marks]) {
+        m.geometry.dispose();
+        (m.material as THREE.Material).dispose();
+      }
+    },
+    [meshes],
+  );
+  const tmp = useMemo(() => ({ m: new THREE.Matrix4(), q: new THREE.Quaternion(), e: new THREE.Euler(), p: new THREE.Vector3(), s: new THREE.Vector3(1, 1, 1) }), []);
   useFrame((st) => {
     const t = st.clock.elapsedTime;
-    refs.current.forEach((g, i) => {
-      if (!g) return;
-      g.position.y = Math.sin(t * 1.7 + i) * 0.15;
-      g.rotation.z = Math.sin(t * 1.3 + i * 2) * 0.12;
+    sites.forEach((s, i) => {
+      // Each one bobs and rocks a little, out of step with the others.
+      tmp.m.compose(tmp.p.set(s.x, Math.sin(t * 1.7 + i) * 0.15, s.z), tmp.q.setFromEuler(tmp.e.set(0, 0, Math.sin(t * 1.3 + i * 2) * 0.12)), tmp.s);
+      meshes.body.setMatrixAt(i, tmp.m);
+      meshes.marks.setMatrixAt(i, tmp.m);
     });
+    meshes.body.instanceMatrix.needsUpdate = meshes.marks.instanceMatrix.needsUpdate = true;
   });
   return (
     <>
-      {sites.map((s, i) => (
-        <group key={s.id} position={[s.x, 0, s.z]} ref={(g) => { refs.current[i] = g; }}>
-          <mesh position-y={0.4}>
-            <sphereGeometry args={[0.75, 14, 10]} />
-            <meshStandardMaterial color="#f2f2f2" roughness={0.4} />
-          </mesh>
-          <mesh position-y={0.45}>
-            <cylinderGeometry args={[0.77, 0.77, 0.26, 14]} />
-            <meshStandardMaterial color={s.kind === "story" ? "#c2412d" : "#1d4e89"} roughness={0.5} />
-          </mesh>
-          <mesh position-y={1.7}>
-            <cylinderGeometry args={[0.05, 0.05, 1.8, 5]} />
-            <meshStandardMaterial color="#333" />
-          </mesh>
-          <mesh position-y={2.65}>
-            <sphereGeometry args={[0.12, 8, 6]} />
-            <meshBasicMaterial color={s.kind === "story" ? "#ffb08a" : "#bfe6ff"} />
-          </mesh>
-        </group>
-      ))}
+      <primitive object={meshes.body} />
+      <primitive object={meshes.marks} />
     </>
   );
 }

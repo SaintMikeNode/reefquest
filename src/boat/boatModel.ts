@@ -152,7 +152,10 @@ export interface Vessel {
   radar: THREE.Object3D[];
   rosette: THREE.Group; // CTD rosette, lowered from the A-frame
   cable: THREE.Mesh;
-  ctdTop: THREE.Vector3; // A-frame sheave position (vessel space)
+  /** The A-frame, pivoting at the foot of its legs: it swings out over the stern for a cast. */
+  aframe: THREE.Group;
+  /** Where the cable leaves the sheave, in the A-frame's own space. */
+  sheave: THREE.Vector3;
   flag: THREE.Mesh;
 }
 
@@ -291,19 +294,28 @@ export function makeVessel(): Vessel {
 
   // ---- Aft science deck.
   const aftY = DECK_Y + sheer(-9) + 0.05;
-  // A-frame: chunky white legs and crossbar at the stern.
+  // A-frame: chunky white legs and crossbar at the stern, as one group that pivots at the foot of
+  // its legs (it swings out over the stern for a cast, so the rosette clears the hull).
+  const aframe = new THREE.Group();
+  aframe.position.set(0, aftY, -10.61);
   for (const sx of [-1, 1]) {
     const leg = part(new THREE.CylinderGeometry(0.22, 0.28, 5.4, 10), C.science, 0.05);
     leg.rotation.x = -0.26;
     leg.rotation.z = sx * 0.06;
-    add(leg, sx * 2.4, aftY + 2.6, -11.3);
+    leg.position.set(sx * 2.4, 2.6, -0.69);
+    aframe.add(leg);
   }
   const aTop = part(new THREE.CylinderGeometry(0.26, 0.26, 5.2, 10), C.science, 0.05);
   aTop.rotation.z = Math.PI / 2;
-  add(aTop, 0, 7.35, -12.0);
-  const sheave = part(new THREE.TorusGeometry(0.3, 0.08, 6, 14), C.steel, 0.03);
-  add(sheave, 0, 7.05, -12.1);
-  const ctdTop = new THREE.Vector3(0, 6.85, -12.15);
+  aTop.position.set(0, 7.35 - aftY, -1.39);
+  aframe.add(aTop);
+  const sheaveWheel = part(new THREE.TorusGeometry(0.3, 0.08, 6, 14), C.steel, 0.03);
+  sheaveWheel.position.set(0, 7.05 - aftY, -1.49);
+  aframe.add(sheaveWheel);
+  bake(aframe, new Set()); // its own parts merged: a few draw calls, not a dozen
+  g.add(aframe);
+  const sheave = new THREE.Vector3(0, 6.85 - aftY, -1.54);
+  const ctdTop = sheave.clone().add(aframe.position);
 
   // CTD rosette: a ring of sample bottles around a frame (hangs from the A-frame).
   const rosette = new THREE.Group();
@@ -359,8 +371,8 @@ export function makeVessel(): Vessel {
   flag.position.set(-2.9 - 0.6, aftY + 3.0, -11.4);
   g.add(flag);
 
-  bake(g, new Set<THREE.Object3D>([...radar, rosette, cable, flag]));
-  return { group: g, radar, rosette, cable, ctdTop, flag };
+  bake(g, new Set<THREE.Object3D>([...radar, rosette, cable, flag, aframe]));
+  return { group: g, radar, rosette, cable, aframe, sheave, flag };
 }
 
 /**

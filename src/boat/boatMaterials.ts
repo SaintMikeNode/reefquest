@@ -104,7 +104,7 @@ export function seafloorMaterial(habitat: THREE.DataTexture, lite: boolean, cove
         vec2 p = vW.xz;
         // Underwater, anything this far is pure water color: skip all the work.
         if (uRqUnder > 0.5 && vDist > uRqVis * 3.2) {
-          gl_FragColor = vec4(uRqFog, 1.0);
+          gl_FragColor = vec4(rqWaterDir(normalize(vW - cameraPosition)), 1.0);
           return;
         }
         // Domain-warp the 5 m class lookup so habitat edges look organic instead of square
@@ -167,7 +167,7 @@ export function seafloorMaterial(habitat: THREE.DataTexture, lite: boolean, cove
             }
           }
         } else if (uRqUnder > 0.5) {
-          c = mix(c, uRqFog, 1.0 - exp(-vDist / uRqVis));
+          c = mix(c, rqWaterDir(normalize(vW - cameraPosition)), 1.0 - exp(-vDist / uRqVis));
         }
         gl_FragColor = vec4(uRqUnder > 0.5 ? c : haze(c, vDist), 1.0);
       }
@@ -240,10 +240,13 @@ export function seaMaterial(depthTex: THREE.Texture | null, size: [number, numbe
           float wob = dot(n.xz, vec2(0.7, 0.5)) * 3.0;
           float win = smoothstep(0.6, 0.74, cosT + wob * 0.05);
           vec3 skyc = mix(vec3(0.6, 0.9, 0.96), vec3(1.0, 0.99, 0.94), pow(cosT, 8.0));
-          vec3 tir = uRqFog * 0.88 + vec3(0.01, 0.03, 0.03) * wob; // mirror of the darker water below
+          // Outside the window the surface is a rippling mirror of the water below, with moving
+          // glints where a ripple catches the light.
+          float glint = pow(max(0.0, 1.0 - abs(wob)), 10.0);
+          vec3 tir = mix(uRqDeep, uRqFog, 0.62) + uRqFog * 0.22 * wob + vec3(0.55, 0.85, 0.95) * glint * 0.14;
           vec3 uc = mix(tir, skyc, win);
-          uc += vec3(0.9, 1.0, 1.0) * pow(max(0.0, 1.0 - abs(wob)), 10.0) * 0.18 * win;
-          uc = mix(uc, uRqFog, 1.0 - exp(-vDist / (uRqVis * 1.7)));
+          uc += vec3(0.9, 1.0, 1.0) * glint * 0.22 * win;
+          uc = mix(uc, rqWaterDir(-v), 1.0 - exp(-vDist / (uRqVis * 1.7)));
           gl_FragColor = vec4(uc, 1.0);
           return;
         }

@@ -3,8 +3,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { loadZoneIndex, zoneName, type ZoneIndexEntry } from "../boat/zone";
-import { SITES } from "../content/sites";
+import { siteName, SITES } from "../content/sites";
 import { useLang } from "../i18n";
+import { MOBILE } from "../lib/device";
 import { useScene } from "./sceneStore";
 import { displayY, heightAt, lonLatToUV, uvToXZ, type TerrainData } from "./terrain";
 
@@ -33,8 +34,8 @@ export interface Pin {
 }
 
 /** Story and dive-site anchor points for the pins (screen-space overlay) and the boats. */
-export function pinList(td: TerrainData): Pin[] {
-  return SITES.filter((s) => s.island === td.meta.island).map((s) => anchor(td, { ...s }));
+export function pinList(td: TerrainData, lang: "es" | "en" = "en"): Pin[] {
+  return SITES.filter((s) => s.island === td.meta.island).map((s) => anchor(td, { ...s, name: siteName(s, lang) }));
 }
 function anchor(td: TerrainData, p: Omit<Pin, "x" | "y" | "z">): Pin {
   const { u, v } = lonLatToUV(td, p.lon, p.lat);
@@ -60,7 +61,7 @@ export function usePlaces(td: TerrainData): Pin[] {
     };
   }, [island]);
   return useMemo(() => {
-    const sites = pinList(td);
+    const sites = pinList(td, lang);
     const empty = zones.filter((z) => !sites.some((s) => inZone(z, s.lon, s.lat)));
     return [...sites, ...empty.map((z) => anchor(td, { id: `zone:${z.id}`, name: zoneName(z, lang), kind: "zone", lon: z.lon, lat: z.lat }))];
   }, [td, zones, lang]);
@@ -296,6 +297,10 @@ export function SiteBoats({ td }: { td: TerrainData }) {
         const ping = new THREE.LineSegments(geo.ping, mats.ping);
         const foam = new THREE.LineSegments(geo.foam, mats.foam);
         root.add(boat, mirror, foam, new THREE.LineSegments(geo.reticle, mats.hud), dashes, ping);
+        // Phones and tablets redraw the island only when something changes, so a spreading ping
+        // would sit frozen; without it and the faint reflection each boat is two draw calls
+        // lighter there (an island can have twenty of them).
+        mirror.visible = ping.visible = !MOBILE;
         return { root, boat, radar, mirror, dashes, ping, foam, body, mats };
       }),
     [sites, geo],
@@ -370,6 +375,7 @@ export function SiteBoats({ td }: { td: TerrainData }) {
             geometry={geo.hit}
             material={geo.hitMat}
             position={[0, 0.1, 0]}
+            visible={false} // never drawn (one draw call less per boat); pointer rays still hit it
             onPointerOver={(e) => {
               if (sitesFade.v < 0.5) return; // the layer is off
               e.stopPropagation();

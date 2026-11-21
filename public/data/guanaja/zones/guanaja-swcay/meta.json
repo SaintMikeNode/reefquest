@@ -1,0 +1,55 @@
+{
+ "id": "guanaja-swcay",
+ "island": "guanaja",
+ "name": "Southwest Cay \u00b7 Jado Trader",
+ "size_m": [
+  4500.0,
+  4500.0
+ ],
+ "cell_m": 10.0,
+ "habitat_cell_m": 5.0,
+ "height": {
+  "file": "height.png",
+  "width": 450,
+  "height": 450,
+  "min_m": -1028.3,
+  "max_m": 4.3
+ },
+ "habitat": {
+  "file": "habitat.png",
+  "width": 900,
+  "height": 900
+ },
+ "bathymetry_source": "nominal-by-zone",
+ "detail": "resampled from the island model (40 m relief), not the 10 m build",
+ "center": {
+  "lat": 16.405,
+  "lon": -85.88
+ },
+ "geo": {
+  "lonlat_to_uv": [
+   [
+    23.73125177660006,
+    -0.13574774074357027,
+    2040.7674326302892
+   ],
+   [
+    -0.1310289704445601,
+    -24.585894059557766,
+    392.5798747934232
+   ]
+  ],
+  "uv_to_lonlat": [
+   [
+    0.04213724248698065,
+    -0.00023265518558204107,
+    -85.90097684143973
+   ],
+   [
+    -0.00022456776400649157,
+    -0.04067248935871033,
+    16.425491396419883
+   ]
+  ]
+ }
+}

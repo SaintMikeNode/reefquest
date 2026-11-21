@@ -1,0 +1,55 @@
+{
+ "id": "utila-north",
+ "island": "utila",
+ "name": "North side \u00b7 Turtle Harbour",
+ "size_m": [
+  4500.0,
+  4500.0
+ ],
+ "cell_m": 10.0,
+ "habitat_cell_m": 5.0,
+ "height": {
+  "file": "height.png",
+  "width": 450,
+  "height": 450,
+  "min_m": -406.1,
+  "max_m": 17.6
+ },
+ "habitat": {
+  "file": "habitat.png",
+  "width": 900,
+  "height": 900
+ },
+ "bathymetry_source": "nominal-by-zone",
+ "detail": "resampled from the island model (40 m relief), not the 10 m build",
+ "center": {
+  "lat": 16.112,
+  "lon": -86.945
+ },
+ "geo": {
+  "lonlat_to_uv": [
+   [
+    23.762618754132163,
+    -0.006546980417164531,
+    2066.646649863864
+   ],
+   [
+    -0.006328946842127551,
+    -24.58125044286473,
+    396.00392763727183
+   ]
+  ],
+  "uv_to_lonlat": [
+   [
+    0.042082900659833535,
+    -1.1208377744860755e-05,
+    -86.96604750507574
+   ],
+   [
+    -1.0835104994791058e-05,
+    -0.04068141002514596,
+    16.132390500242902
+   ]
+  ]
+ }
+}

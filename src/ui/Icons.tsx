@@ -70,3 +70,19 @@ export const IconHeart = (p: SVGProps<SVGSVGElement>) => (
 export const IconExternal = (p: SVGProps<SVGSVGElement>) => (
   <svg {...base(p)}><path d="M9 6H6.5A1.5 1.5 0 0 0 5 7.5v10A1.5 1.5 0 0 0 6.5 19h10a1.5 1.5 0 0 0 1.5-1.5V15" /><path d="M13 5h6v6M19 5l-8 8" /></svg>
 );
+// Things to find in the boat mode (mission tags and place tags).
+export const IconWhaleShark = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base(p)}><path d="M2.5 12c2.6-3 7.6-4.2 12.3-2.4L19.5 6l-1 4.4 3 1.6-3 1.6 1 4.4-4.7-3.6C10.1 16.2 5.1 15 2.5 12z" /><path d="M9 8.9l2-2.6 1.6 2.5" /><path d="M6.6 11.6h.01M9.6 12.7h.01M12.4 11.3h.01" /></svg>
+);
+export const IconTurtle = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base(p)}><ellipse cx="12" cy="12.8" rx="4.8" ry="5.8" /><circle cx="12" cy="4.9" r="1.6" /><path d="M7.9 9.6L4.2 7.4M16.1 9.6l3.7-2.2M8.6 17.2l-2.2 2.4M15.4 17.2l2.2 2.4" /><path d="M12 9.5v6.6M9.2 11.4l2.8 1.6 2.8-1.6" /></svg>
+);
+export const IconShark = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base(p)}><path d="M3 18c1.5 1.2 3 1.2 4.5 0s3-1.2 4.5 0 3 1.2 4.5 0 3-1.2 4.5 0" /><path d="M7.8 14.6C9.4 10 12.2 6.4 16 4.8c-.7 3.7-.3 6.8 1.3 9.8" /></svg>
+);
+export const IconWreck = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base(p)}><path d="M3 6c1.5 1.2 3 1.2 4.5 0s3-1.2 4.5 0 3 1.2 4.5 0 3-1.2 4.5 0" /><path d="M4.4 15.2l14.4-2.9-1.8 6H7.3z" /><path d="M10.8 13.9l-1-4.6M12.6 13.5l-.5-2.5 2.9-.6.5 2.5" /></svg>
+);
+export const IconDownload = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base(p)}><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5" /><path d="M5 19.5h14" /></svg>
+);

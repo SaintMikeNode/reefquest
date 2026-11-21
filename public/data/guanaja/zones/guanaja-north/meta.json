@@ -1,0 +1,55 @@
+{
+ "id": "guanaja-north",
+ "island": "guanaja",
+ "name": "North \u00b7 Mangrove Bight",
+ "size_m": [
+  4500.0,
+  4500.0
+ ],
+ "cell_m": 10.0,
+ "habitat_cell_m": 5.0,
+ "height": {
+  "file": "height.png",
+  "width": 450,
+  "height": 450,
+  "min_m": -771.5,
+  "max_m": 265.1
+ },
+ "habitat": {
+  "file": "habitat.png",
+  "width": 900,
+  "height": 900
+ },
+ "bathymetry_source": "nominal-by-zone",
+ "detail": "resampled from the island model (40 m relief), not the 10 m build",
+ "center": {
+  "lat": 16.512,
+  "lon": -85.872
+ },
+ "geo": {
+  "lonlat_to_uv": [
+   [
+    23.718292161749776,
+    -0.13758801759841996,
+    2039.5092453885338
+   ],
+   [
+    -0.1327311432643915,
+    -24.58619205080502,
+    395.0697145977376
+   ]
+  ],
+  "uv_to_lonlat": [
+   [
+    0.04216023111593147,
+    -0.00023593498692388266,
+    -85.89297080308155
+   ],
+   [
+    -0.00022760643113145786,
+    -0.040671962582969,
+    16.53246610822382
+   ]
+  ]
+ }
+}

@@ -2,12 +2,13 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useT } from "../i18n";
 import { lockScroll } from "../lib/scrollLock";
-import { IconClose, IconHeart } from "./Icons";
+import { IconClose } from "./Icons";
 
-// Donations to Saint Mike Node: a "Support Saint Mike Node" button that opens Ko-fi's donation panel
-// in a window over the page, so people can give without leaving (the same approach as Tulio's
-// Pipodojo site). Nothing from Ko-fi loads until someone opens it: visitors who never press the
-// button get no Ko-fi code and no cookies. This is the site's one third-party embed, and only on
+// Donations to Saint Mike Node: a sentence ("If you want to support the hosting and development of
+// this project, click here") whose link opens Ko-fi's donation panel in a window over the page, so
+// people can give without leaving (the same approach as Tulio's Pipodojo site; he asked for a
+// sentence, not a button, in the footer and on both pages). Nothing from Ko-fi loads until someone
+// opens it: visitors who never click get no Ko-fi code and no cookies. This is the site's one third-party embed, and only on
 // that click. The window says where the money goes (to Saint Mike Node, not to the reef
 // organizations listed on "Cómo ayudar") and that Ko-fi handles the payment.
 
@@ -15,23 +16,9 @@ export const KOFI_URL = "https://ko-fi.com/saintmikenode";
 /** Ko-fi's own embeddable donation panel for the page. */
 const PANEL_URL = `${KOFI_URL}/?hidefeed=true&widget=true&embed=true&preview=true`;
 
-/** Opens the donation window (the footer's button). */
-export function SupportButton({ className = "btn light small" }: { className?: string }) {
-  const t = useT();
-  const [open, setOpen] = useState(false);
-  return (
-    <>
-      <button type="button" className={`${className} support-btn`} aria-haspopup="dialog" onClick={() => setOpen(true)}>
-        <IconHeart /> {t("kofi.button")}
-      </button>
-      {open && <SupportDialog onClose={() => setOpen(false)} />}
-    </>
-  );
-}
-
 /**
- * The same window, opened from a sentence: "If you want to support the hosting and development of
- * this project, click here." The starred words of `kofi.line` are the link. It is a real link to the
+ * "If you want to support the hosting and development of this project, click here." The starred
+ * words of `kofi.line` are the link. It is a real link to the
  * Ko-fi page (open in a new tab, copy the address), and a plain click opens the window instead.
  */
 export function SupportLine({ className }: { className?: string }) {

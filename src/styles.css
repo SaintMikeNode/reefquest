@@ -358,7 +358,11 @@ ol.caveats li { margin: 0 0 12px; padding-left: 4px; }
    it, and the close button pinned to the corner. Name and chip wrap together on narrow cards. A clear
    gap separates this row from the title, so the chip doesn't crowd it. */
 .site-card .card-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: start; margin-bottom: 18px; }
-.site-card .card-place { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; min-height: 30px; }
+.site-card .card-place { display: flex; flex-wrap: nowrap; align-items: center; gap: 12px; min-height: 30px; min-width: 0; container-type: inline-size; }
+.site-card .card-place .place-name { flex: 0 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.site-card .card-actions { flex: none; }
+.chip-short { display: none; }
+@container (max-width: 330px) { .card-chip .chip-long { display: none; } .card-chip .chip-short { display: inline; } }
 .site-card .place-name { font-size: 16px; font-weight: 600; letter-spacing: -0.01em; color: #e6eef6; line-height: 1.25; }
 .site-card .place-depth { font-weight: 450; color: var(--hud-muted); }
 .site-card .card-actions { display: flex; gap: 6px; }
@@ -463,9 +467,11 @@ div.pin { pointer-events: none; }
 .depth-key .ticks { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 10.5px; color: var(--hud-faint); margin-top: 3px; }
 .cast-btn { font-size: 15px; padding: 12px 18px; }
 .controls-hint { font-size: 12.5px; color: rgba(238, 242, 245, 0.78); text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7); align-self: center; text-align: center; flex: 1; }
-.arrive { top: 96px; left: 50%; transform: translateX(-50%); padding: 8px 10px 8px 14px; display: flex; gap: 12px; align-items: center; white-space: nowrap; font-size: 14px; }
-.toast { left: 50%; top: 140px; transform: translateX(-50%); padding: 9px 18px; font-size: 14px; max-width: calc(100% - 24px); text-align: center; background: var(--glass-solid); border: 1px solid var(--hair); border-radius: 999px; }
-.toast.warn { border-color: #e0a040; color: #ffd790; }
+.arrive { padding: 8px 10px 8px 14px; display: flex; gap: 12px; align-items: center; white-space: nowrap; font-size: 14px; pointer-events: auto; }
+/* A message: a quiet pill with a dot that says what kind (aqua: done or noted; amber: careful). */
+.toast { display: inline-flex; align-items: center; gap: 9px; padding: 8px 16px 8px 13px; font-size: 14px; line-height: 1.3; max-width: 100%; color: var(--hud-text); background: var(--glass-solid); border: 1px solid var(--hair); border-radius: 999px; animation: rq-rise 0.3s var(--ease-out) both; }
+.toast::before { content: ""; flex: none; width: 7px; height: 7px; border-radius: 50%; background: #7fe3d8; }
+.toast.warn::before { background: #ffbf5e; }
 .field-guide { width: min(360px, 100%); }
 .bleach-note { margin: 0 0 8px; padding: 7px 10px; font-size: 12.5px; line-height: 1.45; color: #f6e6ec; border-left: 3px solid #d4199a; background: linear-gradient(90deg, rgba(212, 25, 154, 0.22), transparent); }
 .field-guide ul { list-style: none; margin: 6px 0 8px; padding: 0; display: grid; gap: 7px; }
@@ -508,7 +514,7 @@ div.pin { pointer-events: none; }
   .boat-actions > * { flex: 1; justify-content: center; }
   .controls-hint { display: none; }
   .logbook-panel { width: auto; max-height: 34vh; padding: 10px 12px; }
-  .toast { top: 112px; }
+
   .hint { padding: 18px 18px 16px; }
 }
 @media (min-width: 761px) { .layers-toggle { display: none !important; } }
@@ -1097,7 +1103,7 @@ html.lite .ltabs-strip { -webkit-backdrop-filter: none; backdrop-filter: none; b
 }
 /* The mouse guide and toasts arrive gently. */
 .hud.mouse-guide { animation: rq-rise 0.45s var(--ease-out) both; }
-.hud.toast { animation: rq-toast 0.4s var(--ease-out) both; }
+
 @keyframes rq-toast { from { opacity: 0; transform: translate(-50%, -8px); } to { opacity: 1; transform: translate(-50%, 0); } }
 @keyframes rq-rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) {
@@ -1265,7 +1271,7 @@ html.lite .ltabs-strip { background: rgba(50, 88, 145, 0.85); }
 /* No dot grid here (Tulio: it should feel like its own section, not more page). */
 .site-footer { overflow: hidden; background: radial-gradient(ellipse 70% 45% at 50% 100%, rgba(10, 102, 240, 0.26), transparent 70%), linear-gradient(180deg, #04132d 0%, #031029 55%, #062457 100%); }
 .site-footer .inner.footer-grid { padding-bottom: 0; }
-.footer-land { position: relative; height: clamp(240px, 30vw, 380px); margin-top: 20px; pointer-events: none; -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 16%); mask-image: linear-gradient(180deg, transparent 0, #000 16%); }
+.footer-land { position: relative; height: clamp(240px, 30vw, 380px); margin-top: 20px; pointer-events: none; -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 9%); mask-image: linear-gradient(180deg, transparent 0, #000 9%); }
 .sky-islands { position: absolute; inset: 0; display: block; width: 100%; height: 100%; max-width: none; }
 .site-footer .inner.footer-bottom { position: relative; border-top: 0; }
 /* The divider above the sources runs the full width of the window, not just the content column. */
@@ -1374,19 +1380,36 @@ html.lite .pc-ring { animation: none; transform: rotateX(-10deg) rotateY(-22deg)
 .sea-bg .ltabs.full .figure { -webkit-backdrop-filter: none; backdrop-filter: none; background: linear-gradient(160deg, rgba(120, 175, 255, 0.1) 0%, rgba(50, 105, 220, 0.05) 55%, rgba(30, 75, 190, 0.08) 100%); }
 
 /* ---------- Cómo ayudar (pages/SupportPage.tsx) ---------- */
-.org-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; }
+/* Compact cards (Tulio: they were too big): who, how to support and the links show; what each
+   organization does and its sources open under "Ver más". Every closed card is the same height
+   (--org-h, the tallest one, measured in SupportPage), with the buttons and the "Ver más" footer on
+   the same line in all of them; an open card grows by its details, and its neighbor stays put. */
+.org-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; align-items: start; }
 @media (min-width: 860px) { .org-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-.org-card { display: flex; flex-direction: column; }
-.org-kind { font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin: 0 0 10px; }
-.org-card h3 { font-size: 23px; letter-spacing: -0.025em; line-height: 1.15; margin: 0 0 8px; }
-.org-about { color: #d6e4fb; margin: 0 0 12px; font-size: 16.5px; }
-.org-does { margin: 0 0 14px; padding: 0; list-style: none; display: grid; gap: 7px; }
-.org-does li { position: relative; padding-left: 18px; font-size: 15.5px; line-height: 1.45; color: var(--ink); }
-.org-does li::before { content: ""; position: absolute; left: 2px; top: 0.62em; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
-.org-how { font-size: 15px; line-height: 1.5; color: var(--muted); margin: 0 0 16px; padding-top: 12px; border-top: 1px solid var(--rule); }
+.org-card { display: flex; flex-direction: column; min-height: var(--org-h, auto); padding: clamp(16px, 2vw, 22px) clamp(16px, 2vw, 22px) 0; }
+.org-kind { font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin: 0 0 6px; }
+.org-card h3 { font-size: 20px; letter-spacing: -0.02em; line-height: 1.2; margin: 0 0 6px; }
+.org-about { color: #d6e4fb; margin: 0 0 8px; font-size: 15px; line-height: 1.45; }
+.org-how { font-size: 14px; line-height: 1.45; color: var(--muted); margin: 0 0 14px; }
 .org-how b { color: var(--ink); font-weight: 650; }
-.org-links { display: flex; flex-wrap: wrap; gap: 10px; margin-top: auto; }
-.org-card .sources { margin: 14px 0 0; }
+.org-links { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: auto; }
+/* "Ver más": a footer bar across the bottom of every card. */
+.org-toggle { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; margin-top: 16px; padding: 11px 0 13px; border: 0; border-top: 1px solid var(--rule); background: none; color: var(--accent); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+.org-toggle:hover, .org-toggle:focus-visible { color: var(--white); }
+.org-toggle:focus-visible { outline: 2px solid rgba(191, 224, 255, 0.6); outline-offset: -2px; border-radius: 8px; }
+.org-toggle svg { transition: transform 0.25s var(--ease-out); }
+.org-toggle.open svg { transform: rotate(180deg); }
+/* Opens by easing the row from 0 to its height (grid rows can animate to "auto"). */
+.org-more { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.3s var(--ease-out); }
+.org-more.open { grid-template-rows: 1fr; }
+.org-more-inner { min-height: 0; overflow: hidden; }
+.org-more.open .org-more-inner { padding-top: 14px; }
+.org-does { margin: 0 0 10px; padding: 12px 0 0; border-top: 1px solid var(--rule); list-style: none; display: grid; gap: 6px; }
+.org-does li { position: relative; padding-left: 16px; font-size: 14.5px; line-height: 1.45; color: var(--ink); }
+.org-does li::before { content: ""; position: absolute; left: 2px; top: 0.62em; width: 5px; height: 5px; border-radius: 50%; background: var(--accent); }
+.org-card .sources { margin: 0; font-size: 12.5px; }
+html.lite .org-more, html.lite .org-toggle svg { transition: none; }
+@media (prefers-reduced-motion: reduce) { .org-more, .org-toggle svg { transition: none; } }
 /* Small print under a page's intro: the independence note on "Cómo ayudar" (`.org-note`) and the
    contact line on "Datos y créditos" (`.head-note`). */
 .org-note, .head-note { max-width: 620px; margin-top: 18px; }
@@ -1410,9 +1433,8 @@ html.lite .pc-ring { animation: none; transform: rotateX(-10deg) rotateY(-22deg)
 @media (prefers-reduced-motion: reduce) { .mouse-guide.spot::after, .mouse-guide.spot li { animation: none; } }
 
 /* ---------- Ko-fi donation window (ui/Support.tsx) ----------
-   The footer has the button; "Cómo ayudar" and "Datos y créditos" have a sentence with a link
-   instead (`SupportLine`), right after the contact line. The window is a white card (Ko-fi's panel is light) with our blue header, over a dimmed page. */
-.support-btn { justify-self: start; margin-top: 10px; }
+   Opened from a sentence with a link (`SupportLine`), right after the contact line in the footer,
+   on "Cómo ayudar" and on "Datos y créditos". The window is a white card (Ko-fi's panel is light) with our blue header, over a dimmed page. */
 /* "Cómo ayudar": a tighter top (Tulio: the organizations should show without scrolling). Less
    padding around the intro, a wider measure for the intro and its small print (fewer lines), and
    the first island right under them. */
@@ -1441,3 +1463,198 @@ html.lite .pc-ring { animation: none; transform: rotateX(-10deg) rotateY(-22deg)
 .kofi-foot a { font-size: 14px; font-weight: 650; color: var(--brand-ink); text-decoration: underline; text-underline-offset: 3px; }
 .kofi-foot p { margin: 6px 0 0; font-size: 11.5px; line-height: 1.45; color: #6b7280; }
 @media (prefers-reduced-motion: reduce) { .kofi, .kofi-card { animation: none; } .kofi-frame iframe { transition: none; } }
+
+/* ---------- 3D views on phones: the way back and the tools share the top row ----------
+   They are two separate boxes (title plate on the left, tools on the right), and the plate used to
+   be allowed a fixed share of the width, so a longer label (Spanish "Todas las islas") ran under
+   the tools (Tulio: buttons overlapping). Now the plate's first row may take only the room the
+   tools really leave (--tools-w, measured by useWidthVar); the label shortens with "…" as a last
+   resort, the tools are a little slimmer, and screens under 360 px get a short label. The name and
+   the heat line sit below that row, so they keep the full width. */
+/* (`.back-long` / `.back-short`, not `.lbl-long` / `.lbl-short`: those already swap at 760 px for
+   the boat's action buttons.) */
+.back-btn .back-short { display: none; }
+@media (max-width: 760px) {
+  .plate { max-width: calc(100% - 24px); }
+  .plate > .back-btn, .plate > .plate-actions { max-width: calc(100vw - 30px - var(--tools-w, 212px)); }
+  .back-btn { min-width: 0; }
+  .plate-actions .back-btn { max-width: 100%; }
+  .back-btn .icon { flex: none; }
+  .back-btn .lbl { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tools { gap: 3px; }
+  .tools .hbtn.icon-only { padding: 8px; }
+  .hud.tools .lang.chips { gap: 3px; }
+  .hud.tools .lang.chips button { padding: 6px 8px; }
+}
+@media (max-width: 359px) {
+  .back-btn .back-long { display: none; }
+  .back-btn .back-short { display: inline; }
+}
+
+/* ---------- Boat view: every control in one card ----------
+   The mouse actions and the keys used to be a card plus a loose line of text that wrapped around
+   it (Tulio: controls all over the place). Now the keys are a second row of the same card, and the
+   card sits on the bottom bar's baseline, between the logbook and the action buttons. */
+.boat-bottom > .controls-hint { align-self: flex-end; display: flex; justify-content: center; flex: 1 1 0; min-width: 0; container-type: inline-size; }
+.mouse-guide.inline { margin: 0; }
+.mouse-guide .mg-keys { margin-top: 9px; padding-top: 9px; border-top: 1px solid var(--hair); gap: 16px; }
+.mouse-guide .mg-keys li { gap: 7px; font-size: 12.5px; color: var(--hud-text); white-space: nowrap; }
+.mouse-guide .mg-keys .caps { display: inline-flex; gap: 3px; }
+.mouse-guide .mg-keys .mg-key { margin-right: 0; min-width: 20px; text-align: center; }
+/* Not enough room between the logbook and the buttons (a narrower window, longer Spanish labels):
+   the card's rows wrap to fit the room it has, and under 380 px it steps aside rather than overlap.
+   Judged by the room it actually has, not by the window's width. */
+.mouse-guide.inline { max-width: 100%; }
+.mouse-guide.inline ul { flex-wrap: wrap; row-gap: 8px; }
+@container (max-width: 380px) { .mouse-guide.inline { display: none; } }
+/* A short window: the sounder panel scrolls inside itself instead of running into the action
+   buttons under it (it used to cover them below about 650 px of height). */
+@media (min-width: 761px) { .hud-right.sounder { max-height: calc(100% - 72px - 92px); overflow-y: auto; } }
+
+/* Phones: "tap the water to sail there" (boat/BoatHud.tsx TapHint). A ripple on the water and a
+   small label; it takes no taps, and goes away after the first tap on the water. */
+/* Centered with insets, not a transform: the entrance animation owns `transform`, and with a
+   translate(-50%) under it the hint ended up starting at the middle of the screen, cut off on phones. */
+.tap-hint { left: 12px; right: 12px; top: calc(44% - 52px); display: grid; justify-items: center; gap: 10px; pointer-events: none; animation: rq-rise 0.5s var(--ease-out) 0.6s both; }
+.tap-ripple { position: relative; width: 54px; height: 54px; margin-left: 96px; }
+.tap-ripple i { position: absolute; inset: 0; border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.9); animation: tap-ring 1.8s cubic-bezier(0.2, 0.6, 0.3, 1) infinite; }
+.tap-ripple i:nth-child(2) { animation-delay: 0.9s; }
+.tap-ripple b { position: absolute; left: 50%; top: 50%; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.25); }
+@keyframes tap-ring { from { transform: scale(0.25); opacity: 0.95; } to { transform: scale(1.35); opacity: 0; } }
+.tap-label { padding: 8px 14px; border-radius: 999px; background: rgba(5, 18, 34, 0.86); border: 1px solid rgba(255, 255, 255, 0.28); color: var(--white); font-size: 14px; font-weight: 600; text-align: center; max-width: 100%; }
+@media (prefers-reduced-motion: reduce) { .tap-hint { animation: none; } .tap-ripple i { animation: none; opacity: 0.6; } }
+
+/* Island view on a small desktop window: the data credit line stays to the right of the layers box
+   (it wraps there) instead of running under it. */
+@media (min-width: 761px) { .attribution { left: 400px; } }
+
+.checklist.sightings { margin-top: 2px; padding-top: 9px; border-top: 1px solid var(--hair); }
+.checklist.sightings > .hud-faint { grid-column: 1 / -1; font-size: 12.5px; }
+
+/* Things to find in a zone (logbook): each row says how far and which way it is, and a press
+   sails the boat there. Full pills, like every text button. */
+.checklist.sightings button { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; width: 100%; min-height: 34px; padding: 5px 12px 5px 10px; border-radius: 999px; border: 1px solid var(--hair); background: rgba(255, 255, 255, 0.04); color: var(--hud-muted); font: inherit; text-align: left; cursor: pointer; transition: background 0.2s var(--ease-out), border-color 0.2s var(--ease-out), transform 0.2s var(--spring); }
+.checklist.sightings button:hover { background: rgba(127, 214, 255, 0.12); border-color: rgba(127, 214, 255, 0.5); color: var(--hud-text); }
+.checklist.sightings button:active { transform: scale(0.98); }
+.checklist.sightings button.done { color: var(--hud-text); }
+.checklist.sightings button.done i { background: var(--c); }
+.checklist.sightings button i { flex: none; }
+.checklist.sightings button .where { margin-left: auto; padding-left: 10px; font: 500 11.5px/1 var(--mono); letter-spacing: 0.02em; color: #9fdcff; white-space: nowrap; }
+@media (pointer: coarse) { .checklist.sightings button { min-height: 40px; } }
+
+/* ---------- Boat view: top center stack, the mission tag, place tags ----------
+   One column at the top center: the mission in range (or the plain arrival tag), then messages.
+   Being one column, they can never cover each other. Centered with the grid, not a transform. */
+.top-stack { top: 96px; left: 12px; right: 12px; display: grid; justify-items: center; gap: 8px; }
+/* The mission in range: its icon, the place on a line of its own with the steps done, what to do
+   now, the way to its story. --m is the mission's own color; nothing else is colored. */
+.mission { --m: #8fc1ff; display: flex; align-items: center; gap: 12px; width: fit-content; max-width: min(640px, 100%); padding: 9px 10px 9px 10px; border-radius: 26px; pointer-events: auto; animation: rq-rise 0.35s var(--ease-out) both; }
+.m-turtles { --m: #79e2b8; }
+.m-reef-sharks { --m: #ffa78f; }
+.m-wreck { --m: #f2c078; }
+.mission.warn { --m: #ffbf5e; }
+.mission-icon { flex: none; width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; color: var(--m); background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 255, 255, 0.16); transition: color 0.3s var(--ease-out); }
+.mission-icon .icon { width: 21px; height: 21px; }
+.mission-body { display: grid; gap: 4px; min-width: 0; padding-right: 4px; }
+.mission-kicker { display: flex; align-items: center; gap: 10px; font: 600 10.5px/1.2 var(--mono); letter-spacing: 0.13em; text-transform: uppercase; color: var(--m); transition: color 0.3s var(--ease-out); }
+.mission-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mission-steps { flex: none; display: inline-flex; gap: 3px; }
+.mission-steps i { width: 13px; height: 3px; border-radius: 2px; background: rgba(255, 255, 255, 0.2); transition: background 0.4s var(--ease-out); }
+.mission-steps i.done { background: var(--m); }
+.mission-line { font-size: 14px; line-height: 1.35; color: var(--hud-text); animation: rq-fade-in 0.35s var(--ease-out) both; }
+.mission .hbtn { flex: none; white-space: nowrap; padding: 8px 13px; }
+.mission .hbtn .icon { width: 16px; height: 16px; }
+@media (max-width: 760px) {
+  /* Phones: the stack sits right above the bottom dock; the story button is its icon alone. */
+  .top-stack { top: auto; bottom: calc(var(--bb, 140px) + 10px); left: 10px; right: 10px; }
+  .mission { width: 100%; max-width: none; border-radius: 22px; background: var(--glass-solid); }
+  .mission-line { font-size: 13.5px; }
+  .mission-kicker { letter-spacing: 0.08em; }
+  .mission .hbtn { padding: 10px; }
+  .mission .hbtn .lbl { display: none; }
+}
+
+/* Place tags over the water: every place of the zone, as a small pill on a stem (what it is, its
+   name, how far). scenes/labels.tsx positions them and lifts one above another where they would
+   overlap. A press sails the boat there. */
+.tag { --m: #cfe3f5; position: absolute; left: 0; top: 0; display: inline-flex; align-items: center; gap: 7px; height: 28px; padding: 0 11px 0 5px; border-radius: 999px; background: rgba(4, 16, 29, 0.8); border: 1px solid rgba(255, 255, 255, 0.18); box-shadow: 0 6px 18px rgba(0, 8, 20, 0.28); color: var(--white); font: 600 12.5px/1 var(--sans); letter-spacing: 0.005em; white-space: nowrap; cursor: pointer; will-change: transform; transition: background 0.2s var(--ease-out), border-color 0.2s var(--ease-out); }
+.tag:hover { background: rgba(10, 40, 80, 0.92); border-color: rgba(255, 255, 255, 0.4); }
+.tag.on { background: var(--white); border-color: var(--white); color: #04101d; }
+.tag-mark { flex: none; width: 19px; height: 19px; border-radius: 50%; display: grid; place-items: center; color: var(--m); background: rgba(255, 255, 255, 0.1); }
+.tag-mark .icon { width: 14px; height: 14px; }
+.tag-mark i { width: 7px; height: 7px; border-radius: 50%; background: #8fc3f0; }
+.tag.k-story .tag-mark i { border-radius: 1px; transform: rotate(45deg); background: var(--coral); }
+.tag.k-whale-shark { --m: #8fc1ff; }
+.tag.k-turtles { --m: #79e2b8; }
+.tag.k-reef-sharks { --m: #ffa78f; }
+.tag.k-wreck { --m: #f2c078; }
+.tag.k-dive { font-weight: 500; }
+.tag.on .tag-mark { background: rgba(4, 16, 29, 0.1); color: #0a3f8f; }
+.tag-dist { font: 500 11px/1 var(--mono); color: #9db6d0; padding-left: 1px; }
+.tag.on .tag-dist { color: #47607c; }
+.label-anchor > .tag-stem { position: absolute; left: -0.5px; bottom: 0; width: 1px; height: 12px; background: linear-gradient(to top, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.18)); pointer-events: none; }
+@media (max-width: 760px) { .tag { height: 26px; font-size: 12px; padding: 0 9px 0 4px; } .tag-dist { display: none; } }
+
+/* ---------- Boat view: underwater camera (boat/photos.ts) ----------
+   The viewfinder marks the part of the screen the photo keeps (a centered 16:9 crop), with thin
+   white corners; the reticle closes and turns aqua on a subject. */
+.viewfinder { inset: 0; z-index: 7; pointer-events: none; container-type: size; }
+.viewfinder button { pointer-events: auto; }
+.vf-frame { position: absolute; left: 50%; top: 50%; width: min(78cqw, calc(74cqh * 16 / 9)); aspect-ratio: 16 / 9; transform: translate(-50%, -50%); }
+.vf-frame i { position: absolute; width: 30px; height: 30px; border: 0 solid rgba(255, 255, 255, 0.92); }
+.vf-frame i:nth-child(1) { left: 0; top: 0; border-width: 2px 0 0 2px; border-top-left-radius: 10px; }
+.vf-frame i:nth-child(2) { right: 0; top: 0; border-width: 2px 2px 0 0; border-top-right-radius: 10px; }
+.vf-frame i:nth-child(3) { left: 0; bottom: 0; border-width: 0 0 2px 2px; border-bottom-left-radius: 10px; }
+.vf-frame i:nth-child(4) { right: 0; bottom: 0; border-width: 0 2px 2px 0; border-bottom-right-radius: 10px; }
+.vf-reticle { position: absolute; left: 50%; top: 50%; width: 64px; height: 64px; margin: -32px 0 0 -32px; border-radius: 50%; border: 1.5px solid rgba(255, 255, 255, 0.55); transition: transform 0.25s var(--spring), border-color 0.25s var(--ease-out); }
+.vf-reticle::after { content: ""; position: absolute; left: 50%; top: 50%; width: 4px; height: 4px; margin: -2px 0 0 -2px; border-radius: 50%; background: rgba(255, 255, 255, 0.8); }
+.viewfinder.on .vf-reticle { transform: scale(0.72); border-color: #7fe3d8; border-width: 2px; }
+.vf-label { position: absolute; left: 50%; top: calc(50% + 46px); transform: translateX(-50%); display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px 7px 11px; border-radius: 999px; background: rgba(4, 16, 29, 0.72); color: var(--hud-muted); font-size: 13.5px; font-weight: 550; white-space: nowrap; }
+.viewfinder.on .vf-label { color: var(--white); }
+.vf-label .icon { width: 17px; height: 17px; color: #7fe3d8; }
+.vf-controls { position: absolute; left: 50%; bottom: calc(22px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); display: flex; align-items: center; gap: 22px; }
+.vf-shutter { width: 70px; height: 70px; border-radius: 50%; border: 3px solid var(--white); background: rgba(255, 255, 255, 0.9); box-shadow: inset 0 0 0 4px rgba(4, 16, 29, 0.55), 0 8px 24px rgba(0, 8, 20, 0.35); cursor: pointer; transition: transform 0.15s var(--spring); }
+.vf-shutter:active { transform: scale(0.9); }
+.vf-close { width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; background: var(--glass-solid); border: 1px solid var(--hair-2); color: var(--hud-text); cursor: pointer; }
+.vf-close .icon { width: 18px; height: 18px; }
+.vf-spacer { width: 46px; }
+.vf-flash { position: absolute; inset: 0; background: #fff; pointer-events: none; animation: vf-flash 0.45s ease-out both; }
+@keyframes vf-flash { from { opacity: 0.85; } to { opacity: 0; } }
+/* The photo just taken, as a little print that pops up beside the shutter. */
+.vf-print { position: absolute; right: 22px; bottom: calc(26px + env(safe-area-inset-bottom, 0px)); width: 128px; aspect-ratio: 16 / 9; object-fit: cover; border: 3px solid var(--white); border-radius: 6px; box-shadow: 0 10px 28px rgba(0, 8, 20, 0.45); animation: vf-print 2.6s var(--ease-out) both; }
+@keyframes vf-print { 0% { opacity: 0; transform: translateY(18px) rotate(-6deg) scale(0.9); } 12% { opacity: 1; transform: translateY(0) rotate(-3deg) scale(1); } 85% { opacity: 1; } 100% { opacity: 0; transform: translateY(-6px) rotate(-3deg); } }
+.boat-bottom.cam-hidden { visibility: hidden; }
+.boat-bottom.cam-hidden * { pointer-events: none !important; }
+@media (max-width: 760px) {
+  .vf-print { width: 104px; right: 14px; bottom: calc(108px + env(safe-area-inset-bottom, 0px)); }
+  /* Phones: the frame is a band across the middle; the name goes just under it. */
+  .vf-label { top: calc(50% + min(78cqw, calc(74cqh * 16 / 9)) * 9 / 32 + 14px); }
+}
+/* Camera up: the side panels and the title make room for the frame (the way back and the mission stay). */
+.scene-root:has(.viewfinder) :is(.hud-right, .heading-tape) { visibility: hidden; pointer-events: none; }
+/* (Opacity for the plate: its heat line sets its own visibility, which would win.) */
+.scene-root:has(.viewfinder) .plate > :not(.plate-actions):not(.back-btn) { opacity: 0; pointer-events: none; }
+@media (prefers-reduced-motion: reduce) { .vf-flash, .vf-print { animation-duration: 0.01s; } }
+
+/* Logbook tabs: Habitats | Photos. Full pills, like every text button. */
+.log-tabs { display: flex; gap: 6px; padding: 3px; border-radius: 999px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--hair); }
+.log-tabs button { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 32px; padding: 0 14px; border-radius: 999px; border: 0; background: none; color: var(--hud-muted); font: 550 13px/1 var(--sans); cursor: pointer; transition: background 0.2s var(--ease-out), color 0.2s var(--ease-out); }
+.log-tabs button[aria-selected="true"] { background: rgba(255, 255, 255, 0.12); color: var(--hud-text); }
+.log-tabs .icon { width: 15px; height: 15px; }
+.log-tabs .num { font: 500 11.5px/1 var(--mono); color: #9fdcff; }
+/* The album: three frames a row, no horizontal scrolling. */
+.album { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 8px; }
+.shot { margin: 0; display: grid; gap: 5px; min-width: 0; }
+.shot-img { position: relative; aspect-ratio: 16 / 9; border-radius: 8px; overflow: hidden; background: rgba(255, 255, 255, 0.05); display: grid; place-items: center; }
+.shot.empty .shot-img { border: 1px dashed rgba(255, 255, 255, 0.22); background: none; color: rgba(255, 255, 255, 0.35); }
+.shot-img .icon { width: 22px; height: 22px; }
+.shot-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.shot-save { position: absolute; right: 4px; bottom: 4px; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: rgba(4, 16, 29, 0.78); color: var(--white); border: 1px solid rgba(255, 255, 255, 0.3); transition: transform 0.15s var(--spring), background 0.2s var(--ease-out); }
+.shot-save:hover { background: var(--brand); }
+.shot-save:active { transform: scale(0.92); }
+.shot-save .icon { width: 15px; height: 15px; }
+.shot figcaption { display: grid; gap: 1px; min-width: 0; }
+.shot figcaption b { font-size: 12px; font-weight: 600; color: var(--hud-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.shot.empty figcaption b { color: var(--hud-muted); }
+.shot figcaption span { font-size: 11px; color: var(--hud-muted); }
+.album-note { font-size: 12px; line-height: 1.45; margin: 0; }

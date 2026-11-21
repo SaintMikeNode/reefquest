@@ -1,13 +1,1 @@
-[
- {
-  "id": "utila-sw",
-  "name": "Southwest reef",
-  "name_es": "Arrecife del suroeste",
-  "lat": 16.0786,
-  "lon": -86.9977,
-  "size_m": [
-   4500,
-   4500
-  ]
- }
-]
+[{"id": "utila-sw", "name": "Southwest reef", "name_es": "Arrecife del suroeste", "lat": 16.0786, "lon": -86.9977, "size_m": [4500, 4500]}, {"id": "utila-ne", "name": "Northeast corner · Pumpkin Hill", "name_es": "Esquina noreste · Pumpkin Hill", "lat": 16.138, "lon": -86.872, "size_m": [5000, 5000]}, {"id": "utila-harbor", "name": "Utila harbor · Halliburton", "name_es": "Puerto de Utila · Halliburton", "lat": 16.083, "lon": -86.9, "size_m": [4500, 4500]}, {"id": "utila-north", "name": "North side · Turtle Harbour", "name_es": "Lado norte · Turtle Harbour", "lat": 16.112, "lon": -86.945, "size_m": [4500, 4500]}, {"id": "utila-south", "name": "South shore · Jack Neil", "name_es": "Costa sur · Jack Neil", "lat": 16.072, "lon": -86.946, "size_m": [4500, 4500]}]

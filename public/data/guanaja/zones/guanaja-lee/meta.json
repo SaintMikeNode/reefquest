@@ -1,0 +1,55 @@
+{
+ "id": "guanaja-lee",
+ "island": "guanaja",
+ "name": "Leeward side \u00b7 Michael's Rock",
+ "size_m": [
+  5500.0,
+  5500.0
+ ],
+ "cell_m": 10.0,
+ "habitat_cell_m": 5.0,
+ "height": {
+  "file": "height.png",
+  "width": 550,
+  "height": 550,
+  "min_m": -729.4,
+  "max_m": 345.7
+ },
+ "habitat": {
+  "file": "habitat.png",
+  "width": 1100,
+  "height": 1100
+ },
+ "bathymetry_source": "nominal-by-zone",
+ "detail": "resampled from the island model (40 m relief), not the 10 m build",
+ "center": {
+  "lat": 16.478,
+  "lon": -85.918
+ },
+ "geo": {
+  "lonlat_to_uv": [
+   [
+    19.4090143687502,
+    -0.10776164596021781,
+    1669.8596567505792
+   ],
+   [
+    -0.10397615421474193,
+    -20.115649652811033,
+    323.0323102935985
+   ]
+  ],
+  "uv_to_lonlat": [
+   [
+    0.05152097247211704,
+    -0.00027600327565632874,
+    -85.94363606040558
+   ],
+   [
+    -0.0002663076915649458,
+    -0.04971111140414335,
+    16.502991689514293
+   ]
+  ]
+ }
+}

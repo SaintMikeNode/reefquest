@@ -26,8 +26,18 @@ function Mouse({ lit }: { lit: Part }) {
   );
 }
 
-/** `inline`: sits in the flow of another bar (the boat's) instead of the bottom-right corner. */
-export function MouseGuide({ items, inline }: { items: { part: Part; key?: string; label: string; how: string }[]; inline?: boolean }) {
+/** `inline`: sits in the flow of another bar (the boat's) instead of the bottom-right corner.
+ *  `keys`: keyboard controls as a second row of the same card (the boat's W A S D, Space, U), so
+ *  every control is in one place. */
+export function MouseGuide({
+  items,
+  keys,
+  inline,
+}: {
+  items: { part: Part; key?: string; label: string; how: string }[];
+  keys?: { caps: string[]; label: string }[];
+  inline?: boolean;
+}) {
   const t = useT();
   const [open, setOpen] = useState(() => {
     try {
@@ -77,6 +87,22 @@ export function MouseGuide({ items, inline }: { items: { part: Part; key?: strin
           </li>
         ))}
       </ul>
+      {keys && (
+        <ul className="mg-keys">
+          {keys.map((k) => (
+            <li key={k.label}>
+              <span className="caps">
+                {k.caps.map((c) => (
+                  <kbd className="mg-key" key={c}>
+                    {c}
+                  </kbd>
+                ))}
+              </span>
+              {k.label}
+            </li>
+          ))}
+        </ul>
+      )}
       <button className="mg-close" onClick={close} aria-label={t("scene.mouse.close")} title={t("scene.mouse.close")}>
         <IconClose />
       </button>

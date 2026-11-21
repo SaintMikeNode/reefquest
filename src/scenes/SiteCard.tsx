@@ -1,7 +1,7 @@
 import { motion } from "motion/react";
 import type { ReactNode } from "react";
 import { panelMotion } from "../ui/motionPresets";
-import type { Site } from "../content/sites";
+import { siteName, type Site } from "../content/sites";
 import { useL, useLang, useT } from "../i18n";
 import { IconClose } from "../ui/Icons";
 import { PhotoStrip, usePhotos } from "../ui/PhotoStrip";
@@ -18,11 +18,12 @@ export function SiteCard({ site, onClose, actions }: { site: Site; onClose: () =
   return (
     <motion.aside className="hud site-card panel" aria-live="polite" {...panelMotion}>
       <div className="card-head">
-        {/* The place name with its action (e.g. "Explore by boat") right after it; they wrap
-            together when the name is long, and the close button stays in the corner. */}
+        {/* The place name with its action (e.g. "Explore by boat") always right beside it, on every
+            card and every screen: a long name wraps in its own column, the action stays on its
+            right (shortened to "By boat" on narrow cards), and the close button stays in the corner. */}
         <div className="card-place">
           <span className="place-name">
-            {site.name}
+            {siteName(site, lang)}
             {site.depth_m ? <span className="place-depth"> · {site.depth_m} m</span> : null}
           </span>
           {actions && <div className="card-actions">{actions}</div>}

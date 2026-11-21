@@ -1,0 +1,55 @@
+{
+ "id": "utila-ne",
+ "island": "utila",
+ "name": "Northeast corner \u00b7 Pumpkin Hill",
+ "size_m": [
+  5000.0,
+  5000.0
+ ],
+ "cell_m": 10.0,
+ "habitat_cell_m": 5.0,
+ "height": {
+  "file": "height.png",
+  "width": 500,
+  "height": 500,
+  "min_m": -945.2,
+  "max_m": 63.0
+ },
+ "habitat": {
+  "file": "habitat.png",
+  "width": 1000,
+  "height": 1000
+ },
+ "bathymetry_source": "nominal-by-zone",
+ "detail": "resampled from the island model (40 m relief), not the 10 m build",
+ "center": {
+  "lat": 16.138,
+  "lon": -86.872
+ },
+ "geo": {
+  "lonlat_to_uv": [
+   [
+    21.3836050481387,
+    -0.013731971682812654,
+    1858.3592426105708
+   ],
+   [
+    -0.013272894014180574,
+    -22.123217660729775,
+    356.3725281670771
+   ]
+  ],
+  "uv_to_lonlat": [
+   [
+    0.046764781090799956,
+    -2.9027092638054158e-05,
+    -86.89541920773243
+   ],
+   [
+    -2.805667595511553e-05,
+    -0.045201363969251694,
+    16.160663757813982
+   ]
+  ]
+ }
+}

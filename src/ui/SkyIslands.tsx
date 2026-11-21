@@ -3,9 +3,10 @@ import { loadRegion, loadRelief } from "../lib/data";
 import { LITE, MOBILE, REDUCED_MOTION } from "../lib/device";
 
 // The footer's landscape: the Bay Islands seen from the sky, drawn as contour lines in perspective
-// (after the footer of saintmikenode.org, Tulio's own site; our code). The relief is the coarse GEBCO
-// grid already shipped for the home page (relief.bin, ~860 m cells), smoothed and upsampled, cut
-// into contours with marching squares once, then only projected each frame: land in white rings
+// (after the footer of saintmikenode.org, Tulio's own site; our code). The relief is relief.bin
+// (~430 m cells: GEBCO for the sea, each island's own DEM for its land, see pipeline/relief_land.py;
+// with GEBCO alone at ~860 m, narrow Roatán drew as a few islets), lightly smoothed, cut into
+// contours with marching squares once, then only projected each frame: land in white rings
 // rising from the coast, the seafloor in blue lines falling to the deep (depths compressed), a dot
 // grid on the sea surface, and a marker with each island's name. The view drifts slowly from side
 // to side; the lines draw in from the deep up to the peaks when the footer first comes into view.
@@ -33,7 +34,7 @@ function z(h: number) {
 /** Smooth and upsample the grid, then cut every level into segments. */
 function build(relief: Int16Array, meta: { w: number; h: number; west: number; north: number; step: number }) {
   const rows = Math.min(meta.h, Math.ceil((meta.north - SOUTH) / meta.step) + 1);
-  const W = meta.w, K = 2; // upsample factor
+  const W = meta.w, K = meta.step > 0.006 ? 2 : 1; // upsample factor (only a coarse grid needs it)
   const gw = (W - 1) * K + 1, gh = (rows - 1) * K + 1;
   const g = new Float32Array(gw * gh);
   const at = (c: number, r: number) => relief[Math.min(rows - 1, r) * W + Math.min(W - 1, c)];
@@ -42,17 +43,21 @@ function build(relief: Int16Array, meta: { w: number; h: number; west: number; n
       const c = Math.floor(i / K), r = Math.floor(j / K), fx = i / K - c, fy = j / K - r;
       g[j * gw + i] = (at(c, r) * (1 - fx) + at(c + 1, r) * fx) * (1 - fy) + (at(c, r + 1) * (1 - fx) + at(c + 1, r + 1) * fx) * fy;
     }
-  // One light 3×3 blur pass rounds the cell steps off the coastlines.
+  // One light 3×3 pass rounds the cell steps off the lines. Land is smoothed with land and sea
+  // with sea: a plain blur averages a narrow island with the deep water beside it and sinks it.
   const s = new Float32Array(g.length);
   for (let j = 0; j < gh; j++)
     for (let i = 0; i < gw; i++) {
+      const land = g[j * gw + i] > 0;
       let sum = 0, n = 0;
       for (let dj = -1; dj <= 1; dj++)
         for (let di = -1; di <= 1; di++) {
           const x = i + di, y = j + dj;
           if (x < 0 || y < 0 || x >= gw || y >= gh) continue;
+          const v = g[y * gw + x];
+          if (v > 0 !== land) continue;
           const wgt = di === 0 && dj === 0 ? 4 : di === 0 || dj === 0 ? 2 : 1;
-          sum += g[y * gw + x] * wgt;
+          sum += v * wgt;
           n += wgt;
         }
       s[j * gw + i] = sum / n;
@@ -87,16 +92,23 @@ function build(relief: Int16Array, meta: { w: number; h: number; west: number; n
       }
     out.push(new Float32Array(seg));
   }
-  // Each island's peak (for its marker) and the grid's extent (for the sea dots).
+  // Each island's peak (for its marker) and the grid's extent (for the sea dots). The marker stands
+  // on the highest grid point near the island's listed position, at that point's own place and
+  // height. (It used to take the height of that summit but stay at the listed position: with the
+  // relief drawn 35 times taller, Guanaja's tag hung in the air beside its peak.)
   const peaks = ISLANDS.map((isl) => {
     const i = Math.round((isl.lon - meta.west) / cellDeg), j = Math.round((meta.north - isl.lat) / cellDeg);
-    let best = -1e9;
+    let best = -1e9, bi = i, bj = j;
     for (let dj = -6; dj <= 6; dj++)
       for (let di = -6; di <= 6; di++) {
         const x = i + di, y = j + dj;
-        if (x >= 0 && y >= 0 && x < gw && y < gh) best = Math.max(best, s[y * gw + x]);
+        if (x < 0 || y < 0 || x >= gw || y >= gh) continue;
+        if (s[y * gw + x] > best) (best = s[y * gw + x]), (bi = x), (bj = y);
       }
-    return { name: isl.name, x: X(i), y: Y(j), z: z(Math.max(0, best)) };
+    // Its foot rests on the highest contour drawn there (the summit itself is above the last ring).
+    let top = 0;
+    for (const lv of LEVELS) if (lv >= 0 && lv < best) top = lv;
+    return { name: isl.name, x: X(bi), y: Y(bj), z: z(top) };
   });
   // The view aims at the middle of the islands (they sit north of the grid's center).
   const focus = { x: X(Math.round((-86.44 - meta.west) / cellDeg)), y: Y(Math.round((meta.north - 16.29) / cellDeg)) };
@@ -200,12 +212,15 @@ export default function SkyIslands() {
         for (const p of scene.peaks) {
           if (!project(p.x, p.y, p.z)) continue;
           const bx = P.x, by = P.y, mast = narrow ? 22 : 30;
+          // The top of the mast stays below the canvas's fading top edge (the mask on .footer-land),
+          // so a tall island's name (Guanaja) isn't washed out: the mast just gets shorter.
+          const ty = Math.min(by - 6, Math.max(by - mast, h * 0.09 + 20));
           ctx.globalAlpha = a;
           ctx.strokeStyle = "rgba(255, 255, 255, 0.7)";
           ctx.lineWidth = 1;
           ctx.beginPath();
           ctx.moveTo(bx, by);
-          ctx.lineTo(bx, by - mast);
+          ctx.lineTo(bx, ty);
           ctx.stroke();
           const pulse = still ? 0.4 : (t * 0.45 + p.x * 0.01) % 1;
           ctx.strokeStyle = `rgba(127, 196, 255, ${0.7 * (1 - pulse)})`;
@@ -214,12 +229,12 @@ export default function SkyIslands() {
           ctx.stroke();
           ctx.fillStyle = "#ffffff";
           ctx.beginPath();
-          ctx.arc(bx, by - mast, 2.4, 0, Math.PI * 2);
+          ctx.arc(bx, ty, 2.4, 0, Math.PI * 2);
           ctx.fill();
           ctx.fillStyle = "rgba(235, 244, 255, 0.92)";
           // Names stay inside the frame (on phones the outer islands sit near the edges).
           const label = p.name.toUpperCase(), half = ctx.measureText(label).width / 2 + 6;
-          ctx.fillText(label, Math.max(half, Math.min(w - half, bx)), by - mast - 9);
+          ctx.fillText(label, Math.max(half, Math.min(w - half, bx)), ty - 9);
         }
         ctx.globalAlpha = 1;
       }
