@@ -1,9 +1,8 @@
-import { OrbitControls } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
-import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
+import { CameraControls, type Controls } from "../scenes/CameraControls";
 import { LITE, MOBILE, pick, REDUCED_MOTION } from "../lib/device";
 import { SceneReady } from "../scenes/AdaptiveQuality";
 import { clearLabels, LabelProjector, setLabelAnchor } from "../scenes/labels";
@@ -214,7 +213,7 @@ function Scene({ zone, start }: { zone: Zone; start: { lon: number; lat: number 
 function Boat({ zone, start, coverage }: { zone: Zone; start: { x: number; z: number }; coverage: Coverage }) {
   const { camera, gl } = useThree();
   const vessel = useMemo(() => makeVessel(), []);
-  const controls = useRef<OrbitControlsImpl>(null);
+  const controls = useRef<Controls>(null);
   const orbiting = useRef(false); // the person is dragging the camera: no auto chase
   const st = useRef({ x: start.x, z: start.z, a: Math.PI, v: 0, aground: false, lastTele: 0, sx: start.x, sz: start.z, lastTex: 0, under: false });
   const diving = useBoat((b) => b.under);
@@ -266,8 +265,11 @@ function Boat({ zone, start, coverage }: { zone: Zone; start: { x: number; z: nu
   }, []);
 
   // Tap / click on the water to steer there (ignored if the pointer moved: that was a camera drag).
+  // Heard on the element the camera controls use (the canvas's wrapper): they capture the pointer
+  // there, so a lift over the canvas itself never reaches the canvas.
+  const eventsEl = useThree((s) => s.events.connected) as HTMLElement | undefined;
   useEffect(() => {
-    const el = gl.domElement;
+    const el = eventsEl ?? gl.domElement;
     let downAt: { x: number; y: number; t: number } | null = null;
     const ray = new THREE.Raycaster();
     const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
@@ -279,7 +281,7 @@ function Boat({ zone, start, coverage }: { zone: Zone; start: { x: number; z: nu
       const quick = performance.now() - downAt.t < 450;
       downAt = null;
       if (moved > 8 || !quick || e.button !== 0) return;
-      const r = el.getBoundingClientRect();
+      const r = gl.domElement.getBoundingClientRect();
       ray.setFromCamera(new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1), camera);
       if (ray.ray.intersectPlane(plane, hit)) useBoat.getState().setTarget({ x: hit.x, z: hit.z });
     };
@@ -289,7 +291,7 @@ function Boat({ zone, start, coverage }: { zone: Zone; start: { x: number; z: nu
       el.removeEventListener("pointerdown", pd);
       el.removeEventListener("pointerup", pu);
     };
-  }, [gl, camera]);
+  }, [gl, camera, eventsEl]);
 
   useFrame((state, rawDt) => {
     const dt = Math.min(rawDt, 0.05);
@@ -511,8 +513,8 @@ function Boat({ zone, start, coverage }: { zone: Zone; start: { x: number; z: nu
         <ringGeometry args={[3.2, 4.2, 40]} />
         <meshBasicMaterial color="#ffffff" transparent opacity={0.85} />
       </mesh>
-      <OrbitControls
-        ref={controls as never}
+      <CameraControls
+        ref={controls}
         makeDefault
         enableDamping
         dampingFactor={0.1}

@@ -88,7 +88,15 @@ light moves; plain pill on lite, without WebGL2, and no gliding with reduced mot
 islands button and header "Explore in 3D" (white, blue light), "Explore by boat" in story cards
 (solid ocean blue, white light), "Open in 3D" in the hero data card and the islands page cards. The
 component renders a link (`href`), a button, or a span inside a larger link (`as="span"`).
-Tokens and all CSS in `src/styles.css`. Fonts, self-hosted via @fontsource:
+Tokens and all CSS in `src/styles.css`. **Pills come in three sizes only** (the "Pill system" block at the end of
+styles.css; Tulio: pills that differed in height, rounding and alignment "cannot feel like slop"):
+S 30 px (chips in cards and on the map, tabs, segments, close buttons, the button inside a tag),
+M 36 px (HUD and header buttons, messages, the way back on phones), L 44 px (hero and card
+buttons, the way back on computers, the boat dock); all fully rounded, labels weight 600, one icon
+size per height, a little less padding on a leading icon's side. A new pill takes one of these
+sizes; don't set its height or padding elsewhere. Round buttons follow the same heights (close buttons S, tool and arrow
+circles M, play and lightbox L). On phones the top row (way back, tools) sits 16 px from the top
+edge (Tulio: 10 was too close). Fonts, self-hosted via @fontsource:
 Inter (text, headlines), Instrument Serif (italic accents, big numerals), IBM Plex Mono (data).
 Phones: bottom panels clear the gesture bar (`env(safe-area-inset-bottom)`, `viewport-fit=cover`)
 and sit 10 px from the sides; panels that stack above the timeline or the boat bar read its measured
@@ -252,11 +260,20 @@ place name gives NOAA's alert wording. All of it follows the selected date and i
   frame is drawn (`fulfilShot`; the drawing buffer is only readable then). One photo per mission in
   localStorage `rq-photos-v1`; the photo completes the mission. The logbook has two tabs, Habitats
   and Photos (the album: seven frames, the photo or the mission's outline, a one-press save).
-  Camera mode hides the side panels, the title and the dock.
+  Camera mode hides the side panels, the title and the dock. Under the water the way back on the
+  title plate is "Back to the surface" (it surfaces; "Superficie" on phones), and the place's photo
+  gallery (the Photos chip, "See photos") is not offered: the camera is. The dock then holds only
+  Camera and CTD (Tulio: a second way up was redundant). On phones a cast shows only its depth and
+  no label is ever cut (checked in Spanish at 360 px).
   **Place tags**: every place of the zone is a tag over the water (icon by kind, name, distance; a
-  press sails there). `labels.tsx` lifts a tag above another where they would overlap, slides it in
-  from the screen edges, and hides it where it would sit on a HUD panel (it re-reads the HUD's boxes
-  twice a second). The top center is one stack (`.top-stack`: mission or arrival tag, then
+  press sails there). **A place the view faces always has its tag on screen** (Tulio: they hid and
+  only flashed for a moment; far places sit on the horizon at the very top, under the compass and
+  the title). `labels.tsx`, nearest first: the tag goes above its place, held inside the screen;
+  slides sideways off a panel along the edge; then steps up, or else down, past any HUD box or tag
+  it would cover (it re-reads the HUD's boxes twice a second), keeping last frame's direction so
+  tags don't trade places back and forth; the step is eased so a change of slot glides. The stem
+  joins tag and place only when the tag is right above it. Hidden only when it faces away or no
+  spot is free. The top center is one stack (`.top-stack`: mission or arrival tag, then
   messages), so they never cover each other; on computers `useStackRoom` puts it between the title's
   text and the right panel, or under the title when that room is too narrow (zone names are long);
   on phones it sits right above the dock (messages used to cover the title there).
@@ -433,6 +450,13 @@ animation effects off) the scene just switches.
 - Don't center with `transform: translate(-50%)` something that also has an entrance animation on
   `transform`: the animation wins and the element starts at the middle of the screen (the phone tap
   hint ran off the right edge). Center with insets and `justify-items`.
+- Camera controls are `scenes/CameraControls.tsx` (three.js's own OrbitControls / MapControls,
+  mounted like drei's), **not drei's `<OrbitControls>` / `<MapControls>`**: those come from
+  three-stdlib, which froze the camera on phones after a pinch (lifting one finger switched the
+  controls off while the other was still down; fingers weren't captured and could count twice).
+  Ours also turn the view with a two-finger twist. They capture the pointer on the canvas's
+  wrapper (R3F's `events.connected`), so anything listening for a press's end must listen there
+  or on the window, not on the canvas (tap-to-sail did, and stopped hearing taps).
 - A full-screen overlay that stops the page scrolling must use `lockScroll()` (`src/lib/scrollLock.ts`,
   counted, so overlays can nest), never save and restore `body.style.overflow` itself: the photo
   dome and the photo viewer each did, and opening a photo inside the dome left the page locked on

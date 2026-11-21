@@ -78,6 +78,7 @@ export function BoatHud({ index, zoneName, islandName }: { index: HeatIndex; zon
       label: goUnder ? t("boat.dive") : t("boat.surfaceShort"),
       apply: () => {
         useBoat.setState({ under: goUnder });
+        if (goUnder) setGallery(false);
         if (!goUnder) useRoll.getState().setCamera(false); // the camera is for under the water
       },
     });
@@ -217,7 +218,7 @@ export function BoatHud({ index, zoneName, islandName }: { index: HeatIndex; zon
   const stackRef = useRef<HTMLDivElement>(null);
   useStackRoom(stackRef, `${lang}|${zoneName}|${instOpen}|${gallery}`);
   const nearHasPhotos = !!(nearSite && photos?.places[nearSite.id]?.length);
-  const openNear = nearSite && (nearSite.kind === "story" || nearHasPhotos) ? () => (setGallery(false), setStory(nearSite.id)) : null;
+  const openNear = nearSite && (nearSite.kind === "story" || (nearHasPhotos && !under)) ? () => (setGallery(false), setStory(nearSite.id)) : null;
   const openLabel = nearSite?.kind === "story" ? t("boat.readStory") : t("boat.seePhotos");
   const knots = tele ? Math.abs(tele.speed) * 1.94384 : 0;
   const deg = tele ? (tele.heading * 180) / Math.PI : 0;
@@ -263,14 +264,26 @@ export function BoatHud({ index, zoneName, islandName }: { index: HeatIndex; zon
 
       <header className="hud plate">
         <div className="plate-actions">
-          <button className="back-btn" onClick={() => setBoat(null)}>
-            <IconBack />
-            <span className="lbl">
-              <span className="back-long">{t("boat.backTo").replace("{island}", islandName)}</span>
-              <span className="back-short">{islandName}</span>
-            </span>
-          </button>
-          {zonePhotos && zonePhotos.length > 0 && (
+          {/* Under the water the way back is to the surface (Tulio), not to the island. */}
+          {under ? (
+            <button className="back-btn surface-back" onClick={toggleDive}>
+              <IconSurface />
+              <span className="lbl">
+                <span className="back-long">{t("boat.surface")}</span>
+                <span className="back-short">{t("boat.surfaceTo")}</span>
+              </span>
+            </button>
+          ) : (
+            <button className="back-btn" onClick={() => setBoat(null)}>
+              <IconBack />
+              <span className="lbl">
+                <span className="back-long">{t("boat.backTo").replace("{island}", islandName)}</span>
+                <span className="back-short">{islandName}</span>
+              </span>
+            </button>
+          )}
+          {/* The place's photo gallery: from the boat, not under the water (the camera is there). */}
+          {!under && zonePhotos && zonePhotos.length > 0 && (
             <button className="plate-chip" aria-pressed={gallery} onClick={() => (setStory(null), setGallery(!gallery))}>
               <IconCamera /> {t("photos.button")}
             </button>
@@ -571,27 +584,29 @@ export function BoatHud({ index, zoneName, islandName }: { index: HeatIndex; zon
           )}
         </div>
         <div className="boat-actions">
-        <button className="hbtn cast-btn" aria-pressed={under} onClick={toggleDive}>
-          {under ? <IconSurface /> : <IconDive />}
-          {under ? (
-            <>
-              <span className="lbl-long">{t("boat.surface")}</span>
-              <span className="lbl-short">{t("boat.surfaceShort")}</span>
-            </>
-          ) : (
-            t("boat.dive")
-          )}
-        </button>
+        {/* Under the water the way up is the title plate's "Back to the surface": the dock keeps
+            only the camera and the CTD (Tulio). */}
+        {!under && (
+          <button className="hbtn cast-btn" onClick={toggleDive}>
+            <IconDive />
+            <span>{t("boat.dive")}</span>
+          </button>
+        )}
         {under && (
           <button className="hbtn primary cast-btn" aria-pressed={camOn} onClick={toggleCamera}>
             <IconCamera />
-            {t("shot.open")}
+            <span>{t("shot.open")}</span>
           </button>
         )}
         <button className={under ? "hbtn cast-btn" : "hbtn primary cast-btn"} onClick={startCast} disabled={!tele || tele.depth <= 1 || casting}>
           <IconCast />
           {casting
-            ? `${t(cast.phase === "up" ? "boat.castUp" : cast.phase === "hold" ? "boat.castHold" : "boat.castDown")} ${fmtNum(cast.depth, lang)} m`
+            ? (
+              <>
+                <span className="lbl-long">{`${t(cast.phase === "up" ? "boat.castUp" : cast.phase === "hold" ? "boat.castHold" : "boat.castDown")} ${fmtNum(cast.depth, lang)} m`}</span>
+                <span className="lbl-short">{`${fmtNum(cast.depth, lang)} m`}</span>
+              </>
+            )
             : (
               <>
                 <span className="lbl-long">{t("boat.cast")}</span>

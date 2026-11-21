@@ -1,8 +1,7 @@
-import { MapControls } from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
-import type { MapControls as MapControlsImpl } from "three-stdlib";
+import { CameraControls, type Controls } from "./CameraControls";
 import { useLang, useT } from "../i18n";
 import { rampTable } from "../lib/alert";
 import { navGuard } from "../lib/router";
@@ -535,7 +534,7 @@ function Picker({ td }: { td: TerrainData }) {
 
 /** Map-style controls plus smooth fly-to when a site is chosen. */
 function CameraRig({ td }: { td: TerrainData }) {
-  const controls = useRef<MapControlsImpl>(null);
+  const controls = useRef<Controls>(null);
   const flyTo = useScene((s) => s.flyTo);
   const anim = useRef<{ fromT: THREE.Vector3; toT: THREE.Vector3; fromP: THREE.Vector3; toP: THREE.Vector3; t: number } | null>(null);
   // The last fly-to this view has acted on. The store outlives the view, and its last order is in
@@ -593,8 +592,9 @@ function CameraRig({ td }: { td: TerrainData }) {
 
   const half = Math.max(td.sizeX, td.sizeZ) / 2;
   return (
-    <MapControls
-      ref={controls as never}
+    <CameraControls
+      map
+      ref={controls}
       makeDefault
       enableDamping
       dampingFactor={0.12}

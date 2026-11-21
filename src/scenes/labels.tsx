@@ -42,32 +42,52 @@ const EDGE = 6;
 const tagSize = new WeakMap<HTMLElement, { w: number; h: number; k: string }>();
 const tags: { el: HTMLElement; btn: HTMLElement; x: number; y: number; depth: number }[] = [];
 const TAG_GAP = 12; // px between a place and the bottom of its tag
-// The HUD's boxes, re-read twice a second (a tag that would sit on one is hidden, not drawn over
-// the title or a panel). Layout reads are cheap at that rate.
-let blocks: DOMRect[] = [];
+// The HUD's boxes in canvas pixels, re-read twice a second (layout reads are cheap at that rate):
+// tags step around them. `side`: a panel along the left or right edge, which a tag slides away
+// from sideways; the others (compass, arrival tag, messages) it steps above or below.
+type Box = { x0: number; x1: number; y0: number; y1: number; side?: boolean };
+let blocks: Box[] = [];
 let blocksAt = 0;
-function readBlocks(root: Element | null) {
+function readBlocks(root: Element | null, canvas: HTMLCanvasElement) {
   blocks = [];
   if (!root) return;
+  const off = canvas.getBoundingClientRect();
+  const add = (el: Element) => {
+    const r = el.getBoundingClientRect();
+    if (!r.width || !r.height || getComputedStyle(el).visibility === "hidden") return;
+    const x0 = r.left - off.left, x1 = r.right - off.left;
+    blocks.push({ x0, x1, y0: r.top - off.top, y1: r.bottom - off.top, side: x0 < 40 || x1 > off.width - 40 });
+  };
   for (const el of root.querySelectorAll(".hud")) {
-    const parts = el.matches(".top-stack, .boat-bottom") ? [...el.children] : el.matches(".plate") ? [...el.children] : [el];
-    for (const p of parts) {
-      const r = p.getBoundingClientRect();
-      if (r.width && r.height) blocks.push(r);
-    }
+    if (el.matches(".tap-hint, .viewfinder")) continue; // a passing hint, or the camera (tags are off then)
+    if (!el.matches(".top-stack, .boat-bottom, .plate")) add(el);
+    else
+      for (const c of el.children) {
+        if (c.matches(".controls-hint")) for (const cc of c.children) add(cc); // the card, not its wide row
+        else add(c);
+      }
   }
 }
+/** How far each tag is stepped from its own spot (px), eased: when tags trade places they glide
+ *  instead of snapping, while the tag still follows its place exactly. */
+const shift = new WeakMap<HTMLElement, { dx: number; dy: number; seen: number; down: boolean }>();
+let frameNo = 0;
+const overlaps = (a: Box, b: Box, m: number) => a.x0 < b.x1 + m && a.x1 > b.x0 - m && a.y0 < b.y1 + m && a.y1 > b.y0 - m;
 
 export function LabelProjector() {
   const { camera, size, gl } = useThree();
-  useFrame(() => {
+  useFrame((_, dt) => {
+    frameNo++;
     const pins: { el: HTMLElement; btn: HTMLElement; x: number; y: number; rank: number }[] = [];
     tags.length = 0;
     for (const [id, l] of labels) {
       if (!l.el) continue;
       if (l.y < -1e5) continue;
       v.set(l.x, l.y, l.z).project(camera);
-      const visible = v.z < 1 && v.z > -1 && Math.abs(v.x) < 1.1 && Math.abs(v.y) < 1.1;
+      // Boat view tags show whenever the view faces their place, even when it lies above the top
+      // of the screen (far places sit on the horizon): the tag is then held inside the screen.
+      const tag = id.startsWith("buoy:");
+      const visible = v.z < 1 && v.z > -1 && Math.abs(v.x) < (tag ? 1.04 : 1.1) && (tag || Math.abs(v.y) < 1.1);
       l.el.style.visibility = visible ? "visible" : "hidden";
       if (!visible) continue;
       const x = ((v.x + 1) / 2) * size.width, y = ((1 - v.y) / 2) * size.height;
@@ -106,13 +126,19 @@ export function LabelProjector() {
     // Boat view tags: none hidden and none overlapping. Nearest first; a tag that would cover one
     // already placed is lifted above it on its stem (and so on up), and tags near a side of the
     // screen slide inward.
+    // Boat view tags: every place the view faces gets its tag, never hidden behind a panel and never
+    // on top of another tag. Nearest first, each takes the first free spot: above its place, inside
+    // the screen; slid sideways off a panel along the edge; then stepped up, or else down, past
+    // whatever it would cover (far places crowd the horizon under the compass and stack downward).
+    // The stem joins tag and place when the tag is above it. (Before, a tag that touched the HUD was
+    // hidden, and far places only flashed into view when the camera swung: Tulio.)
     if (tags.length) {
       const now = performance.now();
       if (now - blocksAt > 500) {
         blocksAt = now;
-        readBlocks(gl.domElement.closest(".scene-root"));
+        readBlocks(gl.domElement.closest(".scene-root"), gl.domElement);
       }
-      const off = gl.domElement.getBoundingClientRect();
+      const W = size.width, H = size.height;
       tags.sort((a, b) => a.depth - b.depth);
       placed.length = 0;
       for (const g of tags) {
@@ -122,25 +148,66 @@ export function LabelProjector() {
           sz = { w: g.btn.offsetWidth, h: g.btn.offsetHeight, k };
           tagSize.set(g.btn, sz);
         }
-        const x0 = Math.min(Math.max(g.x - sz.w / 2, EDGE), Math.max(EDGE, size.width - EDGE - sz.w));
-        let y1 = g.y - TAG_GAP;
-        for (let tries = 0; tries < 8; tries++) {
-          const hit = placed.find((q) => x0 < q.x1 + 6 && x0 + sz!.w > q.x0 - 6 && y1 - sz!.h < q.y1 + 4 && y1 > q.y0 - 4);
-          if (!hit) break;
-          y1 = hit.y0 - 6;
-        }
-        // Over a HUD panel: hidden (its marker on the water still shows where it is).
-        const ax = x0 + off.left, ay = y1 - sz.h + off.top;
-        if (blocks.some((r) => ax < r.right + 6 && ax + sz!.w > r.left - 6 && ay < r.bottom + 6 && ay + sz!.h > r.top - 6)) {
+        const w = sz.w, h = sz.h;
+        const home = Math.min(Math.max(g.x - w / 2, EDGE), Math.max(EDGE, W - EDGE - w));
+        let x0 = home;
+        const pref = Math.min(Math.max(g.y - TAG_GAP, EDGE + h), H - EDGE);
+        // Off a panel along the edge, sideways.
+        for (const r of blocks)
+          if (r.side && overlaps({ x0, x1: x0 + w, y0: pref - h, y1: pref }, r, 6)) {
+            if (r.x0 < W / 2) x0 = Math.max(x0, r.x1 + 8);
+            else x0 = Math.min(x0, r.x0 - 8 - w);
+          }
+        x0 = Math.min(Math.max(x0, EDGE), Math.max(EDGE, W - EDGE - w));
+        const clash = (y1: number) => {
+          const box = { x0, x1: x0 + w, y0: y1 - h, y1 };
+          return blocks.find((r) => overlaps(box, r, 6)) ?? placed.find((r) => overlaps(box, r, 4));
+        };
+        // Up past what it covers, or down: in the order that worked last frame, so tags don't trade
+        // places back and forth.
+        const before = shift.get(g.btn);
+        const wasDown = !!before && before.seen === frameNo - 1 && before.down;
+        const search = (down: boolean) => {
+          let y = pref;
+          for (let t = 0; t < 14; t++) {
+            const hit = clash(y);
+            if (!hit) return y;
+            y = down ? hit.y1 + 6 + h : hit.y0 - 6;
+            if (down ? y > H - EDGE : y - h < EDGE) return null;
+          }
+          return null;
+        };
+        let y1 = pref, ok = false, down = wasDown;
+        let found = search(down);
+        if (found === null) (down = !down), (found = search(down));
+        if (found !== null) (y1 = found), (ok = true);
+        if (!ok) {
           g.el.style.visibility = "hidden";
           continue;
         }
-        placed.push({ x0, x1: x0 + sz.w, y0: y1 - sz.h, y1 });
-        const tf = `translate(${Math.round(x0 - g.x)}px, ${Math.round(y1 - sz.h - g.y)}px)`;
+        placed.push({ x0, x1: x0 + w, y0: y1 - h, y1 });
+        // Ease the step away from its own spot (a tag just come into view starts where it belongs).
+        let sh = shift.get(g.btn);
+        if (!sh || sh.seen !== frameNo - 1) sh = { dx: x0 - home, dy: y1 - pref, seen: frameNo, down };
+        sh.down = down;
+        const ease = 1 - Math.exp(-Math.min(dt, 0.1) * 20);
+        sh.dx += (x0 - home - sh.dx) * ease;
+        sh.dy += (y1 - pref - sh.dy) * ease;
+        sh.seen = frameNo;
+        shift.set(g.btn, sh);
+        x0 = home + sh.dx;
+        y1 = pref + sh.dy;
+        const tf = `translate(${Math.round(x0 - g.x)}px, ${Math.round(y1 - h - g.y)}px)`;
         if (g.btn.style.transform !== tf) g.btn.style.transform = tf;
+        // The stem: from the tag down to its place, when the tag is above it and right over it.
         const stem = g.btn.nextElementSibling as HTMLElement | null;
-        const sh = `${Math.max(0, Math.round(g.y - y1))}px`;
-        if (stem && stem.style.height !== sh) stem.style.height = sh;
+        if (stem) {
+          const len = g.y - y1;
+          const show = len > 2 && g.y < H && g.x > x0 + 4 && g.x < x0 + w - 4;
+          const top = show ? `${Math.round(-len)}px` : "0px", ht = show ? `${Math.round(len)}px` : "0px";
+          if (stem.style.top !== top) stem.style.top = top;
+          if (stem.style.height !== ht) stem.style.height = ht;
+        }
       }
     }
   });

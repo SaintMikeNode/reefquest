@@ -204,6 +204,7 @@
   "boat.dive": "Underwater",
   "boat.surface": "Back to the surface",
   "boat.surfaceShort": "Surface",
+  "boat.surfaceTo": "Surface",
   "boat.fieldGuide": "Field guide",
   "boat.aroundYou": "Around you",
   "boat.noReef": "No reef right here",

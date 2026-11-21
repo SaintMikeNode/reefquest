@@ -362,7 +362,7 @@ ol.caveats li { margin: 0 0 12px; padding-left: 4px; }
 .site-card .card-place .place-name { flex: 0 1 auto; min-width: 0; overflow-wrap: anywhere; }
 .site-card .card-actions { flex: none; }
 .chip-short { display: none; }
-@container (max-width: 330px) { .card-chip .chip-long { display: none; } .card-chip .chip-short { display: inline; } }
+@container (max-width: 290px) { .card-chip .chip-long { display: none; } .card-chip .chip-short { display: inline; } }
 .site-card .place-name { font-size: 16px; font-weight: 600; letter-spacing: -0.01em; color: #e6eef6; line-height: 1.25; }
 .site-card .place-depth { font-weight: 450; color: var(--hud-muted); }
 .site-card .card-actions { display: flex; gap: 6px; }
@@ -553,7 +553,7 @@ div.pin { pointer-events: none; }
   .site-nav a[aria-current="page"] { background: var(--brand-soft); color: var(--brand-ink); }
   .site-header .inner { position: relative; gap: 10px; }
   .header-end { margin-left: auto; }
-  .menu-toggle { display: inline-block; }
+  .menu-toggle { display: inline-flex; align-items: center; }
   .site-header .cta { display: none; }
 }
 
@@ -580,7 +580,7 @@ div.pin { pointer-events: none; }
 .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-top: 26px; }
 /* Room between the buttons and the cards: the islands' skyline shows there. */
 .hero-content { padding-bottom: clamp(84px, 13vh, 130px); }
-.hero-actions .btn { padding: 13px 22px; font-size: 15.5px; }
+/* (Hero buttons are the L pill: see the pill system at the end.) */
 .art-credit { position: absolute; right: 16px; bottom: 8px; font-size: 11px; color: rgba(255, 255, 255, 0.6); z-index: 0; }
 
 /* Data cards on the artwork */
@@ -1592,7 +1592,7 @@ html.lite .org-more, html.lite .org-toggle svg { transition: none; }
 .tag.on .tag-mark { background: rgba(4, 16, 29, 0.1); color: #0a3f8f; }
 .tag-dist { font: 500 11px/1 var(--mono); color: #9db6d0; padding-left: 1px; }
 .tag.on .tag-dist { color: #47607c; }
-.label-anchor > .tag-stem { position: absolute; left: -0.5px; bottom: 0; width: 1px; height: 12px; background: linear-gradient(to top, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.18)); pointer-events: none; }
+.label-anchor > .tag-stem { position: absolute; left: -0.5px; top: 0; width: 1px; height: 0; background: linear-gradient(to top, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.18)); pointer-events: none; }
 @media (max-width: 760px) { .tag { height: 26px; font-size: 12px; padding: 0 9px 0 4px; } .tag-dist { display: none; } }
 
 /* ---------- Boat view: underwater camera (boat/photos.ts) ----------
@@ -1658,3 +1658,112 @@ html.lite .org-more, html.lite .org-toggle svg { transition: none; }
 .shot.empty figcaption b { color: var(--hud-muted); }
 .shot figcaption span { font-size: 11px; color: var(--hud-muted); }
 .album-note { font-size: 12px; line-height: 1.45; margin: 0; }
+
+/* Boat action buttons never overflow the dock: they share the row, and a label that doesn't fit is
+   cut with an ellipsis (during a cast underwater on phones, three buttons and a live depth). */
+.boat-actions > .hbtn { min-width: 0; overflow: hidden; }
+.boat-actions > .hbtn > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.boat-actions > .hbtn > .icon { flex: none; }
+@media (max-width: 760px) {
+  /* Phones: the way back to the surface is the short label ("Superficie"), which fits beside the tools. */
+  .back-btn.surface-back .back-long { display: none; }
+  .back-btn.surface-back .back-short { display: inline; }
+}
+
+/* ==========================================================================================
+   Pill system (Tulio: the pills differed in height, rounding and alignment). Every pill-shaped
+   control is one of three sizes, fully rounded, its label in weight 600 on one line, its icon the
+   same size in every pill of that size and centered on the label, with a little less room on the
+   icon's side than on the label's (so the pill reads as centered). Round icon-only buttons take
+   the height as their width.
+     S 30 px  chips inside cards and over the map: place tags, "Explore by boat", tabs, segments,
+              the logbook's rows, close buttons, the button inside a tag (arrival, mission)
+     M 36 px  HUD and header buttons: tools, language, header links and CTA, the photos chip,
+              messages; the way back on phones
+     L 44 px  main actions: hero and card buttons, the way back on computers, the boat dock
+   This block comes last on purpose: it overrides the sizes set piecemeal above.
+   ========================================================================================== */
+:root { --pill-s: 30px; --pill-m: 36px; --pill-l: 44px; }
+
+/* L */
+.btn, .back-btn, .boat-actions > .hbtn.cast-btn, .vf-close {
+  height: var(--pill-l); padding: 0 20px; font-size: 15px; font-weight: 600; line-height: 1; gap: 8px; border-radius: 999px; align-items: center;
+}
+.btn svg, .back-btn > svg, .boat-actions > .hbtn > svg { width: 17px; height: 17px; flex: none; }
+.btn.small svg, .site-header .cta svg { width: 16px; height: 16px; }
+/* Leading icons (the way back, the dock): a little less room on the icon's side. Page buttons
+   (.btn) end with an arrow and stay even. */
+.back-btn, .boat-actions > .hbtn:has(> svg:first-child) { padding-left: 16px; }
+.vf-close { width: var(--pill-l); padding: 0; justify-content: center; }
+
+/* M */
+.btn.small, .site-header .cta, .hbtn, .plate-chip, .lang.chips button, .panel-tabs button {
+  height: var(--pill-m); padding: 0 16px; font-size: 14px; font-weight: 600; line-height: 1; gap: 7px; border-radius: 999px; align-items: center;
+}
+.btn.small > svg, .site-header .cta > svg, .hbtn > svg, .plate-chip > svg, .panel-tabs button > svg { width: 16px; height: 16px; flex: none; }
+.hbtn:not(.icon-only):has(> svg:first-child), .plate-chip:has(> svg:first-child), .panel-tabs button:has(> svg:first-child) { padding-left: 13px; }
+.hbtn.icon-only { width: var(--pill-m); padding: 0; justify-content: center; }
+.lang.chips button { padding: 0 12px; }
+@media (min-width: 901px) {
+  .site-nav a { height: var(--pill-m); display: inline-flex; align-items: center; padding: 0 15px; font-size: 14.5px; font-weight: 600; line-height: 1; }
+}
+/* Messages are pills too, M tall (they may wrap to a second line on phones). */
+.toast, .tap-label, .vf-label { min-height: var(--pill-m); padding-top: 6px; padding-bottom: 6px; border-radius: 999px; line-height: 1.3; box-sizing: border-box; }
+.tap-label, .vf-label { display: inline-flex; align-items: center; }
+
+/* S */
+.card-chip, .tag, .seg button, .log-tabs button, .checklist.sightings button,
+.arrive .hbtn, .arrive-row .hbtn, .mission .hbtn {
+  height: var(--pill-s); padding: 0 12px; font-size: 13px; font-weight: 600; line-height: 1; gap: 6px; border-radius: 999px; align-items: center;
+}
+.card-chip > svg:first-child, .arrive .hbtn > svg, .arrive-row .hbtn > svg, .mission .hbtn > svg, .log-tabs button > svg { width: 14px; height: 14px; }
+.card-chip > svg:last-child:not(:first-child) { width: 12px; height: 12px; }
+.card-chip:has(> svg:first-child), .arrive .hbtn:has(> svg:first-child), .arrive-row .hbtn:has(> svg:first-child), .mission .hbtn:has(> svg:first-child) { padding-left: 10px; }
+.card-chip:has(> svg:last-child) { padding-right: 10px; }
+.tag { padding: 0 12px 0 5px; font-size: 13px; }
+.tag-mark { width: 20px; height: 20px; }
+.tag.k-dive { font-weight: 600; }
+.checklist.sightings button { padding: 0 12px 0 10px; font-weight: 500; }
+.checklist.sightings button.done { font-weight: 600; }
+.site-card .close-btn, .mg-close, .shot-save { width: var(--pill-s); height: var(--pill-s); padding: 0; display: grid; place-items: center; border-radius: 999px; }
+.site-card .close-btn > svg, .mg-close > svg, .shot-save > svg { width: 15px; height: 15px; }
+.mg-close { top: 5px; right: 5px; }
+@media (pointer: coarse) { .checklist.sightings button { height: 40px; } }
+
+/* Pills that hold a button: the arrival tag is an L pill with an S button inset 6 px; the mission
+   tag is fully rounded around its icon circle and button the same way. */
+.arrive { min-height: var(--pill-l); padding: 6px 7px 6px 16px; border-radius: 999px; box-sizing: border-box; }
+.arrive:not(:has(.hbtn)) { padding-right: 16px; }
+.mission { border-radius: 999px; padding: 8px 8px 8px 8px; }
+.mission-body { padding-right: 6px; }
+
+/* Phones: the way back is M (it shares the top row with the tools), the dock stays L. */
+@media (max-width: 760px) {
+  .back-btn { height: var(--pill-m); padding: 0 13px 0 10px; font-size: 13.5px; gap: 6px; }
+  .back-btn > svg { width: 16px; height: 16px; }
+  .hud.tools .lang.chips button { padding: 0 9px; }
+  .mission { border-radius: 26px; }
+  .arrive-row .hbtn { height: var(--pill-s); }
+}
+.log-tabs button, .checklist.sightings button { min-height: 0; }
+.boat-actions > .hbtn.cast-btn:has(> svg:first-child) { padding-left: 16px; }
+@media (pointer: coarse) { .checklist.sightings button { height: 40px; } }
+.tools .hbtn.icon-only { width: var(--pill-m); height: var(--pill-m); padding: 0; }
+@media (max-width: 760px) { .hud .instrument { height: var(--pill-m); padding-top: 0; padding-bottom: 0; box-sizing: border-box; } }
+/* Phones: the top row (the way back, the tools) sits 16 px from the top edge, not 10 (Tulio: too
+   close to the edge); the sounder sheet opens under it. */
+@media (max-width: 760px) {
+  .plate { top: 16px; }
+  .tools { top: 16px; }
+  .hud-right.sounder.open { top: 64px; }
+}
+/* Round buttons and the last few pills on the system: S circles carry a 15 px icon, M 16, L 17–18. */
+.play-btn { width: var(--pill-l); height: var(--pill-l); }
+@media (max-width: 760px) { .play-btn { width: var(--pill-l); height: var(--pill-l); } }
+.curve-nav, .kofi-close { width: var(--pill-m); height: var(--pill-m); }
+.curve-nav { margin: calc(var(--pill-m) / -2) 0 0 calc(var(--pill-m) / -2); }
+.curve-nav svg, .kofi-close svg { width: 16px; height: 16px; }
+.lb-nav svg, .lb-close svg { width: 17px; height: 17px; }
+.menu-toggle { height: var(--pill-m); padding: 0 16px; font-size: 14px; font-weight: 600; line-height: 1; border-radius: 999px; }
+@media (max-width: 760px) { .menu-toggle { padding: 0 14px; } }
+.chips:not(.lang) button { height: var(--pill-s); padding: 0 12px; font-size: 13px; font-weight: 600; line-height: 1; border-radius: 999px; font-variant-numeric: tabular-nums; }
