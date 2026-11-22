@@ -260,7 +260,7 @@ export function Hud({ td, index }: { td: TerrainData; index: HeatIndex }) {
           onClose={() => setSite(null)}
           actions={
             siteZone && (
-              <SpecularButton className="card-chip" onClick={() => setBoat({ zone: siteZone.id, lon: site.lon, lat: site.lat })} lineColor="#ffffff" baseColor="#bfe0ff">
+              <SpecularButton className="card-chip" onClick={() => setBoat({ zone: siteZone.id, lon: site.lon, lat: site.lat })} lineColor="#ffffff" baseColor="#bfe0ff" attract={4}>
                 <IconShip />
                 <span className="chip-long">{t("boat.explore")}</span>
                 <span className="chip-short">{t("boat.exploreShort")}</span>

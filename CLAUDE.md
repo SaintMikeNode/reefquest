@@ -86,7 +86,11 @@ light and a highlight that follows the cursor (a tiny WebGL2 canvas per button, 
 light moves; plain pill on lite, without WebGL2, and no gliding with reduced motion). Used on: the hero
 islands button and header "Explore in 3D" (white, blue light), "Explore by boat" in story cards
 (solid ocean blue, white light), "Open in 3D" in the hero data card and the islands page cards. The
-component renders a link (`href`), a button, or a span inside a larger link (`as="span"`).
+component renders a link (`href`), a button, or a span inside a larger link (`as="span"`). `attract`
+(seconds) makes the light run once round the rim on its own now and then (1.7 s, every 4 s on the
+story card's "Explore by boat", Tulio: so people see it is the thing to press; phones have no
+hover): a timer between sweeps, nothing drawn, paused off screen or in a hidden tab, off with
+reduced motion and on lite.
 Tokens and all CSS in `src/styles.css`. **Pills come in three sizes only** (the "Pill system" block at the end of
 styles.css; Tulio: pills that differed in height, rounding and alignment "cannot feel like slop"):
 S 30 px (chips in cards and on the map, tabs, segments, close buttons, the button inside a tag),
@@ -420,7 +424,8 @@ Interaction feel (Tulio: "smooth and interactive like an Apple app", on phones a
   first-load bundle; the header and home use CSS. Shared presets in `ui/motionPresets.ts` (spring, no
   wobble, rise in through a light blur, quick fade out; no blur on lite).
 - Layers box: `ui/LiquidTabs.tsx` (after pinui's "Liquid Tabs"): panel body and active tab merged by
-  a goo filter so the tab is a folder tab that flows to the next label; the tab not open sits on a lighter
+  a goo filter so the tab is a folder tab that flows to the next label; the body's top corners are square
+  and the tab is rounded only on top (rounded ones notched both edges where body and strip meet); the tab not open sits on a lighter
   blue-grey strip with muted text, the open one is the dark folder with a white label and sky-blue icon; content slides out/in by
   direction through a blur, height eases. One tab is always open (no second-tap collapse).
 - Folding panels (the boat's logbook and sounder) open and close with `ui/Fold.tsx`: on computers

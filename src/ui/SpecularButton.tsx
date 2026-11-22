@@ -6,6 +6,9 @@ import { LITE } from "../lib/device";
 // our style. It can render as a link or a span (our main calls to action are links). The rim is drawn
 // by a small WebGL2 shader on a canvas behind the label; it only redraws while the light moves.
 // Lite devices, browsers without WebGL2 and reduced motion (no gliding) still get the plain pill.
+// `attract` (seconds) makes the light run once round the rim now and then on its own, brightening
+// as it goes, for a button people should notice (Tulio: the story card's "Explore by boat"); it is
+// what hover shows, for phones that have no hover. Nothing is drawn between sweeps.
 
 const PAD = 24;
 
@@ -129,6 +132,7 @@ export interface SpecularProps {
   thickness?: number;
   glow?: number;
   proximity?: number; // px from the button where the light starts to follow
+  attract?: number; // seconds between idle sweeps of the light round the rim (off when unset)
   "aria-label"?: string;
   title?: string;
 }
@@ -136,11 +140,11 @@ export interface SpecularProps {
 export function SpecularButton({
   children, href, as = "button", onClick, className = "", style,
   lineColor = "#ffffff", baseColor = "#bfe0ff", intensity = 1, idleIntensity = 0.45,
-  shineSize = 12, shineFade = 40, thickness = 1.3, glow = 1, proximity = 260, ...aria
+  shineSize = 12, shineFade = 40, thickness = 1.3, glow = 1, proximity = 260, attract, ...aria
 }: SpecularProps) {
   const ref = useRef<HTMLElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const settings = { lineColor, baseColor, intensity, idleIntensity: clamp(idleIntensity, 0, 1), shineSize, shineFade, thickness, glow, proximity: Math.max(1, proximity) };
+  const settings = { lineColor, baseColor, intensity, idleIntensity: clamp(idleIntensity, 0, 1), shineSize, shineFade, thickness, glow, proximity: Math.max(1, proximity), attract: attract ?? 0 };
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
 
@@ -168,6 +172,19 @@ export function SpecularButton({
     const pointer = { x: 0, y: 0, known: false };
     const state = { spot: 0, level: 0, press: 0, ready: false };
     let raf = 0, last = 0, visible = true;
+    // The idle sweep: when it started (ms), and the timer that starts the next one.
+    const SWEEP_MS = 1700;
+    let sweepAt = -1, sweepTimer = 0;
+    const schedule = (first = false) => {
+      clearTimeout(sweepTimer);
+      const every = settingsRef.current.attract;
+      if (!every || reduce) return;
+      sweepTimer = window.setTimeout(() => {
+        if (!visible || document.hidden) return schedule();
+        sweepAt = performance.now();
+        wake();
+      }, first ? 900 : every * 1000);
+    };
     const toRgb = (value: string) => {
       if (colors.has(value)) return colors.get(value)!;
       let rgb = [1, 1, 1];
@@ -244,11 +261,25 @@ export function SpecularButton({
       let diff = (target && target.near > 0 ? target.spot : restSpot()) - state.spot;
       diff -= Math.round(diff);
       state.spot = wrap(state.spot + diff * (1 - Math.exp(-dt * 8)));
-      const level = s.idleIntensity + (1 - s.idleIntensity) * (target ? target.near : 0);
+      let level = s.idleIntensity + (1 - s.idleIntensity) * (target ? target.near : 0);
+      if (sweepAt >= 0) {
+        const k = (now - sweepAt) / SWEEP_MS;
+        if (k >= 1 || (target && target.near > 0.05)) {
+          // Done, or the pointer came near: hover takes over.
+          sweepAt = -1;
+          schedule();
+        } else {
+          // Once round from the resting spot, easing in and out, brightest halfway.
+          const e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+          state.spot = wrap(restSpot() + e);
+          diff = 0;
+          level = Math.max(level, s.idleIntensity + (1 - s.idleIntensity) * Math.sin(Math.PI * k));
+        }
+      }
       state.level += (level - state.level) * (1 - Math.exp(-dt * 7));
       state.press *= Math.exp(-dt * 5);
       draw();
-      if (Math.abs(diff) > 0.0002 || Math.abs(level - state.level) > 0.001 || state.press > 0.002) raf = requestAnimationFrame(frame);
+      if (sweepAt >= 0 || Math.abs(diff) > 0.0002 || Math.abs(level - state.level) > 0.001 || state.press > 0.002) raf = requestAnimationFrame(frame);
       else last = 0;
     };
     const wake = () => {
@@ -296,8 +327,10 @@ export function SpecularButton({
     document.documentElement.addEventListener("pointerleave", leave);
     host.addEventListener("pointerdown", down);
     measure();
+    schedule(true);
     return () => {
       cancelAnimationFrame(raf);
+      clearTimeout(sweepTimer);
       ro.disconnect();
       io.disconnect();
       removeEventListener("pointermove", move);

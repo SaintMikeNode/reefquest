@@ -1302,7 +1302,12 @@ html.lite .curve-nav { -webkit-backdrop-filter: none; backdrop-filter: none; bac
 @media (hover: hover) { .ltabs-tab[aria-selected="false"]:hover { color: var(--white); } }
 html.lite .ltabs-strip { background: rgba(50, 88, 145, 0.85); }
 /* The open tab's outer corners match the strip's (20 px), so the two outlines meet exactly. */
-.ltabs-blob { border-radius: var(--r-l); }
+/* The panel's outline is the strip's rounded top, straight sides, and the body's rounded bottom:
+   the body's top corners are square (rounded ones left a notch at each edge where body and strip
+   meet, showing the lighter strip on one side and a dent under the open tab on the other), and the
+   open tab is rounded only on top (its bottom lies inside the body; the goo filter makes the joint). */
+.ltabs-body { border-radius: 0 0 var(--r-l) var(--r-l); }
+.ltabs-blob { border-radius: var(--r-l) var(--r-l) 0 0; }
 /* Islands page foot: the photos button centered under the cards (the cards are centered too),
    the source note centered under it. */
 .isle-foot { flex-direction: column; justify-content: center; gap: 14px; margin-top: 22px; text-align: center; }
@@ -1401,8 +1406,8 @@ html.lite .pc-ring { animation: none; transform: rotateX(-10deg) rotateY(-22deg)
 .ltabs.full .ltabs-strip { border-radius: var(--r-l) var(--r-l) 0 0; -webkit-backdrop-filter: none; backdrop-filter: none; background: linear-gradient(180deg, rgba(96, 140, 200, 0.4), rgba(60, 100, 160, 0.3)); }
 .ltabs.full .ltabs-surface { bottom: auto; filter: none; }
 .ltabs.full .ltabs-goo { opacity: 1; }
-.ltabs.full .ltabs-body { border-radius: var(--r-l) var(--r-l) 0 0; }
-.ltabs.full .ltabs-blob { border-radius: var(--r-l); }
+.ltabs.full .ltabs-body { border-radius: 0; }
+.ltabs.full .ltabs-blob { border-radius: var(--r-l) var(--r-l) 0 0; }
 /* (1 px wider each side: the goo filter fattens the part above it by about that much.) */
 .ltabs-sheet { position: absolute; left: -1px; right: -1px; bottom: 0; background: #081624; border-radius: 0 0 var(--r-l) var(--r-l); box-shadow: 0 30px 60px -34px rgba(0, 0, 0, 0.8); }
 /* The two tabs share the panel's whole width (Tulio: a short tab row left a notch beside it). */
