@@ -95,6 +95,9 @@ export const IconShark = (p: SVGProps<SVGSVGElement>) => (
 export const IconWreck = (p: SVGProps<SVGSVGElement>) => (
   <svg {...base(p)}><path d="M3 6c1.5 1.2 3 1.2 4.5 0s3-1.2 4.5 0 3 1.2 4.5 0 3-1.2 4.5 0" /><path d="M4.4 15.2l14.4-2.9-1.8 6H7.3z" /><path d="M10.8 13.9l-1-4.6M12.6 13.5l-.5-2.5 2.9-.6.5 2.5" /></svg>
 );
+export const IconDiver = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base(p)}><circle cx="18.6" cy="10.2" r="1.9" /><path d="M16.5 11.4l-8 1.2-3.3-.6" /><path d="M9.6 8.9h5.2" /><path d="M8.5 12.6l-1.7 3.6L3 17.6M11.4 12.2l-.6 4L7.6 19" /><path d="M20.2 6.6v-.01M21.3 4.3v-.01" /></svg>
+);
 export const IconDownload = (p: SVGProps<SVGSVGElement>) => (
   <svg {...base(p)}><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5" /><path d="M5 19.5h14" /></svg>
 );

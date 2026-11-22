@@ -1,6 +1,5 @@
-import { PerspectiveCamera, View } from "@react-three/drei";
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Canvas, createPortal, useFrame, useThree } from "@react-three/fiber";
+import { Fragment, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { accent, fmtNum, useLang, useT } from "../i18n";
 import { loadLatest, loadSceneMeta, type Latest, type SceneMeta } from "../lib/data";
@@ -8,7 +7,7 @@ import { LITE, REDUCED_MOTION, pick } from "../lib/device";
 import { ISLAND_ORDER, SCENE_ISLANDS } from "../lib/islands";
 import { href } from "../lib/router";
 import { AlertChip } from "../ui/AlertChip";
-import { IconArrow, IconCamera } from "../ui/Icons";
+import { IconArrow } from "../ui/Icons";
 import { SpecularButton } from "../ui/SpecularButton";
 import { allPhotos, DomeGallery } from "../ui/AllPhotos";
 import { usePhotos } from "../ui/PhotoStrip";
@@ -17,10 +16,13 @@ import { HAS_WEBGL } from "../webgl";
 // "Explore the islands in 3D": one card per island with a live 3D preview of its relief and reef
 // shelf, turning slowly over a light that rises from the deep (our take on a "shader card"). Hover
 // lifts the light, speeds the turn and swings the camera toward the pointer; the card opens the
-// island. All four previews share ONE WebGL canvas (drei <View>: each card is a scissored region),
-// so phones hold a single context. The meshes are coarse (≤ ~45k triangles each, deep water
-// dropped) and built from the island scene's own terrain.png, so a later visit is cached. Lite
-// devices and reduced motion draw still frames, redrawn only on scroll and resize.
+// island. All the previews share ONE WebGL canvas (each card's stage is a scissored region of it),
+// so phones hold a single context. The canvas lies in the page over the cards and scrolls with
+// them: it is not fixed to the screen, because phones scroll the page without waiting for the next
+// redraw and a fixed canvas left the islands behind, drawn outside their cards. The meshes are
+// coarse (≤ ~45k triangles each, deep water dropped) and built from the island scene's own
+// terrain.png, so a later visit is cached. Lite devices and reduced motion draw still frames,
+// redrawn only when the layout changes or a card is hovered.
 
 const STILL = LITE || REDUCED_MOTION;
 // Only the islands with a 3D scene (Cayos Cochinos has no detailed data yet), side by side.
@@ -80,42 +82,54 @@ async function buildPreview(id: string): Promise<Preview> {
   // Distance to the nearest land (m, chamfer transform on the sampled grid): the preview keeps the
   // reef within a margin of the coast, so small cays aren't lost in a wide shallow bank (Cayos Cochinos).
   const cell = (step * Math.max(sx, sz)) / (Math.max(W, H) - 1);
-  const dist = new Float32Array(cols * rows);
+  const D = Math.SQRT2;
+  // Distance (m) from each sample to the nearest sample where `seed` holds (two-pass chamfer).
+  const chamfer = (seed: (k: number) => boolean) => {
+    const out = new Float32Array(cols * rows);
+    for (let k = 0; k < out.length; k++) out[k] = seed(k) ? 0 : 1e9;
+    for (let j = 0; j < rows; j++)
+      for (let i = 0; i < cols; i++) {
+        const k = j * cols + i;
+        if (i > 0) out[k] = Math.min(out[k], out[k - 1] + cell);
+        if (j > 0) {
+          out[k] = Math.min(out[k], out[k - cols] + cell);
+          if (i > 0) out[k] = Math.min(out[k], out[k - cols - 1] + cell * D);
+          if (i < cols - 1) out[k] = Math.min(out[k], out[k - cols + 1] + cell * D);
+        }
+      }
+    for (let j = rows - 1; j >= 0; j--)
+      for (let i = cols - 1; i >= 0; i--) {
+        const k = j * cols + i;
+        if (i < cols - 1) out[k] = Math.min(out[k], out[k + 1] + cell);
+        if (j < rows - 1) {
+          out[k] = Math.min(out[k], out[k + cols] + cell);
+          if (i < cols - 1) out[k] = Math.min(out[k], out[k + cols + 1] + cell * D);
+          if (i > 0) out[k] = Math.min(out[k], out[k + cols - 1] + cell * D);
+        }
+      }
+    return out;
+  };
+  const raw = new Float32Array(cols * rows);
   let l0 = Infinity, l1 = -Infinity, m0 = Infinity, m1 = -Infinity;
   for (let j = 0, k = 0; j < rows; j++)
     for (let i = 0; i < cols; i++, k++) {
-      const land = heightAt(i * step, j * step) > 0;
-      dist[k] = land ? 0 : 1e9;
-      if (land) (l0 = Math.min(l0, i)), (l1 = Math.max(l1, i)), (m0 = Math.min(m0, j)), (m1 = Math.max(m1, j));
+      raw[k] = heightAt(i * step, j * step);
+      if (raw[k] > 0) (l0 = Math.min(l0, i)), (l1 = Math.max(l1, i)), (m0 = Math.min(m0, j)), (m1 = Math.max(m1, j));
     }
-  const D = Math.SQRT2;
-  for (let j = 0; j < rows; j++)
-    for (let i = 0; i < cols; i++) {
-      const k = j * cols + i;
-      if (i > 0) dist[k] = Math.min(dist[k], dist[k - 1] + cell);
-      if (j > 0) {
-        dist[k] = Math.min(dist[k], dist[k - cols] + cell);
-        if (i > 0) dist[k] = Math.min(dist[k], dist[k - cols - 1] + cell * D);
-        if (i < cols - 1) dist[k] = Math.min(dist[k], dist[k - cols + 1] + cell * D);
-      }
-    }
-  for (let j = rows - 1; j >= 0; j--)
-    for (let i = cols - 1; i >= 0; i--) {
-      const k = j * cols + i;
-      if (i < cols - 1) dist[k] = Math.min(dist[k], dist[k + 1] + cell);
-      if (j < rows - 1) {
-        dist[k] = Math.min(dist[k], dist[k + cols] + cell);
-        if (i < cols - 1) dist[k] = Math.min(dist[k], dist[k + cols + 1] + cell * D);
-        if (i > 0) dist[k] = Math.min(dist[k], dist[k + cols - 1] + cell * D);
-      }
-    }
+  const dist = chamfer((k) => raw[k] > 0);
+  // Low strips at or just under sea level that cross an island (Guanaja's lowlands and canal) would
+  // draw as coastline and split it into separate islands at this coarse scale. Close the land mask
+  // (grow it, then shrink it back) and raise the very shallow water it covers to low land.
+  const CLOSE = 450; // m
+  const open = chamfer((k) => dist[k] > CLOSE);
+  for (let k = 0; k < raw.length; k++) if (raw[k] <= 0 && raw[k] > -6 && open[k] > CLOSE) (raw[k] = 1.5), (dist[k] = 0);
   const margin = Math.max(1800, 0.3 * Math.max(l1 - l0, m1 - m0) * cell);
   const pos = new Float32Array(cols * rows * 3);
   const alpha = new Float32Array(cols * rows); // how visible each vertex is
   const meters = new Float32Array(cols * rows); // height (m), for contours and the coastline
   for (let j = 0, k = 0; j < rows; j++)
     for (let i = 0; i < cols; i++, k++) {
-      const h = heightAt(i * step, j * step);
+      const h = raw[k];
       const d = -h;
       // Height: islands lifted to a similar scale (stylized), shelf shallow, deep water compressed.
       const y = h > 0 ? 0.3 * Math.pow(h / landTop, 0.85) : -0.12 * Math.pow(Math.min(1, d / 60), 0.7) - 0.05 * Math.min(1, Math.max(0, d - 60) / 300);
@@ -246,7 +260,18 @@ interface Hover {
   k: number; // smoothed hover
 }
 
-function Stage({ id, hover }: { id: string; hover: React.RefObject<Hover> }) {
+/** A card's preview: the stage element its region of the canvas follows, and the pointer over the card. */
+interface Slot {
+  el: HTMLElement | null;
+  hover: Hover;
+}
+
+/**
+ * One island's preview, in its own scene (a portal) with its own camera, drawn into its card's
+ * stage. The stage and the canvas are measured at the same moment, so the region is right however
+ * far the page has scrolled.
+ */
+function Stage({ id, slot }: { id: string; slot: Slot }) {
   const [p, setP] = useState<Preview | null>(null);
   const invalidate = useThree((s) => s.invalidate);
   useEffect(() => {
@@ -259,7 +284,7 @@ function Stage({ id, hover }: { id: string; hover: React.RefObject<Hover> }) {
     };
   }, [id, invalidate]);
 
-  const cam = useRef<THREE.PerspectiveCamera>(null);
+  const cam = useMemo(() => new THREE.PerspectiveCamera(28, 1, 0.05, 60), []);
   const turn = useRef<THREE.Group>(null);
   const born = useRef(-1);
   const glow = useMemo(() => {
@@ -307,30 +332,47 @@ function Stage({ id, hover }: { id: string; hover: React.RefObject<Hover> }) {
   useEffect(() => () => (glow.dispose(), land.dispose()), [glow, land]);
 
   const startAngle = useMemo(() => ({ roatan: -0.35, utila: 0.4, guanaja: -0.9, "cayos-cochinos": 0.2 })[id] ?? 0, [id]);
+  // Priority 1: R3F leaves the drawing to us, and each preview draws only its own region.
   useFrame((state, dt) => {
-    const h = hover.current!;
+    const r = slot.el?.getBoundingClientRect();
+    if (!r || r.width < 1 || r.height < 1) return;
+    // Animated, a card more than a screen away is skipped; still frames draw every card, since
+    // they are only redrawn when the layout changes.
+    if (!STILL && (r.bottom < -innerHeight || r.top > 2 * innerHeight)) return;
+    const h = slot.hover;
     h.k += (h.on - h.k) * Math.min(1, dt * 4);
     const t = state.clock.elapsedTime;
     if (born.current < 0) born.current = t;
     const u = glow.uniforms;
+    const aspect = r.width / r.height;
     u.uTime.value = STILL ? 3 : t;
     u.uHover.value = h.k;
     land.uniforms.uHover.value = h.k;
     if (!STILL) u.uIntro.value = Math.min(1, (t - born.current) / 1.6) ** 0.6;
-    u.uAspect.value = state.size.width / Math.max(1, state.size.height);
+    u.uAspect.value = aspect;
+    if (cam.aspect !== aspect) (cam.aspect = aspect), cam.updateProjectionMatrix();
     if (turn.current && !STILL) turn.current.rotation.y += dt * (0.09 + 0.3 * h.k);
-    if (cam.current && p) {
+    if (p) {
       // Orbit a little toward the pointer, the way a tilted card would.
       const az = h.x * 0.35 * h.k, el = 0.92 - h.y * 0.12 * h.k;
       const dist = (p.radius / Math.sin((28 * Math.PI) / 360)) * 0.88;
-      cam.current.position.set(Math.sin(az) * Math.cos(el) * dist, Math.sin(el) * dist, Math.cos(az) * Math.cos(el) * dist);
-      cam.current.lookAt(0, p.radius * 0.16, -p.radius * 0.1); // the island sits low, inside the light
+      cam.position.set(Math.sin(az) * Math.cos(el) * dist, Math.sin(el) * dist, Math.cos(az) * Math.cos(el) * dist);
+      cam.lookAt(0, p.radius * 0.16, -p.radius * 0.1); // the island sits low, inside the light
     }
-  });
+    // The stage's rectangle of the canvas, from its bottom-left corner in CSS pixels. With the
+    // scissor on, the renderer's clear only empties this rectangle.
+    const { gl } = state;
+    const c = gl.domElement.getBoundingClientRect();
+    const x = r.left - c.left, y = c.bottom - r.bottom;
+    gl.setViewport(x, y, r.width, r.height);
+    gl.setScissor(x, y, r.width, r.height);
+    gl.setScissorTest(true);
+    gl.render(state.scene, cam);
+    gl.setScissorTest(false);
+  }, 1);
 
   return (
     <>
-      <PerspectiveCamera ref={cam} makeDefault fov={28} near={0.05} far={60} position={[0, 4, 4]} />
       <mesh material={glow} frustumCulled={false} renderOrder={-1}>
         <planeGeometry args={[2, 2]} />
       </mesh>
@@ -343,25 +385,30 @@ function Stage({ id, hover }: { id: string; hover: React.RefObject<Hover> }) {
   );
 }
 
-/** With the still frame loop, redraw when the page scrolls or resizes (the views move). */
-function RedrawOnScroll() {
+/** Inside the shared canvas: a scene per island, and the redraw the cards ask for with still frames. */
+function Previews({ slots, redraw }: { slots: Record<string, Slot>; redraw: React.RefObject<() => void> }) {
   const invalidate = useThree((s) => s.invalidate);
   useEffect(() => {
-    const on = () => invalidate();
-    addEventListener("scroll", on, { passive: true });
-    addEventListener("resize", on);
+    redraw.current = () => invalidate();
+    invalidate();
     return () => {
-      removeEventListener("scroll", on);
-      removeEventListener("resize", on);
+      redraw.current = () => {};
     };
-  }, [invalidate]);
-  return null;
+  }, [invalidate, redraw]);
+  const scenes = useMemo(() => SHOWN.map(() => new THREE.Scene()), []);
+  return (
+    <>
+      {SHOWN.map((id, i) => (
+        <Fragment key={id}>{createPortal(<Stage id={id} slot={slots[id]} />, scenes[i])}</Fragment>
+      ))}
+    </>
+  );
 }
 
-function IslandCard({ id, latest, meta }: { id: string; latest: Latest | null; meta: SceneMeta | undefined }) {
+function IslandCard({ id, latest, meta, slot, redraw }: { id: string; latest: Latest | null; meta: SceneMeta | undefined; slot: Slot; redraw: () => void }) {
   const t = useT();
   const lang = useLang((s) => s.lang);
-  const hover = useRef<Hover>({ on: 0, x: 0, y: 0, k: 0 });
+  const hover = slot.hover;
   const s = latest?.islands[id];
   const open = SCENE_ISLANDS.has(id) && HAS_WEBGL;
   const name = s?.name ?? meta?.name ?? id;
@@ -372,14 +419,14 @@ function IslandCard({ id, latest, meta }: { id: string; latest: Latest | null; m
   const onMove = (e: React.PointerEvent<HTMLElement>) => {
     const r = e.currentTarget.getBoundingClientRect();
     const x = ((e.clientX - r.left) / r.width) * 2 - 1, y = ((e.clientY - r.top) / r.height) * 2 - 1;
-    hover.current.x = x;
-    hover.current.y = y;
+    hover.x = x;
+    hover.y = y;
     e.currentTarget.style.setProperty("--px", x.toFixed(3));
     e.currentTarget.style.setProperty("--py", y.toFixed(3));
   };
   const body = (
     <>
-      <div className="isle-stage">{HAS_WEBGL ? <View className="isle-view"><Stage id={id} hover={hover} /></View> : <div className="isle-fallback" />}</div>
+      <div className="isle-stage">{HAS_WEBGL ? <div className="isle-view" ref={(el) => void (slot.el = el)} /> : <div className="isle-fallback" />}</div>
       <div className="isle-body">
         <p className="isle-where num">{where}</p>
         <h2>{name}</h2>
@@ -408,13 +455,16 @@ function IslandCard({ id, latest, meta }: { id: string; latest: Latest | null; m
     </>
   );
   const handlers = {
-    onPointerEnter: () => (hover.current.on = 1),
+    onPointerEnter: () => ((hover.on = 1), redraw()),
     onPointerLeave: (e: React.PointerEvent<HTMLElement>) => {
-      hover.current.on = 0;
+      hover.on = 0;
+      redraw();
       e.currentTarget.style.setProperty("--px", "0");
       e.currentTarget.style.setProperty("--py", "0");
     },
     onPointerMove: onMove,
+    // Still frames: draw again once the card has finished lifting or settling.
+    onTransitionEnd: redraw,
   };
   return open ? (
     <a className="isle-card" href={href.island(id)} {...handlers}>
@@ -454,7 +504,7 @@ function PhotosCard() {
           <p className="isle-status">{t("photos.cardFrom")}</p>
           <p className="isle-worst">{t("photos.cardLicense")}</p>
           <SpecularButton as="span" className="btn primary small" lineColor="#ffffff" baseColor="#bfe0ff">
-            <IconCamera /> {t("photos.all")}
+            {t("home.enter3d")} <IconArrow />
           </SpecularButton>
         </div>
       </button>
@@ -479,6 +529,40 @@ export function IslandsPage() {
         .catch(() => {});
   }, []);
 
+  // Each card's stage and pointer, shared with the canvas; and its redraw, for still frames.
+  const slots = useMemo(
+    () => Object.fromEntries(SHOWN.map((id) => [id, { el: null, hover: { on: 0, x: 0, y: 0, k: 0 } } as Slot])),
+    [],
+  );
+  const redraw = useRef<() => void>(() => {});
+  const grid = useRef<HTMLDivElement>(null);
+  const layer = useRef<HTMLDivElement>(null);
+  // The canvas lies over the island stages only (with room for a card's hover lift), not the whole
+  // grid: on phones the cards are one column, and a canvas over all of it would be a lot of pixels.
+  useLayoutEffect(() => {
+    const g = grid.current, l = layer.current;
+    if (!g || !l) return;
+    const PAD = 12;
+    const fit = () => {
+      const top0 = g.getBoundingClientRect().top;
+      let top = Infinity, bottom = -Infinity;
+      for (const id of SHOWN) {
+        const r = slots[id].el?.getBoundingClientRect();
+        if (r) (top = Math.min(top, r.top)), (bottom = Math.max(bottom, r.bottom));
+      }
+      if (!(bottom > top)) return;
+      l.style.top = `${Math.floor(top - top0) - PAD}px`;
+      l.style.height = `${Math.ceil(bottom - top) + 2 * PAD}px`;
+      redraw.current();
+    };
+    fit();
+    const ro = new ResizeObserver(fit);
+    ro.observe(g);
+    for (const id of SHOWN) if (slots[id].el) ro.observe(slots[id].el!);
+    return () => ro.disconnect();
+  }, [slots]);
+  const redrawNow = () => redraw.current();
+
   return (
     <div className="sea-bg islands-page">
       <main className="page">
@@ -488,29 +572,32 @@ export function IslandsPage() {
           <p className="standfirst">{t("isles.lead")}</p>
         </header>
         <section className="section">
-          <div className="isle-grid">
+          <div className="isle-grid" ref={grid}>
             {SHOWN.map((id) => (
-              <IslandCard key={id} id={id} latest={latest} meta={metas[id]} />
+              <IslandCard key={id} id={id} latest={latest} meta={metas[id]} slot={slots[id]} redraw={redrawNow} />
             ))}
             <PhotosCard />
+            {HAS_WEBGL && (
+              <div className="isle-canvas" ref={layer} aria-hidden="true">
+                <Canvas
+                  frameloop={STILL ? "demand" : "always"}
+                  dpr={pick<[number, number]>([1, 1], [1, 1.5], [1, 2])}
+                  // No depth buffer: nothing here tests depth, and the canvas can be tall on phones.
+                  gl={{ antialias: !LITE, alpha: true, depth: false, powerPreference: "high-performance" }}
+                  // It scrolls with the page, so its place on screen changes all the time: don't re-measure on scroll.
+                  resize={{ scroll: false }}
+                  style={{ pointerEvents: "none" }}
+                >
+                  <Previews slots={slots} redraw={redraw} />
+                </Canvas>
+              </div>
+            )}
           </div>
           <div className="isle-foot">
             <p className="fig-source isle-note">{t("isles.note")}</p>
           </div>
         </section>
       </main>
-      {HAS_WEBGL && (
-        <Canvas
-          className="isle-canvas"
-          frameloop={STILL ? "demand" : "always"}
-          dpr={pick<[number, number]>([1, 1], [1, 1.5], [1, 2])}
-          gl={{ antialias: !LITE, alpha: true, powerPreference: "high-performance" }}
-          style={{ position: "fixed", inset: 0, pointerEvents: "none" }}
-        >
-          <View.Port />
-          {STILL && <RedrawOnScroll />}
-        </Canvas>
-      )}
     </div>
   );
 }

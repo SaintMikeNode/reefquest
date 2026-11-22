@@ -8,6 +8,7 @@ import { MOBILE, pick } from "../lib/device";
 import { useBoat, type MissionType } from "./boatStore";
 import { subject, zonePlaces, type ZonePlace } from "./places";
 import { underwater, WATER, WATER_GLSL } from "./props";
+import { diverGeometry, diverMaterial } from "./divers";
 import { buildWreck } from "./wreck";
 import { floorY, hash, heightAtXZ, type Zone } from "./zone";
 
@@ -26,6 +27,9 @@ import { floorY, hash, heightAtXZ, type Zone } from "./zone";
 //  "reef-sharks"  Caribbean reef sharks over the sand by the bait bucket their dive is named for.
 //                 Go under and they circle you.
 //  wrecks         The ship on the seafloor (wreck.ts) with a school of fish living on it.
+//  "divers"       Every plain dive site (a mooring and nothing else documented): a small group of
+//                 scuba divers on the reef, found the way dive boats find theirs, by the bubbles
+//                 breaking the surface. Go under and they swim over and circle you.
 //
 // **Whatever there is to see comes close** (Tulio: a shark the size of a speck is "boring and
 // lame"): under the water the animals close in on the boat, and the camera starts out facing them.
@@ -330,20 +334,21 @@ export function Wildlife({ zone }: { zone: Zone }) {
   const turtles = useMemo(() => scenesIn(zone, "turtles").slice(0, 1), [zone]);
   const sharks = useMemo(() => scenesIn(zone, "reef-sharks").slice(0, 1), [zone]);
   const wrecks = useMemo(() => zonePlaces(zone).filter((p) => p.site.wreck), [zone]);
+  const dives = useMemo(() => zonePlaces(zone).filter((p) => p.site.kind === "dive" && !p.site.scene && !p.site.wreck), [zone]);
   // Things seen only from under the water: within `r` of one the mission is on (the HUD says to
   // go under), and looking from below puts it in the logbook.
   const below = useMemo(
     () =>
-      [...turtles, ...sharks, ...wrecks].map((p) => {
+      [...turtles, ...sharks, ...wrecks, ...dives].map((p) => {
         const L = p.site.wreck?.length_m ?? 0;
         return {
           id: p.site.id, x: p.x, z: p.z,
           r: L ? L / 2 + 30 : 80,
-          type: (L ? "wreck" : p.site.scene) as MissionType,
+          type: (L ? "wreck" : p.site.scene ?? "divers") as MissionType,
           look: L ? { y: floorY(p.floor ?? heightAtXZ(zone, p.x, p.z)) + L * 0.12, dist: Math.max(16, L * 0.48), yaw: p.yaw ?? 0 } : null,
         };
       }),
-    [turtles, sharks, wrecks, zone],
+    [turtles, sharks, wrecks, dives, zone],
   );
   useEffect(() => {
     useBoat.setState({ wild: [...boils.map((b) => b.site.id), ...below.map((b) => b.id)] });
@@ -383,6 +388,9 @@ export function Wildlife({ zone }: { zone: Zone }) {
       ))}
       {sharks.map((b) => (
         <ReefSharks key={b.site.id} id={b.site.id} zone={zone} cx={b.x} cz={b.z} />
+      ))}
+      {dives.map((b) => (
+        <Divers key={b.site.id} id={b.site.id} zone={zone} cx={b.x} cz={b.z} depth={b.site.depth_m} />
       ))}
     </>
   );
@@ -679,6 +687,150 @@ function ReefSharks({ id, zone, cx, cz }: { id: string; zone: Zone; cx: number; 
     <>
       <primitive object={mesh} />
       <primitive object={bucket} />
+    </>
+  );
+}
+
+/** Looks for the divers of a group: wetsuit, fin and tank colors. */
+const KITS: [string, string, string][] = [["#2f5f9a", "#f2c230", "#f2c230"], ["#2a6f78", "#e8edf2", "#c9d1d8"], ["#3a4f8a", "#f0663c", "#f2c230"], ["#38506a", "#2f9bd8", "#c9d1d8"]];
+
+/**
+ * A small group of scuba divers at a dive site (a Marine Park mooring, or a site from the dive
+ * maps): they follow their guide in a slow loop over the reef near the buoy, kicking gently and
+ * breathing out a burst of bubbles every few seconds. From the boat the surface is opaque, so they
+ * show as their bubbles breaking it, which is how dive boats keep track of their divers. With the
+ * boat's snorkeler in the water they swim over and circle at a few meters, at eye level.
+ * Three draw calls (divers, bubbles under the water, bubbles at the surface), ~500 triangles a
+ * diver, all hidden away from the site.
+ */
+function Divers({ id, zone, cx, cz, depth }: { id: string; zone: Zone; cx: number; cz: number; depth?: number }) {
+  const N = pick(2, 3, 4), BUB = pick(36, 60, 96), POP = pick(9, 13, 18);
+  const time = useMemo(() => ({ value: 0 }), []);
+  const mesh = useMemo(() => {
+    // One geometry for the group (instances share it); each group gets its own kit, by site.
+    const kit = KITS[Math.floor(hash(cx * 0.013 + cz * 0.007) * KITS.length) % KITS.length];
+    const im = new THREE.InstancedMesh(diverGeometry(kit[0], kit[1], kit[2]), diverMaterial(time), N);
+    im.frustumCulled = false;
+    im.visible = false;
+    return im;
+  }, [time, N, cx, cz]);
+  const bubbles = useMemo(() => {
+    const g = new THREE.IcosahedronGeometry(1, 0);
+    const im = new THREE.InstancedMesh(g, underwater(new THREE.MeshBasicMaterial({ color: "#e4f5ff", transparent: true, opacity: 0.6, depthWrite: false })), BUB);
+    im.frustumCulled = false;
+    im.visible = false;
+    im.count = 0;
+    return im;
+  }, [BUB]);
+  const pops = useMemo(() => {
+    // Foam patches, not rings: the sea's own cell lines are thin white curves, and rings vanished into them.
+    const g = new THREE.CircleGeometry(1, 12);
+    g.rotateX(-Math.PI / 2);
+    const im = new THREE.InstancedMesh(g, new THREE.MeshBasicMaterial({ color: "#ffffff", transparent: true, opacity: 0.85, depthWrite: false }), POP);
+    im.frustumCulled = false;
+    im.renderOrder = 5; // after the sea surface (4), which is transparent too
+    im.visible = false;
+    return im;
+  }, [POP]);
+  useEffect(() => () => free(mesh, bubbles, pops), [mesh, bubbles, pops]);
+  useEffect(() => () => untrack(`dv:${id}:`), [id]);
+  const st = useRef({ a: hash(cx) * Math.PI * 2, next: 0, head: 0, pos: [] as { x: number; y: number; z: number; yaw: number }[], ax: cx, az: cz, fx: 0, fz: -1 });
+  // Bubbles in flight: where each burst left a regulator and when.
+  const flight = useRef<{ x: number; y: number; z: number; t: number; s: number }[]>([]);
+  const closeIn = useCloseIn(id);
+  // The guide's loop: centered a little off the buoy, at the site's depth when it is known.
+  const loopR = 16 + hash(cz * 0.01) * 10;
+  useFrame((fr, dtRaw) => {
+    const near = boatDist(cx, cz) < SEE_REEF;
+    const { under } = useBoat.getState();
+    mesh.visible = near && under;
+    bubbles.visible = near && under;
+    pops.visible = near && !under;
+    if (!near) return;
+    const dt = Math.min(dtRaw, 0.1), t = fr.clock.elapsedTime, k = closeIn(dt), s = st.current;
+    time.value = t;
+    // Close in, the loop becomes a flat oval a few meters in front of the snorkeler's mask, as wide
+    // as the view (a phone held upright sees only a meter or two to each side), so the group crosses
+    // the view back and forth and is never behind you. It drifts after the view, unhurried: they
+    // come over to where you look.
+    const cam = fr.camera as THREE.PerspectiveCamera;
+    const tanH = Math.tan(((cam.fov ?? 50) * Math.PI) / 360) * (cam.aspect ?? 1.6);
+    const D = Math.min(10, Math.max(6, 2.2 / tanH)), RA = Math.min(6, Math.max(2.2, tanH * D * 1.15));
+    _p.set(0, 0, -1).applyQuaternion(cam.quaternion);
+    const fl = Math.hypot(_p.x, _p.z) || 1, ffx = _p.x / fl, ffz = _p.z / fl;
+    // Only under the water (above it this is the chase camera, far behind the boat); on the first
+    // frames down it starts right in front of the mask.
+    if (under) {
+      const ease = k < 0.05 ? 1 : Math.min(1, dt * 0.5);
+      s.ax += (cam.position.x + ffx * D - s.ax) * ease;
+      s.az += (cam.position.z + ffz * D - s.az) * ease;
+      s.fx += (ffx - s.fx) * ease;
+      s.fz += (ffz - s.fz) * ease;
+    }
+    const fn = Math.hypot(s.fx, s.fz) || 1, fx = s.fx / fn, fz = s.fz / fn, sx = fz, sz = -fx;
+    const RB = 2.2, Reff = loopR * (1 - k) + 4 * k;
+    s.a += dt * ((0.32 + 0.28 * k) / Reff); // ~0.3 m/s, an easy dive pace; a little livelier up close
+    for (let i = 0; i < N; i++) {
+      // In a loose line behind the guide, each a little to one side.
+      const a = s.a - i * (1.9 / Reff), side = (i % 2 ? 1 : -1) * (i ? 0.7 : 0);
+      const ca = Math.cos(a), sa = Math.sin(a);
+      // Far: a circle round the site. Close: the oval in front of the mask.
+      const x = (cx + ca * (loopR + side)) * (1 - k) + (s.ax + sx * ca * (RA + side) + fx * sa * RB) * k;
+      const z = (cz + sa * (loopR + side)) * (1 - k) + (s.az + sz * ca * (RA + side) + fz * sa * RB) * k;
+      const dx = -sa * loopR * (1 - k) + (-sx * sa * RA + fx * ca * RB) * k;
+      const dz = ca * loopR * (1 - k) + (-sz * sa * RA + fz * ca * RB) * k;
+      const bottom = floorY(Math.min(-3, heightAtXZ(zone, x, z)));
+      const want = depth ? -Math.min(depth, 22) : bottom + 2;
+      const cruise = Math.max(bottom + 1.4, Math.min(-2.5, want));
+      const level = Math.max(bottom + 1, Math.min(-1.4, cam.position.y - 0.3 - i * 0.35));
+      const y = cruise * (1 - k) + level * k + Math.sin(t * 0.5 + i * 1.7) * 0.25;
+      const yaw = Math.atan2(dx, dz);
+      s.pos[i] = { x, y, z, yaw };
+      place(mesh, i, x, y, z, yaw, -0.08 + 0.05 * Math.sin(t * 0.4 + i), 0.06 * Math.sin(t * 0.7 + i * 2), 1.12);
+      trackSubject(`dv:${id}:${i}`, id, x, y, z, 20);
+    }
+    mesh.instanceMatrix.needsUpdate = true;
+    // Breathing: every ~4 s one diver breathes out a burst from the regulator (only drawn under the water).
+    if (!under) flight.current.length = 0;
+    else if (t >= s.next) {
+      const i = Math.floor(hash(t * 3.3) * N) % N, p = s.pos[i];
+      s.next = t + 4.2 / N;
+      if (p) for (let j = 0; j < 7; j++) flight.current.push({ x: p.x + Math.sin(p.yaw) * 0.68, y: p.y + 0.05, z: p.z + Math.cos(p.yaw) * 0.68, t, s: 0.6 + hash(t + j) * 0.8 });
+    }
+    // Bubbles rise ~0.9 m/s, wobbling and growing as the pressure drops, and pop at the surface.
+    const list = flight.current;
+    let n = 0;
+    for (let j = 0; j < list.length; j++) {
+      const b = list[j], age = t - b.t, y = b.y + age * (0.75 + b.s * 0.25);
+      if (y > -0.12 || n >= BUB) continue;
+      list[n] = b;
+      const w = Math.sin(age * 7 + b.s * 20) * 0.08 * Math.min(1, age);
+      const size = (0.018 + 0.03 * b.s) * (1 + Math.min(1.5, age * 0.12));
+      _m.makeScale(size, size * 0.8, size).setPosition(b.x + w + (b.s - 1) * age * 0.12, y, b.z + Math.cos(age * 5 + b.s * 9) * 0.06 * Math.min(1, age));
+      bubbles.setMatrixAt(n++, _m);
+    }
+    list.length = n;
+    bubbles.count = n;
+    bubbles.instanceMatrix.needsUpdate = true;
+    // At the surface, above the group: patches of bubbles boiling up and spreading, a few meters
+    // across, big enough to spot from the boat (they are drawn larger than life on purpose).
+    if (!under) {
+      const gx = s.pos[0]?.x ?? cx, gz = s.pos[0]?.z ?? cz;
+      for (let j = 0; j < POP; j++) {
+        const life = (t * (0.45 + hash(j) * 0.4) + hash(j * 3.7)) % 1, cyc = Math.floor(t * (0.45 + hash(j) * 0.4) + hash(j * 3.7));
+        const ang = hash(j * 11 + cyc) * Math.PI * 2, rr = Math.sqrt(hash(j * 5 + cyc * 3)) * 5;
+        const size = (0.8 + 1.6 * life) * (0.6 + hash(j + cyc) * 0.8) * Math.sin(Math.min(1, life * 1.2) * Math.PI);
+        _m.makeScale(size, 1, size).setPosition(gx + Math.cos(ang) * rr, 0.06 + j * 0.0005, gz + Math.sin(ang) * rr);
+        pops.setMatrixAt(j, _m);
+      }
+      pops.instanceMatrix.needsUpdate = true;
+    }
+  });
+  return (
+    <>
+      <primitive object={mesh} />
+      <primitive object={bubbles} />
+      <primitive object={pops} />
     </>
   );
 }

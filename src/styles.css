@@ -854,10 +854,11 @@ html.lite .window { -webkit-backdrop-filter: none; backdrop-filter: none; backgr
   .home .section.window { margin-top: 20px; padding-top: clamp(18px, 3vw, 34px); }
 }
 
-/* Islands page (pages/IslandsPage.tsx): a frosted card per island with a live 3D preview. One fixed
-   WebGL canvas draws into every card's stage (drei View); it sits under the header. */
-.isle-canvas { z-index: 5; }
-.isle-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(14px, 1.8vw, 24px); }
+/* Islands page (pages/IslandsPage.tsx): a frosted card per island with a live 3D preview. One WebGL
+   canvas draws into every card's stage. It lies in the grid over the island stages (top and height
+   set in code) and scrolls with them: a canvas fixed to the screen lagged behind the cards on phones. */
+.isle-canvas { position: absolute; left: 0; right: 0; top: 0; height: 0; z-index: 5; pointer-events: none; }
+.isle-grid { position: relative; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(14px, 1.8vw, 24px); }
 .isle-card { position: relative; display: flex; flex-direction: column; color: inherit; text-decoration: none; overflow: hidden;
   border-radius: var(--r-l); border: 1.5px solid rgba(190, 220, 255, 0.24);
   background: radial-gradient(90% 70% at 50% 38%, rgba(30, 90, 210, 0.32), transparent 72%), linear-gradient(165deg, rgba(120, 175, 255, 0.15), rgba(30, 75, 190, 0.1));
@@ -1527,7 +1528,9 @@ html.lite .org-more, html.lite .org-toggle svg { transition: none; }
    The mouse actions and the keys used to be a card plus a loose line of text that wrapped around
    it (Tulio: controls all over the place). Now the keys are a second row of the same card, and the
    card sits on the bottom bar's baseline, between the logbook and the action buttons. */
-.dock-center > .controls-hint { display: flex; justify-content: center; min-width: 0; max-width: 100%; }
+/* Computers only: in the phone layout (also a narrow window) the bottom bar has the room, and the card
+   sat over the Underwater / Cast CTD buttons. */
+@media (min-width: 761px) { .dock-center > .controls-hint { display: flex; justify-content: center; min-width: 0; max-width: 100%; } }
 .mouse-guide.inline { margin: 0; }
 .mouse-guide .mg-keys { margin-top: 9px; padding-top: 9px; border-top: 1px solid var(--hair); gap: 16px; }
 .mouse-guide .mg-keys li { gap: 7px; font-size: 12.5px; color: var(--hud-text); white-space: nowrap; }
@@ -1595,6 +1598,7 @@ html.lite .org-more, html.lite .org-toggle svg { transition: none; }
 .m-turtles { --m: #79e2b8; }
 .m-reef-sharks { --m: #ffa78f; }
 .m-wreck { --m: #f2c078; }
+.m-divers { --m: #c3b4ff; }
 .mission.warn { --m: #ffbf5e; }
 .mission-icon { flex: none; width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; color: var(--m); background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 255, 255, 0.16); transition: color 0.3s var(--ease-out); }
 .mission-icon .icon { width: 21px; height: 21px; }
@@ -1631,6 +1635,7 @@ html.lite .org-more, html.lite .org-toggle svg { transition: none; }
 .tag.k-turtles { --m: #79e2b8; }
 .tag.k-reef-sharks { --m: #ffa78f; }
 .tag.k-wreck { --m: #f2c078; }
+.tag.k-divers { --m: #c3b4ff; }
 .tag.k-dive { font-weight: 500; }
 .tag.on .tag-mark { background: rgba(4, 16, 29, 0.1); color: #0a3f8f; }
 .tag-dist { font: 500 11px/1 var(--mono); color: #9db6d0; padding-left: 1px; }
@@ -1642,6 +1647,9 @@ html.lite .org-more, html.lite .org-toggle svg { transition: none; }
    The viewfinder marks the part of the screen the photo keeps (a centered 16:9 crop), with thin
    white corners; the reticle closes and turns aqua on a subject. */
 .viewfinder { inset: 0; z-index: 7; pointer-events: none; container-type: size; }
+/* Only its buttons take the pointer: a drag anywhere else, the frame included, turns the view
+   (`.hud > *` would otherwise make the frame, the reticle and the label catch it). */
+.viewfinder > * { pointer-events: none; }
 .viewfinder button { pointer-events: auto; }
 .vf-frame { position: absolute; left: 50%; top: 50%; width: min(78cqw, calc(74cqh * 16 / 9)); aspect-ratio: 16 / 9; transform: translate(-50%, -50%); }
 .vf-frame i { position: absolute; width: 30px; height: 30px; border: 0 solid rgba(255, 255, 255, 0.92); }
@@ -1687,6 +1695,7 @@ html.lite .org-more, html.lite .org-toggle svg { transition: none; }
 .log-tabs .num { font: 500 11.5px/1 var(--mono); color: #9fdcff; }
 /* The album: three frames a row, no horizontal scrolling. */
 .album { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 8px; }
+.album-head { font: 600 10.5px/1.2 var(--mono); letter-spacing: 0.12em; text-transform: uppercase; margin-top: 2px; }
 .shot { margin: 0; display: grid; gap: 5px; min-width: 0; }
 .shot-img { position: relative; aspect-ratio: 16 / 9; border-radius: var(--r-s); overflow: hidden; background: rgba(255, 255, 255, 0.05); display: grid; place-items: center; }
 .shot.empty .shot-img { border: 1px dashed rgba(255, 255, 255, 0.22); background: none; color: rgba(255, 255, 255, 0.35); }

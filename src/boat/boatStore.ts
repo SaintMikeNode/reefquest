@@ -78,7 +78,7 @@ interface BoatState {
 }
 
 /** The kinds of thing to find in a zone (content/sites.ts `scene`, or a `wreck`). */
-export type MissionType = "whale-shark" | "turtles" | "reef-sharks" | "wreck";
+export type MissionType = "whale-shark" | "turtles" | "reef-sharks" | "wreck" | "divers";
 
 const KEY = (z: string) => `rq-log-${z}`;
 const SEEN = (z: string) => `rq-seen-${z}`;

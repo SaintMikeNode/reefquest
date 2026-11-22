@@ -151,7 +151,7 @@ place name gives NOAA's alert wording. All of it follows the selected date and i
   the position, and coordinates that trace back to AGRRA. The dolphin lagoon on Roatán is a story
   only, with no animals drawn: those dolphins are captive and the card says so), `learn.ts` (explainers; `src/ui/LessonFigures.tsx` draws the bleaching and DHW
   diagrams), `reefLife.ts` (underwater field guide: species names and how to recognize them). **Every fact needs a source**; don't add unsourced claims.
-- `src/pages/`: `IslandsPage` (`#/islands`: four frosted cards in a row (2 × 2 under 1180 px, one column on phones): the three islands and a photos card (a ring of reef photos turning in CSS 3D; opens the dome of every photo); every button sits at the bottom of its card so they line up; each island card shows its mapped reef area (`reef_km2` in meta.json, from `pipeline/reef_area.mjs` on the Allen Coral Atlas habitat map) before the record year, so it isn't all bad news. The island cards: text and button centered, with a pure-CSS blueprint texture (a faint grid fading to the edges and a wireframe floor in perspective under each island) that fit one screen on computers (Roatán, Utila, Guanaja; Cayos Cochinos left out until it has a 3D scene; the preview height follows the window height), each with a live 3D preview in blueprint line art (Tulio found the colored relief too much): coastline, survey grid, land contours and depth lines over a rising light shader with contour lines (our take on React Bits' paid "Shader Card"); hover lifts the light, speeds the turn and swings the camera toward the pointer, the text drifts the other way. All four share ONE fixed WebGL canvas through drei `<View>`; meshes are coarse samples of each island's terrain.png cropped by distance to the coast, deep water dropped; lite and reduced motion render still frames, redrawn on scroll), `Home` (hero whose copy leads with the place and its reefs, then learning, then heat: "Meet the reef around our islands", buttons to the islands page and Learn; Tulio picked this over a satellite-heat headline and a "map the reef" game headline; live SVG map with OSM coastlines + today's 5 km heat cells, island
+- `src/pages/`: `IslandsPage` (`#/islands`: four frosted cards in a row (2 × 2 under 1180 px, one column on phones): the three islands and a photos card (a ring of reef photos turning in CSS 3D; opens the dome of every photo); every button sits at the bottom of its card so they line up; each island card shows its mapped reef area (`reef_km2` in meta.json, from `pipeline/reef_area.mjs` on the Allen Coral Atlas habitat map) before the record year, so it isn't all bad news. The island cards: text and button centered, with a pure-CSS blueprint texture (a faint grid fading to the edges and a wireframe floor in perspective under each island) that fit one screen on computers (Roatán, Utila, Guanaja; Cayos Cochinos left out until it has a 3D scene; the preview height follows the window height), each with a live 3D preview in blueprint line art (Tulio found the colored relief too much): coastline, survey grid, land contours and depth lines over a rising light shader with contour lines (our take on React Bits' paid "Shader Card"); hover lifts the light, speeds the turn and swings the camera toward the pointer, the text drifts the other way. The island previews share ONE WebGL canvas, each drawn into its stage's rectangle (scissor) from its own portal scene and camera. The canvas lies in the grid over the island stages and scrolls with the page, **not `position: fixed`**: phones scroll on the compositor without waiting for a redraw, and a fixed canvas (drei `<View>`) left the islands behind, drawn outside their cards (Tulio). Meshes are coarse samples of each island's terrain.png cropped by distance to the coast, deep water dropped; animated previews more than a screen away are skipped; lite and reduced motion render still frames, redrawn only on layout changes and hover), `Home` (hero whose copy leads with the place and its reefs, then learning, then heat: "Meet the reef around our islands", buttons to the islands page and Learn; Tulio picked this over a satellite-heat headline and a "map the reef" game headline; live SVG map with OSM coastlines + today's 5 km heat cells, island
   cards, heat stripes; on phones the yearly heat card puts "Open in 3D" at the top right beside a
   two-line title, with the islands in two rows), `LearnHub` ("Aprende": the heat data and the lessons as two liquid tabs, Tulio's call to merge
   them; `LiquidTabs page` is the page-size version of the tabs on the 3D layers box: only the top of
@@ -264,6 +264,14 @@ place name gives NOAA's alert wording. All of it follows the selected date and i
     (the guidelines allow snorkeling only) with the dolphins swinging in.
   - turtles (Pumpkin Hill, the West End reserve) and reef sharks (Cara a Cara, with the bait
     bucket the dive is named for): under the water they close in and circle at arm's length.
+  - divers (every plain dive site, `kind: "dive"` with no `scene` or `wreck`: 27 places, all inside
+    a zone; Tulio: those places felt empty): a group of 2–4 scuba divers (`divers.ts`, ~630
+    triangles each, flutter kick in the vertex shader, one instanced draw call) following their
+    guide in a slow loop near the buoy at the site's depth, breathing out bubbles. From the boat
+    (the surface is opaque) they show as foam patches of bubbles breaking the surface, drawn
+    larger than life so they can be spotted. Under the water they come to a flat oval in front of
+    the mask, as wide as the view (narrow on a phone held upright), so they keep crossing it.
+    Plain reef water, no mood. The tag's button opens the site's photos above the water.
   - wrecks (`wreck.ts`, Halliburton, Jado Trader, El Aguila): a small freighter built in code,
     upright, on its side or in pieces as the sources describe, one mesh of ~400 triangles, unlit
     with its shading baked into vertex colors, and a school of fish over the deck. The zones'
@@ -287,7 +295,9 @@ place name gives NOAA's alert wording. All of it follows the selected date and i
   along each hull), and the shutter (or F / Enter) saves a 480 × 270 JPEG (~6–30 KB) right after a
   frame is drawn (`fulfilShot`; the drawing buffer is only readable then). One photo per mission in
   localStorage `rq-photos-v1`; the photo completes the mission. The logbook has two tabs, Habitats
-  and Photos (the album: seven frames, the photo or the mission's outline, a one-press save).
+  and Photos (the album: a frame per mission, 34 with the divers, this zone's first under "In this
+  zone"; the photo or the mission's outline, a one-press save). Only the viewfinder's buttons take
+  the pointer: a drag inside the frame turns the view.
   Camera mode hides the side panels, the title and the dock (and the bottom bar on phones). Under the water the way back on the
   title plate is "Back to the surface" (it surfaces; "Superficie" on phones), and the place's photo
   gallery (the Photos chip, "See photos") is not offered on computers: the camera is (phones keep
@@ -409,7 +419,8 @@ Interaction feel (Tulio: "smooth and interactive like an Apple app", on phones a
   (no layout animation there); still with reduced motion. Use it for any new fold-out section.
 - Boat view on computers: the action buttons (Dive / Camera, Cast CTD) stand at the bottom center
   with the controls card under them (Tulio: they sat too far in the corner); the logbook or field
-  guide is on the left (at least 300 px); under 1100 px of width the controls card steps aside.
+  guide is on the left (at least 300 px); under 1100 px of width the controls card steps aside, and
+  in the phone layout (also a narrow desktop window) it is hidden (it sat over the buttons).
 - Map layers fade (~350 ms ease-out) instead of switching: the shaders blend by `uShowHabitat`,
   `uShowContours`, `uShowHeat` (0..1), and dive sites by `sitesFade` (boats scale, markers and labels
   fade; always mounted, unclickable while off).

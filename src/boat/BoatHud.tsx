@@ -12,7 +12,7 @@ import { BENTHIC, GEOMORPHIC } from "../scenes/materials";
 import { useScene } from "../scenes/sceneStore";
 import { fmtLat, fmtLon, SiteCard } from "../scenes/SiteCard";
 import { AlertChip } from "../ui/AlertChip";
-import { IconBack, IconBook, IconCamera, IconCast, IconCheck, IconClose, IconDive, IconDownload, IconShark, IconPhotos, IconSonar, IconSurface, IconTools, IconTurtle, IconWhaleShark, IconWreck } from "../ui/Icons";
+import { IconBack, IconBook, IconCamera, IconCast, IconCheck, IconClose, IconDive, IconDownload, IconShark, IconPhotos, IconSonar, IconSurface, IconTools, IconTurtle, IconWhaleShark, IconWreck, IconDiver } from "../ui/Icons";
 import { PhotoStrip, usePhotos } from "../ui/PhotoStrip";
 import { panelMotion } from "../ui/motionPresets";
 import { Fold } from "../ui/Fold";
@@ -231,7 +231,7 @@ export function BoatHud({ index, zoneName, islandName }: { index: HeatIndex; zon
   // On boarding: say what there is to find here (the list is in the logbook).
   useEffect(() => {
     if (!wild.length) return;
-    const names = [...new Set(wild.map((id) => SITES.find((s) => s.id === id)).map((s) => (s?.wreck ? t("boat.scene.wreck") : s?.scene ? t(`boat.scene.${s.scene}`) : "")))].filter(Boolean);
+    const names = [...new Set(wild.map((id) => SITES.find((s) => s.id === id)).map((s) => { const k = s && missionType(s); return k ? t(`boat.scene.${k}`) : ""; }))].filter(Boolean);
     const timer = window.setTimeout(() => flash(`${t("boat.sightings")}: ${names.join(", ").toLowerCase()}`), 3200);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -503,8 +503,10 @@ export function BoatHud({ index, zoneName, islandName }: { index: HeatIndex; zon
               : mission.type === "whale-shark" ? (mission.state === "watch" ? 1 : 0)
               : 1
             }
-            onRead={missionSite.kind === "story" ? () => (setGallery(false), setStory(missionSite.id)) : null}
-            readLabel={t("boat.readStory")}
+            // Its story, or for a dive site its photos (above the water: under it, the camera).
+            onRead={missionSite.kind === "story" || (!under && photos?.places[missionSite.id]?.length) ? () => (setGallery(false), setStory(missionSite.id)) : null}
+            readLabel={missionSite.kind === "story" ? t("boat.readStory") : t("boat.seePhotos")}
+            readIcon={missionSite.kind === "story" ? "book" : "photos"}
           />
         ) : (
           nearSite && !storySite && (
@@ -549,7 +551,7 @@ export function BoatHud({ index, zoneName, islandName }: { index: HeatIndex; zon
                 </span>
               </button>
             </div>
-            {logTab === "photos" && <PhotoAlbum shots={shots} />}
+            {logTab === "photos" && <PhotoAlbum shots={shots} here={wild} />}
             {logTab === "habitats" && (
             <>
             <div className="hud-faint" style={{ fontSize: 12.5, lineHeight: 1.45 }}>
@@ -569,12 +571,12 @@ export function BoatHud({ index, zoneName, islandName }: { index: HeatIndex; zon
                 <span className="hud-faint">{t("boat.sightings")}</span>
                 {wild.map((id) => {
                   const place = SITES.find((s) => s.id === id);
-                  const scene = place?.wreck ? "wreck" : place?.scene;
+                  const scene = place && missionType(place);
                   // Each one says how far and which way it is, and a press sails the boat there.
                   return scene ? (
                     <button key={id} type="button" className={sightings.includes(id) ? "done" : undefined} style={{ "--c": "#7fd6ff" } as React.CSSProperties} onClick={() => sailTo(id)} title={t("boat.sailTo")}>
                       <i />
-                      <span>{t(`boat.scene.${scene}`)}</span>
+                      <span>{scene === "divers" ? t("boat.scene.diversAt").replace("{name}", siteName(place!, lang)) : t(`boat.scene.${scene}`)}</span>
                       <span className="where">{whereIs(id)}</span>
                     </button>
                   ) : null;
@@ -873,7 +875,8 @@ function FieldGuide({ bleachNote }: { bleachNote: string | null }) {
 /** A distance for a tag or a list: "480 m", "1.8 km". */
 const meters = (d: number) => (d < 950 ? `${Math.max(10, Math.round(d / 10) * 10)} m` : `${(d / 1000).toFixed(1)} km`);
 /** What there is to find at a place, if anything (content/sites.ts `scene`, or a `wreck`). */
-const missionType = (s: (typeof SITES)[number]): MissionType | undefined => (s.wreck ? "wreck" : s.scene);
+const missionType = (s: (typeof SITES)[number]): MissionType | undefined =>
+  s.wreck ? "wreck" : s.scene ?? (s.kind === "dive" ? "divers" : undefined); // a plain dive site: its divers
 
 /** The mark of a place: its mission's own icon, a diamond for a story, a dot for a dive site. */
 function PlaceMark({ kind }: { kind: MissionType | "story" | "dive" }) {
@@ -881,13 +884,14 @@ function PlaceMark({ kind }: { kind: MissionType | "story" | "dive" }) {
   if (kind === "turtles") return <IconTurtle />;
   if (kind === "reef-sharks") return <IconShark />;
   if (kind === "wreck") return <IconWreck />;
+  if (kind === "divers") return <IconDiver />;
   return <i />;
 }
 
 /** The mission in range, top center: its icon, the place on a line of its own with the steps
  *  done so far, what to do now, and the way to its story. In the family of the arrival tag (Tulio
  *  found the first version, a bordered box with a colored label run into the text, generic). */
-function MissionTag({ type, name, line, warn, steps, done, onRead, readLabel }: { type: MissionType; name: string; line: string; warn: boolean; steps: number; done: number; onRead: (() => void) | null; readLabel: string }) {
+function MissionTag({ type, name, line, warn, steps, done, onRead, readLabel, readIcon }: { type: MissionType; name: string; line: string; warn: boolean; steps: number; done: number; onRead: (() => void) | null; readLabel: string; readIcon: "book" | "photos" }) {
   return (
     <div className={`mission panel m-${type}${warn ? " warn" : ""}`} role="status">
       <span className="mission-icon" aria-hidden="true">
@@ -908,7 +912,7 @@ function MissionTag({ type, name, line, warn, steps, done, onRead, readLabel }: 
       </span>
       {onRead && (
         <button className="hbtn" onClick={onRead} title={readLabel}>
-          <IconBook />
+          {readIcon === "book" ? <IconBook /> : <IconPhotos />}
           <span className="lbl">{readLabel}</span>
         </button>
       )}
@@ -972,38 +976,53 @@ function useStackRoom(ref: React.RefObject<HTMLDivElement | null>, key: string) 
 }
 
 /** Every place with something to photograph, in the album's order. */
-const MISSION_SITES = SITES.filter((s) => s.scene || s.wreck);
+const MISSION_SITES = SITES.filter((s) => missionType(s));
 const ISLAND_NAME: Record<string, string> = { roatan: "Roatán", utila: "Utila", guanaja: "Guanaja", "cayos-cochinos": "Cayos Cochinos" };
 
 /** The logbook's Fotos tab: one frame per place with something to photograph, the photo once taken
- *  (saved with one press: a small JPEG), its outline until then. */
-function PhotoAlbum({ shots }: { shots: Record<string, { url: string }> }) {
+ *  (saved with one press: a small JPEG), its outline until then. There are 30-odd (every dive site
+ *  has its divers), so the places of this zone come first, under their own heading. */
+function PhotoAlbum({ shots, here }: { shots: Record<string, { url: string }>; here: string[] }) {
   const t = useT();
   const lang = useLang((s) => s.lang);
+  const near = MISSION_SITES.filter((s) => here.includes(s.id));
+  const rest = MISSION_SITES.filter((s) => !here.includes(s.id));
+  const frames = (list: typeof MISSION_SITES) => (
+    <div className="album">
+      {list.map((s) => {
+        const p = shots[s.id];
+        const name = siteName(s, lang);
+        return (
+          <figure key={s.id} className={p ? "shot" : "shot empty"}>
+            <div className="shot-img">
+              {p ? <img src={p.url} alt={name} loading="lazy" /> : <PlaceMark kind={missionType(s)!} />}
+              {p && (
+                <a className="shot-save" href={p.url} download={`ReefQuest-${s.id}.jpg`} title={t("shot.save")} aria-label={`${t("shot.save")}: ${name}`}>
+                  <IconDownload />
+                </a>
+              )}
+            </div>
+            <figcaption>
+              <b>{name}</b>
+              <span>{ISLAND_NAME[s.island] ?? s.island}</span>
+            </figcaption>
+          </figure>
+        );
+      })}
+    </div>
+  );
   return (
     <>
-      <div className="album">
-        {MISSION_SITES.map((s) => {
-          const p = shots[s.id];
-          const name = siteName(s, lang);
-          return (
-            <figure key={s.id} className={p ? "shot" : "shot empty"}>
-              <div className="shot-img">
-                {p ? <img src={p.url} alt={name} loading="lazy" /> : <PlaceMark kind={missionType(s)!} />}
-                {p && (
-                  <a className="shot-save" href={p.url} download={`ReefQuest-${s.id}.jpg`} title={t("shot.save")} aria-label={`${t("shot.save")}: ${name}`}>
-                    <IconDownload />
-                  </a>
-                )}
-              </div>
-              <figcaption>
-                <b>{name}</b>
-                <span>{ISLAND_NAME[s.island] ?? s.island}</span>
-              </figcaption>
-            </figure>
-          );
-        })}
-      </div>
+      {near.length > 0 && rest.length > 0 ? (
+        <>
+          <span className="hud-faint album-head">{t("shot.here")}</span>
+          {frames(near)}
+          <span className="hud-faint album-head">{t("shot.elsewhere")}</span>
+          {frames(rest)}
+        </>
+      ) : (
+        frames(MISSION_SITES)
+      )}
       <p className="hud-faint album-note">{t("shot.hint")}</p>
     </>
   );
