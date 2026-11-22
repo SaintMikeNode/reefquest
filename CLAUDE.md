@@ -93,7 +93,8 @@ S 30 px (chips in cards and on the map, tabs, segments, close buttons, the butto
 M 36 px (HUD and header buttons, messages, the way back on phones), L 44 px (hero and card
 buttons, the way back on computers, the boat dock); all fully rounded, labels weight 600, one icon
 size per height, a little less padding on a leading icon's side. A new pill takes one of these
-sizes; don't set its height or padding elsewhere. Round buttons follow the same heights (close buttons S, tool and arrow
+sizes; don't set its height or padding elsewhere. A label that clips to "…" keeps a line box of at least 1.35 (line-height 1
+cut the g of "Bajo el agua"), and buttons side by side as a pair (the boat dock) share one width. Round buttons follow the same heights (close buttons S, tool and arrow
 circles M, play and lightbox L). **Box corners come in four sizes too** (`--r-xl/l/m/s` in styles.css; Tulio: two
 boxes that differed in rounding "look different"): XL the home page's big windows, L 22 px every panel,
 card, sheet, menu and dialog (HUD panels, the phone bar, the timeline, cards, figures), M 14 px photos
@@ -278,6 +279,12 @@ place name gives NOAA's alert wording. All of it follows the selected date and i
     bathymetry is far smoother than the real reef, so a wreck is laid down the model's slope at its
     documented depth (up to 520 m from its pin; its buoy and tag go with it). Underwater the view
     stands off the hull's side and above the deck: it used to start inside the 73 m Jado Trader.
+  **Every mission has a ring on the water** (`missionRings.ts`; Tulio: where to go under was
+  ambiguous; "cool and subtle"): its area (the range where the mission is on: 80 m, a wreck's
+  half length + 30 m, the whale sharks' 90 m contact zone) in the mission's tag color, a dashed
+  edge turning slowly, a soft glow inside it, a ripple running out every few seconds (none on
+  lite); solid and brighter while the boat is inside, dim once its photo is taken, fading past
+  ~1 km. All of a zone's rings are one instanced draw call; hidden under the water.
   **Whatever there is to see comes close, and the player is always told what to do**: the mission
   tag (`MissionTag` in BoatHud: icon, the place on its own line with three step bars, one line of
   what to do now, the story button; in the family of the arrival tag, Tulio found the bordered box
@@ -295,8 +302,10 @@ place name gives NOAA's alert wording. All of it follows the selected date and i
   along each hull), and the shutter (or F / Enter) saves a 480 × 270 JPEG (~6–30 KB) right after a
   frame is drawn (`fulfilShot`; the drawing buffer is only readable then). One photo per mission in
   localStorage `rq-photos-v1`; the photo completes the mission. The logbook has two tabs, Habitats
-  and Photos (the album: a frame per mission, 34 with the divers, this zone's first under "In this
-  zone"; the photo or the mission's outline, a one-press save). Only the viewfinder's buttons take
+  and Photos (the album: a frame per mission of the island the boat is at, Tulio's call, since all
+  34 at once was too much: Roatán 8, Utila 13, Guanaja 13; this zone's first under "In this zone",
+  then "Elsewhere on <island>"; the photo or the mission's outline, a one-press save; photos from
+  other islands stay saved). Only the viewfinder's buttons take
   the pointer: a drag inside the frame turns the view.
   Camera mode hides the side panels, the title and the dock (and the bottom bar on phones). Under the water the way back on the
   title plate is "Back to the surface" (it surfaces; "Superficie" on phones), and the place's photo
@@ -417,9 +426,15 @@ Interaction feel (Tulio: "smooth and interactive like an Apple app", on phones a
 - Folding panels (the boat's logbook and sounder) open and close with `ui/Fold.tsx`: on computers
   the height eases (~0.3 s) while the content fades; phones and tablets only fade and slide it
   (no layout animation there); still with reduced motion. Use it for any new fold-out section.
+  The logbook's head and its Habitats / Photos tabs stay put while the list under them scrolls
+  (`.log-scroll`; Tulio: the tabs scrolled out of sight). A panel's own scrollbar stops short of
+  its rounded corners (track margin), so no bar runs out of its box.
 - Boat view on computers: the action buttons (Dive / Camera, Cast CTD) stand at the bottom center
   with the controls card under them (Tulio: they sat too far in the corner); the logbook or field
-  guide is on the left (at least 300 px); under 1100 px of width the controls card steps aside, and
+  guide is on the left (at least 300 px) and, from 1100 px of width, the sounder in the right corner
+  level with it (Tulio: HUD consistency; it folds open upward, and the dock's right column is kept
+  at least its width so nothing runs under it; narrower, it stays top right); under 1100 px of width
+  the controls card steps aside, and
   in the phone layout (also a narrow desktop window) it is hidden (it sat over the buttons).
 - Map layers fade (~350 ms ease-out) instead of switching: the shaders blend by `uShowHabitat`,
   `uShowContours`, `uShowHeat` (0..1), and dive sites by `sitesFade` (boats scale, markers and labels

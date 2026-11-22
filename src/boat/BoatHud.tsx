@@ -26,7 +26,7 @@ import { Echogram } from "./Echogram";
 
 const TOUCH = typeof matchMedia !== "undefined" && matchMedia("(pointer: coarse)").matches;
 
-export function BoatHud({ index, zoneName, islandName }: { index: HeatIndex; zoneName: string; islandName: string }) {
+export function BoatHud({ index, zoneName, islandName, island }: { index: HeatIndex; zoneName: string; islandName: string; island: string }) {
   const t = useT();
   const L = useL();
   const lang = useLang((s) => s.lang);
@@ -243,6 +243,8 @@ export function BoatHud({ index, zoneName, islandName }: { index: HeatIndex; zon
   // Photos: the zone's own gallery (from the title plate), and a site's photos from the arrival bar.
   const photos = usePhotos();
   const zoneId = useScene((s) => s.boat?.zone);
+  // The album and its count: this island's missions only (another island's photos stay saved for it).
+  const islandMissions = useMemo(() => MISSION_SITES.filter((s) => s.island === island), [island]);
   const zonePhotos = zoneId ? photos?.places[`zone:${zoneId}`] : undefined;
   const [gallery, setGallery] = useState(false);
   const stackRef = useRef<HTMLDivElement>(null);
@@ -547,11 +549,13 @@ export function BoatHud({ index, zoneName, islandName }: { index: HeatIndex; zon
                 <IconCamera />
                 {t("shot.tab")}
                 <span className="num">
-                  {MISSION_SITES.filter((s) => shots[s.id]).length}/{MISSION_SITES.length}
+                  {islandMissions.filter((s) => shots[s.id]).length}/{islandMissions.length}
                 </span>
               </button>
             </div>
-            {logTab === "photos" && <PhotoAlbum shots={shots} here={wild} />}
+            {/* The tabs stay put; only what is under them scrolls (Tulio: they scrolled out of sight). */}
+            <div className="log-scroll">
+            {logTab === "photos" && <PhotoAlbum shots={shots} here={wild} sites={islandMissions} islandName={islandName} />}
             {logTab === "habitats" && (
             <>
             <div className="hud-faint" style={{ fontSize: 12.5, lineHeight: 1.45 }}>
@@ -601,6 +605,7 @@ export function BoatHud({ index, zoneName, islandName }: { index: HeatIndex; zon
             </div>
             </>
             )}
+            </div>
           </Fold>
         </div>
         )}
@@ -939,7 +944,8 @@ function useStackRoom(ref: React.RefObject<HTMLDivElement | null>, key: string) 
       }
       const box = root.getBoundingClientRect();
       const plate = root.querySelector(".plate");
-      const right = root.querySelector(".hud-right, .site-card");
+      // The panel on the right, if it stands at the top (the sounder moves to the bottom corner on wide screens).
+      const right = [...root.querySelectorAll(".hud-right, .site-card")].find((el) => el.getBoundingClientRect().top - box.top < box.height / 2);
       // The plate's text, not its box: walk its text nodes.
       let textRight = 0, textBottom = 0;
       if (plate) {
@@ -977,16 +983,15 @@ function useStackRoom(ref: React.RefObject<HTMLDivElement | null>, key: string) 
 
 /** Every place with something to photograph, in the album's order. */
 const MISSION_SITES = SITES.filter((s) => missionType(s));
-const ISLAND_NAME: Record<string, string> = { roatan: "Roatán", utila: "Utila", guanaja: "Guanaja", "cayos-cochinos": "Cayos Cochinos" };
 
-/** The logbook's Fotos tab: one frame per place with something to photograph, the photo once taken
- *  (saved with one press: a small JPEG), its outline until then. There are 30-odd (every dive site
- *  has its divers), so the places of this zone come first, under their own heading. */
-function PhotoAlbum({ shots, here }: { shots: Record<string, { url: string }>; here: string[] }) {
+/** The logbook's Fotos tab: one frame per place of this island with something to photograph, the
+ *  photo once taken (saved with one press: a small JPEG), its outline until then. Every dive site
+ *  has its divers, so the places of this zone come first, under their own heading. */
+function PhotoAlbum({ shots, here, sites, islandName }: { shots: Record<string, { url: string }>; here: string[]; sites: typeof MISSION_SITES; islandName: string }) {
   const t = useT();
   const lang = useLang((s) => s.lang);
-  const near = MISSION_SITES.filter((s) => here.includes(s.id));
-  const rest = MISSION_SITES.filter((s) => !here.includes(s.id));
+  const near = sites.filter((s) => here.includes(s.id));
+  const rest = sites.filter((s) => !here.includes(s.id));
   const frames = (list: typeof MISSION_SITES) => (
     <div className="album">
       {list.map((s) => {
@@ -1004,7 +1009,6 @@ function PhotoAlbum({ shots, here }: { shots: Record<string, { url: string }>; h
             </div>
             <figcaption>
               <b>{name}</b>
-              <span>{ISLAND_NAME[s.island] ?? s.island}</span>
             </figcaption>
           </figure>
         );
@@ -1017,11 +1021,11 @@ function PhotoAlbum({ shots, here }: { shots: Record<string, { url: string }>; h
         <>
           <span className="hud-faint album-head">{t("shot.here")}</span>
           {frames(near)}
-          <span className="hud-faint album-head">{t("shot.elsewhere")}</span>
+          <span className="hud-faint album-head">{t("shot.elsewhere").replace("{island}", islandName)}</span>
           {frames(rest)}
         </>
       ) : (
-        frames(MISSION_SITES)
+        frames(sites)
       )}
       <p className="hud-faint album-note">{t("shot.hint")}</p>
     </>

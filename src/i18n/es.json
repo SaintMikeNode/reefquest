@@ -327,7 +327,7 @@
   "shot.tab": "Fotos",
   "shot.save": "Guardar foto",
   "shot.here": "En esta zona",
-  "shot.elsewhere": "En otras zonas",
+  "shot.elsewhere": "En el resto de {island}",
   "shot.hint": "Bajo el agua, abre la cámara en los lugares marcados y encuadra lo que hay que encontrar. Cada foto completa una misión.",
   "log.habitats": "Hábitats",
   "bar.island": "Controles de la isla",

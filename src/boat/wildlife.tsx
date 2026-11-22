@@ -9,6 +9,7 @@ import { useBoat, type MissionType } from "./boatStore";
 import { subject, zonePlaces, type ZonePlace } from "./places";
 import { underwater, WATER, WATER_GLSL } from "./props";
 import { diverGeometry, diverMaterial } from "./divers";
+import { missionRings, RING_DONE, RING_IDLE, RING_INSIDE } from "./missionRings";
 import { buildWreck } from "./wreck";
 import { floorY, hash, heightAtXZ, type Zone } from "./zone";
 
@@ -377,6 +378,7 @@ export function Wildlife({ zone }: { zone: Zone }) {
   return (
     <>
       <PhotoAim />
+      <MissionRings rings={[...boils.map((b) => ({ id: b.site.id, type: "whale-shark" as MissionType, x: b.x, z: b.z, r: CONTACT_R })), ...below.map((b) => ({ id: b.id, type: b.type, x: b.x, z: b.z, r: b.r }))]} />
       {wrecks.map((w) => (
         <Wreck key={w.site.id} zone={zone} place={w} />
       ))}
@@ -394,6 +396,35 @@ export function Wildlife({ zone }: { zone: Zone }) {
       ))}
     </>
   );
+}
+
+/** The rings on the water around this zone's missions (missionRings.ts): where to stop and go under.
+ *  One draw call; their state (inside, photo taken) is checked a few times a second. */
+function MissionRings({ rings }: { rings: { id: string; type: MissionType; x: number; z: number; r: number }[] }) {
+  const time = useMemo(() => ({ value: 0 }), []);
+  const key = rings.map((r) => r.id).join("|");
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const mesh = useMemo(() => (rings.length ? missionRings(rings, time) : null), [key, time]);
+  useEffect(() => () => void (mesh && free(mesh)), [mesh]);
+  const next = useRef(0);
+  useFrame((fr) => {
+    if (!mesh) return;
+    const { under, mission } = useBoat.getState();
+    mesh.visible = !under;
+    if (under) return;
+    time.value = fr.clock.elapsedTime;
+    if (fr.clock.elapsedTime < next.current) return;
+    next.current = fr.clock.elapsedTime + 0.3;
+    const shots = useRoll.getState().photos;
+    const attr = mesh.geometry.getAttribute("aState") as THREE.BufferAttribute;
+    let changed = false;
+    rings.forEach((r, i) => {
+      const v = shots[r.id] ? RING_DONE : mission?.id === r.id ? RING_INSIDE : RING_IDLE;
+      if (attr.getX(i) !== v) (attr.setX(i, v), (changed = true));
+    });
+    if (changed) attr.needsUpdate = true;
+  });
+  return mesh ? <primitive object={mesh} /> : null;
 }
 
 /** The whale shark mission: tuna boil and seabirds above, bait ball below, the shark and a pod of

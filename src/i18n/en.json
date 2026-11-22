@@ -327,7 +327,7 @@
   "shot.tab": "Photos",
   "shot.save": "Save photo",
   "shot.here": "In this zone",
-  "shot.elsewhere": "In other zones",
+  "shot.elsewhere": "Elsewhere on {island}",
   "shot.hint": "Under the water, open the camera at the marked places and frame what there is to find. Each photo completes a mission.",
   "log.habitats": "Habitats",
   "bar.island": "Island controls",

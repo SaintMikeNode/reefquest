@@ -466,7 +466,17 @@ div.pin { pointer-events: none; }
 .boat-bottom { left: 22px; right: 22px; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); display: flex; gap: 12px; align-items: flex-end; justify-content: space-between; pointer-events: none; }
 .boat-bottom > * { pointer-events: auto; }
 .boat-actions { display: flex; gap: 8px; align-items: center; }
-.logbook-panel { width: min(420px, 100%); padding: 12px 16px 14px; display: grid; gap: 10px; max-height: 46vh; overflow-y: auto; overflow-x: hidden; }
+.logbook-panel { width: min(420px, 100%); padding: 12px 16px 14px; display: flex; flex-direction: column; gap: 10px; max-height: 46vh; overflow: hidden; }
+/* The head and the Habitats / Photos tabs stay put; only the list under them scrolls, inside the
+   box (the whole panel used to scroll, tabs and all). Flex lets the fold shrink to the room left. */
+.logbook-panel > .fold-head { flex: none; }
+.logbook-panel > .fold { min-height: 0; display: flex; flex-direction: column; }
+.logbook-panel .fold-inner { min-height: 0; flex: 1 1 auto; display: flex !important; flex-direction: column; }
+.logbook-panel .log-tabs { flex: none; }
+.log-scroll { min-height: 0; flex: 1 1 auto; overflow-y: auto; overflow-x: hidden; display: grid; align-content: start; gap: 10px; }
+/* Computers: the bar sits in the panel's side padding, beside the content, never past the box's edge.
+   (In the phone dock the panel has no padding, and phones draw their bar over the content.) */
+@media (min-width: 761px) { .log-scroll { margin-right: -10px; padding-right: 10px; } }
 .checklist { display: grid; grid-template-columns: 1fr 1fr; gap: 5px 14px; font-size: 13.5px; }
 .checklist span { display: inline-flex; align-items: center; gap: 8px; color: var(--hud-muted); }
 .checklist span.done { color: var(--hud-text); }
@@ -965,6 +975,8 @@ html.lite .window, html.lite .hero-cards .card, html.lite .sea-bg .figure { -web
   .panel::-webkit-scrollbar-thumb:hover, .panel ::-webkit-scrollbar-thumb:hover { background-color: rgba(255, 255, 255, 0.38); }
   .panel::-webkit-scrollbar-button, .panel ::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
   .panel::-webkit-scrollbar-corner, .panel ::-webkit-scrollbar-corner { background: transparent; }
+  /* A panel's own bar stops short of its rounded corners, so it never runs out of the box. */
+  .panel::-webkit-scrollbar-track { margin-block: calc(var(--r-l, 22px) - 4px); }
 }
 /* Photos of places (ui/PhotoStrip.tsx): a 3:2 photo with rounded corners, thumbnails to switch, and a
    caption with the species, where it was taken and the credit the license asks for. */
@@ -1080,7 +1092,7 @@ html.lite .ltabs-strip { -webkit-backdrop-filter: none; backdrop-filter: none; b
 /* The liquid panel isn't a .panel: give its scroll area the same slim scrollbar. */
 @supports selector(::-webkit-scrollbar) {
   .ltabs-content::-webkit-scrollbar { width: 11px; }
-  .ltabs-content::-webkit-scrollbar-track { background: transparent; }
+  .ltabs-content::-webkit-scrollbar-track { background: transparent; margin-block: 6px; }
   .ltabs-content::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border: 4px solid transparent; border-radius: 999px; background-clip: padding-box; }
   .ltabs-content::-webkit-scrollbar-thumb:hover { background-color: rgba(255, 255, 255, 0.38); }
   .ltabs-content::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
@@ -1513,7 +1525,7 @@ html.lite .org-more, html.lite .org-toggle svg { transition: none; }
   .back-btn { min-width: 0; }
   .plate-actions .back-btn { max-width: 100%; }
   .back-btn .icon { flex: none; }
-  .back-btn .lbl { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .back-btn .lbl { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.35; }
   .tools { gap: 3px; }
   .tools .hbtn.icon-only { padding: 8px; }
   .hud.tools .lang.chips { gap: 3px; }
@@ -1556,6 +1568,14 @@ html.lite .org-more, html.lite .org-toggle svg { transition: none; }
 /* A short window: the sounder panel scrolls inside itself instead of running into the action
    buttons under it (it used to cover them below about 650 px of height). */
 @media (min-width: 761px) { .hud-right.sounder { max-height: calc(100% - 72px - 92px); overflow-y: auto; } }
+/* Computers 1100 px and wider: the sounder stands in the bottom right corner, level with the
+   logbook in the bottom left (Tulio: HUD consistency); it folds open upward. The dock's right
+   column is then at least as wide as the sounder, so the centered buttons and controls card never
+   run under it. Narrower windows keep it top right (no room for three columns at the bottom). */
+@media (min-width: 1100px) {
+  .hud-right.sounder { top: auto; right: 22px; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); max-height: calc(100% - 18px - 190px); }
+  .boat-bottom { grid-template-columns: minmax(300px, 1fr) auto minmax(264px, 1fr); }
+}
 
 /* Phones: "tap the water to sail there" (boat/BoatHud.tsx TapHint). A ripple on the water and a
    small label; it takes no taps, and goes away after the first tap on the water. */
@@ -1716,6 +1736,12 @@ html.lite .org-more, html.lite .org-toggle svg { transition: none; }
 .boat-actions > .hbtn { min-width: 0; overflow: hidden; }
 .boat-actions > .hbtn > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .boat-actions > .hbtn > .icon { flex: none; }
+/* The dock's buttons are a matched pair (Tulio: "consistency"): equal widths (the widest label
+   sets both), labels centered, the same weight. The label clips only to end in "…", so its line
+   box is tall enough for descenders (line-height 1 cut the g of "agua"). */
+.boat-actions { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); align-items: center; }
+.boat-actions > .hbtn { justify-content: center; font-weight: 600; }
+.boat-actions > .hbtn > span { line-height: 1.35; }
 @media (max-width: 760px) {
   /* Phones: the way back to the surface is the short label ("Superficie"), which fits beside the tools. */
   .back-btn.surface-back .back-long { display: none; }
@@ -1850,7 +1876,7 @@ html.lite .org-more, html.lite .org-toggle svg { transition: none; }
   /* The icon sits in an S pill that fills in for the open sheet. */
   .scene-nav .ind { display: grid; place-items: center; width: 54px; height: var(--pill-s); border-radius: 999px; transition: background-color 0.25s ease, color 0.25s ease; }
   .scene-nav .ind > svg { width: 20px; height: 20px; }
-  .scene-nav .lbl { max-width: 100%; font-size: 11.5px; font-weight: 600; line-height: 1.2; letter-spacing: 0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .scene-nav .lbl { max-width: 100%; font-size: 11.5px; font-weight: 600; line-height: 1.35; letter-spacing: 0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .scene-nav [aria-pressed="true"] { color: var(--white); }
   .scene-nav [aria-pressed="true"] .ind { background: rgba(127, 190, 255, 0.2); color: #bfe0ff; }
   .scene-nav > :active .ind { transform: scale(0.94); }
