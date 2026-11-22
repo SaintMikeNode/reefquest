@@ -1418,6 +1418,16 @@ html.lite .pc-ring { animation: none; transform: rotateX(-10deg) rotateY(-22deg)
 .ltabs.full .ltabs-inner { padding: 0; }
 @media (max-width: 760px), (pointer: coarse) { .ltabs.full .ltabs-content { padding-right: clamp(16px, 3.4vw, 40px); } }
 @media (max-width: 420px) { .ltabs.full .ltabs-tab { font-size: 15px; gap: 7px; padding: 0 8px; } }
+/* On arrival the closed tab's label pulses three times (brighter, a touch bigger), after the page
+   curtain, so it reads as something to press. Transform and color on a small label only. */
+@keyframes ltabs-hint {
+  0%, 100% { transform: none; color: rgba(214, 228, 245, 0.72); }
+  50% { transform: scale(1.06); color: #ffffff; }
+}
+.ltabs.full.hinting .ltabs-tab[aria-selected="false"] { animation: ltabs-hint 0.8s ease-in-out 1s 3; }
+.ltabs.full.hinting .ltabs-tab[aria-selected="false"] svg { animation: ltabs-hint-icon 0.8s ease-in-out 1s 3; }
+@keyframes ltabs-hint-icon { 50% { color: #7fc4ff; } }
+@media (prefers-reduced-motion: reduce) { .ltabs.full.hinting .ltabs-tab, .ltabs.full.hinting .ltabs-tab svg { animation: none; } }
 /* A tab's own heading, inside the panel. */
 .pane-head { padding: 2px 0 4px; }
 .pane-head .eyebrow { margin-bottom: 12px; }

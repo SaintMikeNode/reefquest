@@ -50,6 +50,15 @@ export function LiquidTabs({ tabs, active, onSelect, label, page = false, childr
   const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const [blob, setBlob] = useState<{ x: number; w: number } | null>(null);
   const [dir, setDir] = useState(1);
+  // Page size: on arrival the other tab's label pulses a few times so people see it can be opened
+  // (Tulio: "Lecciones" didn't read as clickable). CSS does the pulse; this ends it after ~3.8 s or
+  // at the first press.
+  const [hinting, setHinting] = useState(page);
+  useEffect(() => {
+    if (!hinting) return;
+    const t = window.setTimeout(() => setHinting(false), 3800);
+    return () => clearTimeout(t);
+  }, [hinting]);
 
   // The open tab's place in the row (numbers, not the tabs array: a new array each parent render
   // would re-measure and re-observe every time).
@@ -87,6 +96,7 @@ export function LiquidTabs({ tabs, active, onSelect, label, page = false, childr
   }, [page]);
 
   const select = (id: string) => {
+    setHinting(false);
     if (id === active) return;
     setDir(tabs.findIndex((t) => t.id === id) > tabs.findIndex((t) => t.id === active) ? 1 : -1);
     onSelect(id);
@@ -100,7 +110,7 @@ export function LiquidTabs({ tabs, active, onSelect, label, page = false, childr
   };
 
   return (
-    <div ref={root} className={page ? "ltabs full" : "ltabs"}>
+    <div ref={root} className={page ? `ltabs full${hinting ? " hinting" : ""}` : "ltabs"}>
       <svg aria-hidden="true" className="ltabs-defs">
         <defs>
           <filter id={gooId} x="-10%" y="-10%" width="120%" height="120%" colorInterpolationFilters="sRGB">

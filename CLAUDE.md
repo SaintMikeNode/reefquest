@@ -161,7 +161,8 @@ place name gives NOAA's alert wording. All of it follows the selected date and i
   two-line title, with the islands in two rows), `LearnHub` ("Aprende": the heat data and the lessons as two liquid tabs, Tulio's call to merge
   them; `LiquidTabs page` is the page-size version of the tabs on the 3D layers box: only the top of
   the panel goes through the goo filter, no height or blur animation; switching tabs rewrites the
-  address with `replaceState` and plays no curtain) with its two panes `HeatPage` (island comparison
+  address with `replaceState` and plays no curtain); on arrival the closed tab's label pulses three times (from 1 s, after the curtain;
+  brighter and 6% bigger; ends at the first press; Tulio: "Lecciones" didn't read as clickable) with its two panes `HeatPage` (island comparison
   chart, worst years, alert scale) and `LearnPage` (lessons), `SupportPage` ("Cómo ayudar": the
   conservation organizations by island from `src/content/support.ts`; every statement comes from the
   organization's own site, read on `SUPPORT_CHECKED`; only organizations with a working website; the
