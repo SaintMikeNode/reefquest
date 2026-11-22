@@ -13,6 +13,7 @@ const COLORS: Record<MissionType, string> = {
   "whale-shark": "#8fc1ff",
   turtles: "#79e2b8",
   "reef-sharks": "#ffa78f",
+  stingrays: "#ff9ec4",
   wreck: "#f2c078",
   divers: "#c3b4ff",
 };

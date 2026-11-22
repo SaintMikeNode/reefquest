@@ -9,6 +9,7 @@ import { useBoat, type MissionType } from "./boatStore";
 import { subject, zonePlaces, type ZonePlace } from "./places";
 import { underwater, WATER, WATER_GLSL } from "./props";
 import { diverGeometry, diverMaterial } from "./divers";
+import { rayGeometry, rayMaterial } from "./rays";
 import { missionRings, RING_DONE, RING_IDLE, RING_INSIDE } from "./missionRings";
 import { buildWreck } from "./wreck";
 import { floorY, hash, heightAtXZ, type Zone } from "./zone";
@@ -28,6 +29,8 @@ import { floorY, hash, heightAtXZ, type Zone } from "./zone";
 //  "reef-sharks"  Caribbean reef sharks over the sand by the bait bucket their dive is named for.
 //                 Go under and they circle you.
 //  wrecks         The ship on the seafloor (wreck.ts) with a school of fish living on it.
+//  "stingrays"    Stingray Point (Utila): stingrays gliding low over the sand channel and settling
+//                 on it, and a spotted eagle ray cruising past, as the dive guides describe.
 //  "divers"       Every plain dive site (a mooring and nothing else documented): a small group of
 //                 scuba divers on the reef, found the way dive boats find theirs, by the bubbles
 //                 breaking the surface. Go under and they swim over and circle you.
@@ -46,7 +49,7 @@ export const CONTACT_R = 90;
 /** From this far out the HUD says the whale sharks are ahead and how to go in. */
 export const APPROACH_R = 240;
 const BOIL_R = 20;
-const SLOW = 1.55; // m/s (3 knots): the most the boat may do inside the contact zone
+const SLOW = 5.14; // m/s (10 knots): the most the boat may do inside the contact zone (3 was too hard to play, Tulio)
 /** From how far (m) each scene is drawn: the birds and white water of a boil are what captains
  *  look for from a distance; animals below the surface and wrecks are lost in the water sooner. */
 const SEE_BOIL = 1300, SEE_SWIMMERS = 380, SEE_REEF = 300;
@@ -334,13 +337,14 @@ export function Wildlife({ zone }: { zone: Zone }) {
   const boils = useMemo(() => scenesIn(zone, "whale-shark").slice(0, 1), [zone]);
   const turtles = useMemo(() => scenesIn(zone, "turtles").slice(0, 1), [zone]);
   const sharks = useMemo(() => scenesIn(zone, "reef-sharks").slice(0, 1), [zone]);
+  const rays = useMemo(() => scenesIn(zone, "stingrays"), [zone]);
   const wrecks = useMemo(() => zonePlaces(zone).filter((p) => p.site.wreck), [zone]);
   const dives = useMemo(() => zonePlaces(zone).filter((p) => p.site.kind === "dive" && !p.site.scene && !p.site.wreck), [zone]);
   // Things seen only from under the water: within `r` of one the mission is on (the HUD says to
   // go under), and looking from below puts it in the logbook.
   const below = useMemo(
     () =>
-      [...turtles, ...sharks, ...wrecks, ...dives].map((p) => {
+      [...turtles, ...sharks, ...rays, ...wrecks, ...dives].map((p) => {
         const L = p.site.wreck?.length_m ?? 0;
         return {
           id: p.site.id, x: p.x, z: p.z,
@@ -349,7 +353,7 @@ export function Wildlife({ zone }: { zone: Zone }) {
           look: L ? { y: floorY(p.floor ?? heightAtXZ(zone, p.x, p.z)) + L * 0.12, dist: Math.max(16, L * 0.48), yaw: p.yaw ?? 0 } : null,
         };
       }),
-    [turtles, sharks, wrecks, dives, zone],
+    [turtles, sharks, rays, wrecks, dives, zone],
   );
   useEffect(() => {
     useBoat.setState({ wild: [...boils.map((b) => b.site.id), ...below.map((b) => b.id)] });
@@ -390,6 +394,9 @@ export function Wildlife({ zone }: { zone: Zone }) {
       ))}
       {sharks.map((b) => (
         <ReefSharks key={b.site.id} id={b.site.id} zone={zone} cx={b.x} cz={b.z} />
+      ))}
+      {rays.map((b) => (
+        <Stingrays key={b.site.id} id={b.site.id} zone={zone} cx={b.x} cz={b.z} />
       ))}
       {dives.map((b) => (
         <Divers key={b.site.id} id={b.site.id} zone={zone} cx={b.x} cz={b.z} depth={b.site.depth_m} />
@@ -722,6 +729,105 @@ function ReefSharks({ id, zone, cx, cz }: { id: string; zone: Zone; cx: number; 
   );
 }
 
+/** Where whatever comes close gathers under the water: a point a few meters in front of the
+ *  snorkeler's mask, as far as it takes to fill the view (a phone held upright sees only a meter or
+ *  two to each side), drifting after the view unhurried. `s` keeps it between frames. Returns the
+ *  view's forward (f) and side (sx, sz) directions and how wide an oval (RA) fits in it. */
+function frontAnchor(s: { ax: number; az: number; fx: number; fz: number }, cam: THREE.Camera, under: boolean, k: number, dt: number, far = 0) {
+  const pc = cam as THREE.PerspectiveCamera;
+  const tanH = Math.tan(((pc.fov ?? 50) * Math.PI) / 360) * (pc.aspect ?? 1.6);
+  const D = Math.min(10, Math.max(6, 2.2 / tanH)) + far, RA = Math.min(6, Math.max(2.2, tanH * D * 1.15));
+  _p.set(0, 0, -1).applyQuaternion(cam.quaternion);
+  const fl = Math.hypot(_p.x, _p.z) || 1;
+  // Only under the water (above it this is the chase camera, far behind the boat); on the first
+  // frames down it starts right in front of the mask.
+  if (under) {
+    const ease = k < 0.05 ? 1 : Math.min(1, dt * 0.5);
+    s.ax += (cam.position.x + (_p.x / fl) * D - s.ax) * ease;
+    s.az += (cam.position.z + (_p.z / fl) * D - s.az) * ease;
+    s.fx += (_p.x / fl - s.fx) * ease;
+    s.fz += (_p.z / fl - s.fz) * ease;
+  }
+  const fn = Math.hypot(s.fx, s.fz) || 1, fx = s.fx / fn, fz = s.fz / fn;
+  return { fx, fz, sx: fz, sz: -fx, RA };
+}
+/**
+ * Stingray Point: stingrays gliding low over the sand channel, now and then settling on the sand
+ * for a while, and a spotted eagle ray cruising past higher up, flapping slowly (both are what the
+ * dive guides list there; the species of stingray isn't named, so the shapes are illustrative).
+ * Under the water they come to the sand in front of the mask and cross it, below eye level, the
+ * eagle ray a little farther out. Two draw calls, ~300 triangles a ray.
+ */
+function Stingrays({ id, zone, cx, cz }: { id: string; zone: Zone; cx: number; cz: number }) {
+  const N = pick(2, 3, 5);
+  const time = useMemo(() => ({ value: 0 }), []);
+  const rays = useMemo(() => {
+    const im = new THREE.InstancedMesh(rayGeometry("stingray"), rayMaterial(time, "stingray"), N);
+    im.frustumCulled = false;
+    im.visible = false;
+    return im;
+  }, [time, N]);
+  const eagle = useMemo(() => {
+    const m = new THREE.Mesh(rayGeometry("eagle"), rayMaterial(time, "eagle"));
+    m.frustumCulled = false;
+    m.visible = false;
+    return m;
+  }, [time]);
+  useEffect(() => () => free(rays, eagle), [rays, eagle]);
+  useEffect(() => () => untrack(`sr:${id}:`), [id]);
+  const closeIn = useCloseIn(id);
+  const st = useRef({ ang: [] as number[], e: 0, ax: cx, az: cz, fx: 0, fz: -1 });
+  useFrame((fr, dtRaw) => {
+    const on = boatDist(cx, cz) < SEE_REEF;
+    rays.visible = eagle.visible = on;
+    if (!on) return;
+    const dt = Math.min(dtRaw, 0.1), t = fr.clock.elapsedTime, k = closeIn(dt), s = st.current;
+    const { under } = useBoat.getState();
+    time.value = t;
+    const { fx, fz, sx, sz, RA } = frontAnchor(s, fr.camera, under, k, dt);
+    const eye = fr.camera.position.y;
+    for (let i = 0; i < N; i++) {
+      // Now and then one settles on the sand for a while and stops (only while far: up close they
+      // keep moving).
+      const rest = THREE.MathUtils.smoothstep(Math.sin(t * 0.05 + i * 1.9), 0.75, 0.95) * (1 - k);
+      // Each its own slow loop over the sand near the place; close in, spread along an oval in
+      // front of the mask, low, so they glide across the sand you are looking at.
+      const dir = i % 2 ? 1 : -1;
+      const a = (s.ang[i] = (s.ang[i] ?? i * 2.4) + dir * dt * ((0.28 + 0.2 * k) / (14 * (1 - k) + 4 * k)) * (0.8 + hash(i * 3) * 0.4) * (1 - rest));
+      const rf = 8 + hash(i * 7) * 14, ox = cx + (hash(i * 5) - 0.5) * 30, oz = cz + (hash(i * 11) - 0.5) * 30;
+      const ca = Math.cos(a), sa = Math.sin(a), rb = 1.6 + i * 0.5;
+      const x = (ox + ca * rf) * (1 - k) + (s.ax + sx * ca * RA + fx * (sa * rb - 1)) * k;
+      const z = (oz + sa * rf) * (1 - k) + (s.az + sz * ca * RA + fz * (sa * rb - 1)) * k;
+      const dx = -sa * rf * dir * (1 - k) + (-sx * sa * RA + fx * ca * rb) * dir * k;
+      const dz = ca * rf * dir * (1 - k) + (-sz * sa * RA + fz * ca * rb) * dir * k;
+      const bottom = floorY(heightAtXZ(zone, x, z));
+      const glide = bottom + 0.35 + 0.5 * hash(i * 13) + Math.sin(t * 0.4 + i) * 0.12;
+      const near = Math.max(bottom + 0.3, Math.min(glide + 0.6, eye - 1.1 - i * 0.25));
+      const y = THREE.MathUtils.lerp(glide * (1 - k) + near * k, bottom + 0.07, rest);
+      const size = 1.15 + hash(i * 17) * 0.4;
+      place(rays, i, x, y, z, Math.atan2(dx, dz), 0, 0.08 * Math.sin(t * 0.6 + i) * (1 - rest), size);
+      trackSubject(`sr:${id}:${i}`, id, x, y, z, 20);
+    }
+    rays.instanceMatrix.needsUpdate = true;
+    // The eagle ray: a wide loop a few meters up; close in, a pass across the view farther out.
+    s.e += dt * (0.9 + 0.2 * k) / (34 * (1 - k) + (RA + 3) * k);
+    const ca = Math.cos(s.e), sa = Math.sin(s.e);
+    const ex = (cx + ca * 34) * (1 - k) + (s.ax + sx * ca * (RA + 3) + fx * (4 + sa * 2)) * k;
+    const ez = (cz + sa * 30) * (1 - k) + (s.az + sz * ca * (RA + 3) + fz * (4 + sa * 2)) * k;
+    const edx = -sa * 34 * (1 - k) + (-sx * sa * (RA + 3) + fx * ca * 2) * k, edz = ca * 30 * (1 - k) + (-sz * sa * (RA + 3) + fz * ca * 2) * k;
+    const eb = floorY(heightAtXZ(zone, ex, ez));
+    const ey = Math.min(-1.5, Math.max(eb + 2.5, (eb + 3.5) * (1 - k) + (eye + 0.4) * k));
+    place(eagle, 0, ex, ey + Math.sin(t * 0.5) * 0.3, ez, Math.atan2(edx, edz), 0, -0.15 * Math.sin(s.e), 2.3);
+    trackSubject(`sr:${id}:eagle`, id, ex, ey, ez, 22);
+  });
+  return (
+    <>
+      <primitive object={rays} />
+      <primitive object={eagle} />
+    </>
+  );
+}
+
 /** Looks for the divers of a group: wetsuit, fin and tank colors. */
 const KITS: [string, string, string][] = [["#2f5f9a", "#f2c230", "#f2c230"], ["#2a6f78", "#e8edf2", "#c9d1d8"], ["#3a4f8a", "#f0663c", "#f2c230"], ["#38506a", "#2f9bd8", "#c9d1d8"]];
 
@@ -780,25 +886,9 @@ function Divers({ id, zone, cx, cz, depth }: { id: string; zone: Zone; cx: numbe
     if (!near) return;
     const dt = Math.min(dtRaw, 0.1), t = fr.clock.elapsedTime, k = closeIn(dt), s = st.current;
     time.value = t;
-    // Close in, the loop becomes a flat oval a few meters in front of the snorkeler's mask, as wide
-    // as the view (a phone held upright sees only a meter or two to each side), so the group crosses
-    // the view back and forth and is never behind you. It drifts after the view, unhurried: they
-    // come over to where you look.
-    const cam = fr.camera as THREE.PerspectiveCamera;
-    const tanH = Math.tan(((cam.fov ?? 50) * Math.PI) / 360) * (cam.aspect ?? 1.6);
-    const D = Math.min(10, Math.max(6, 2.2 / tanH)), RA = Math.min(6, Math.max(2.2, tanH * D * 1.15));
-    _p.set(0, 0, -1).applyQuaternion(cam.quaternion);
-    const fl = Math.hypot(_p.x, _p.z) || 1, ffx = _p.x / fl, ffz = _p.z / fl;
-    // Only under the water (above it this is the chase camera, far behind the boat); on the first
-    // frames down it starts right in front of the mask.
-    if (under) {
-      const ease = k < 0.05 ? 1 : Math.min(1, dt * 0.5);
-      s.ax += (cam.position.x + ffx * D - s.ax) * ease;
-      s.az += (cam.position.z + ffz * D - s.az) * ease;
-      s.fx += (ffx - s.fx) * ease;
-      s.fz += (ffz - s.fz) * ease;
-    }
-    const fn = Math.hypot(s.fx, s.fz) || 1, fx = s.fx / fn, fz = s.fz / fn, sx = fz, sz = -fx;
+    // Close in, the loop becomes a flat oval in front of the snorkeler's mask, as wide as the view,
+    // so the group crosses it back and forth and is never behind you.
+    const { fx, fz, sx, sz, RA } = frontAnchor(s, fr.camera, under, k, dt);
     const RB = 2.2, Reff = loopR * (1 - k) + 4 * k;
     s.a += dt * ((0.32 + 0.28 * k) / Reff); // ~0.3 m/s, an easy dive pace; a little livelier up close
     for (let i = 0; i < N; i++) {
@@ -813,7 +903,7 @@ function Divers({ id, zone, cx, cz, depth }: { id: string; zone: Zone; cx: numbe
       const bottom = floorY(Math.min(-3, heightAtXZ(zone, x, z)));
       const want = depth ? -Math.min(depth, 22) : bottom + 2;
       const cruise = Math.max(bottom + 1.4, Math.min(-2.5, want));
-      const level = Math.max(bottom + 1, Math.min(-1.4, cam.position.y - 0.3 - i * 0.35));
+      const level = Math.max(bottom + 1, Math.min(-1.4, fr.camera.position.y - 0.3 - i * 0.35));
       const y = cruise * (1 - k) + level * k + Math.sin(t * 0.5 + i * 1.7) * 0.25;
       const yaw = Math.atan2(dx, dz);
       s.pos[i] = { x, y, z, yaw };

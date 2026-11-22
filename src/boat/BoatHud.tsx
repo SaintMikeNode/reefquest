@@ -12,7 +12,7 @@ import { BENTHIC, GEOMORPHIC } from "../scenes/materials";
 import { useScene } from "../scenes/sceneStore";
 import { fmtLat, fmtLon, SiteCard } from "../scenes/SiteCard";
 import { AlertChip } from "../ui/AlertChip";
-import { IconBack, IconBook, IconCamera, IconCast, IconCheck, IconClose, IconDive, IconDownload, IconShark, IconPhotos, IconSonar, IconSurface, IconTools, IconTurtle, IconWhaleShark, IconWreck, IconDiver } from "../ui/Icons";
+import { IconBack, IconBook, IconCamera, IconCast, IconCheck, IconClose, IconDive, IconDownload, IconShark, IconPhotos, IconSonar, IconSurface, IconTools, IconTurtle, IconWhaleShark, IconWreck, IconDiver, IconStingray } from "../ui/Icons";
 import { PhotoStrip, usePhotos } from "../ui/PhotoStrip";
 import { panelMotion } from "../ui/motionPresets";
 import { Fold } from "../ui/Fold";
@@ -890,6 +890,7 @@ function PlaceMark({ kind }: { kind: MissionType | "story" | "dive" }) {
   if (kind === "reef-sharks") return <IconShark />;
   if (kind === "wreck") return <IconWreck />;
   if (kind === "divers") return <IconDiver />;
+  if (kind === "stingrays") return <IconStingray />;
   return <i />;
 }
 
@@ -926,11 +927,17 @@ function MissionTag({ type, name, line, warn, steps, done, onRead, readLabel, re
 }
 
 /**
- * Where the top stack (mission tag, arrival tag, messages) goes on computers: centered in the room
- * between the title plate's text and the panel on the right when that room is wide enough for a
- * mission tag, otherwise left-aligned right under the plate. Zone names are long ("Esquina noreste
- * · Pumpkin Hill"), and a centered stack ran into them. Phones use the CSS (above the dock).
+ * Where the top stack (mission tag, arrival tag, messages) goes on computers: always centered on
+ * the screen (Tulio: it drifted right of center beside long zone names). Beside the title plate
+ * when there is room for both: the stack gets the room left between the title (at least
+ * PLATE_MIN, where a long name like "Esquina noreste · Pumpkin Hill" breaks onto two lines) and
+ * any panel at the top right, up to STACK_MAX, and the title is held to its side of the stack, so
+ * long names wrap rather than run under it. A narrower window puts the stack, still centered,
+ * under the title. Phones use the CSS (above the dock).
  */
+// The title's narrowest at its full size and, when that leaves the stack too little room, at the
+// slightly smaller "tight" size; the stack needs ~480 px for a mission tag (icon, two lines, button).
+const PLATE_MIN = 380, PLATE_TIGHT = 300, STACK_MIN = 480, STACK_MAX = 640;
 function useStackRoom(ref: React.RefObject<HTMLDivElement | null>, key: string) {
   useLayoutEffect(() => {
     const stack = ref.current;
@@ -938,45 +945,45 @@ function useStackRoom(ref: React.RefObject<HTMLDivElement | null>, key: string) 
     const root = stack.parentElement!;
     const place = () => {
       const st = stack.style;
+      const plate = root.querySelector<HTMLElement>(".plate");
       if (window.innerWidth <= 760) {
         st.left = st.right = st.top = st.justifyItems = "";
+        stack.classList.remove("narrow");
+        if (plate) (plate.style.maxWidth = ""), plate.classList.remove("tight");
         return;
       }
       const box = root.getBoundingClientRect();
-      const plate = root.querySelector(".plate");
       // The panel on the right, if it stands at the top (the sounder moves to the bottom corner on wide screens).
       const right = [...root.querySelectorAll(".hud-right, .site-card")].find((el) => el.getBoundingClientRect().top - box.top < box.height / 2);
-      // The plate's text, not its box: walk its text nodes.
-      let textRight = 0, textBottom = 0;
-      if (plate) {
-        const walker = document.createTreeWalker(plate, NodeFilter.SHOW_TEXT);
-        const range = document.createRange();
-        for (let n = walker.nextNode(); n; n = walker.nextNode()) {
-          if (!n.textContent?.trim()) continue;
-          range.selectNodeContents(n);
-          const r = range.getBoundingClientRect();
-          if (r.width) (textRight = Math.max(textRight, r.right - box.left)), (textBottom = Math.max(textBottom, r.bottom - box.top));
-        }
-      }
-      const rightEdge = right ? right.getBoundingClientRect().left - box.left : box.width - 18;
-      const free = rightEdge - textRight - 40;
-      if (free >= 470) {
-        st.left = `${Math.round(textRight + 20)}px`;
-        st.right = `${Math.round(box.width - rightEdge + 20)}px`;
+      const plateLeft = plate ? plate.getBoundingClientRect().left - box.left : 22;
+      const rightNeed = (right ? box.width - (right.getBoundingClientRect().left - box.left) : 18) + 20;
+      const roomFor = (plateW: number) => Math.min(STACK_MAX, box.width - 2 * Math.max(plateLeft + plateW + 20, rightNeed));
+      const tight = roomFor(PLATE_MIN) < STACK_MIN;
+      const room = roomFor(tight ? PLATE_TIGHT : PLATE_MIN);
+      st.justifyItems = "center";
+      plate?.classList.toggle("tight", tight && room >= STACK_MIN);
+      // Narrower than a mission tag needs: the tag's story button shows its icon alone.
+      stack.classList.toggle("narrow", room < STACK_MIN && box.width - 2 * Math.max(22, rightNeed) < STACK_MIN);
+      if (room >= STACK_MIN) {
+        // Beside the title, centered; the title keeps to its side (it depends only on the room, not
+        // on what the stack shows, so it doesn't rewrap as messages come and go).
+        const inset = Math.round((box.width - room) / 2);
+        st.left = st.right = `${inset}px`;
         st.top = "96px";
-        st.justifyItems = "center";
+        if (plate) plate.style.maxWidth = `${Math.floor(Math.min(460, box.width * 0.6, inset - 20 - plateLeft))}px`;
       } else {
-        st.left = "22px";
-        st.right = `${Math.round(box.width - rightEdge + 18)}px`;
-        st.top = `${Math.round(textBottom + 16)}px`;
-        st.justifyItems = "start";
+        // No room beside it: under the title, still centered on the screen.
+        if (plate) plate.style.maxWidth = "";
+        const inset = Math.max(22, rightNeed);
+        st.left = st.right = `${Math.round(inset)}px`;
+        st.top = `${Math.round((plate ? plate.getBoundingClientRect().bottom - box.top : 120) + 14)}px`;
       }
     };
     place();
     const ro = new ResizeObserver(place);
-    const plate = stack.parentElement?.querySelector(".plate");
+    const plate = root.querySelector(".plate");
     if (plate) ro.observe(plate);
-    ro.observe(stack.parentElement!);
+    ro.observe(root);
     return () => ro.disconnect();
   }, [ref, key]);
 }

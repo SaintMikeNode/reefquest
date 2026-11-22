@@ -14,7 +14,7 @@ export const WATER = {
 
 /** A look for the water around something to find, so each place has its own (colors at eye level
  *  and straight down, and how far one sees compared with reef water). `null` is plain reef water. */
-export type WaterMood = "whale-shark" | "turtles" | "reef-sharks" | "wreck";
+export type WaterMood = "whale-shark" | "turtles" | "reef-sharks" | "stingrays" | "wreck";
 export const MOODS: Record<WaterMood, { fog: THREE.Color; deep: THREE.Color; vis: number }> = {
   // Open blue water off the shelf: cobalt, very clear, falling away to near black.
   "whale-shark": { fog: new THREE.Color(0.02, 0.27, 0.62), deep: new THREE.Color(0.0, 0.02, 0.14), vis: 2.0 },
@@ -22,6 +22,8 @@ export const MOODS: Record<WaterMood, { fog: THREE.Color; deep: THREE.Color; vis
   turtles: { fog: new THREE.Color(0.05, 0.5, 0.56), deep: new THREE.Color(0.01, 0.2, 0.32), vis: 1.3 },
   // Twenty meters down on the sand: steel blue, dimmer.
   "reef-sharks": { fog: new THREE.Color(0.03, 0.2, 0.4), deep: new THREE.Color(0.0, 0.035, 0.12), vis: 1.25 },
+  // A sand channel through the reef, a few meters down: pale aqua over white sand, clear.
+  stingrays: { fog: new THREE.Color(0.07, 0.44, 0.52), deep: new THREE.Color(0.02, 0.18, 0.28), vis: 1.45 },
   // Thirty meters down beside a hull: deep blue-green, clear enough to take the ship in.
   wreck: { fog: new THREE.Color(0.02, 0.2, 0.34), deep: new THREE.Color(0.0, 0.03, 0.1), vis: 2.0 },
 };

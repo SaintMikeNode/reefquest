@@ -23,7 +23,7 @@ export interface Site {
   date?: string;
   /** Animals documented at this place, shown in the boat mode (boat/wildlife.tsx). A place with a
    *  scene in open water gets no mooring buoy. */
-  scene?: "whale-shark" | "turtles" | "reef-sharks";
+  scene?: "whale-shark" | "turtles" | "reef-sharks" | "stingrays";
   /** A shipwreck to find on the seafloor in the boat mode (boat/wreck.ts): its length and how it
    *  lies, as the sources describe it. It is laid at `depth_m`. */
   wreck?: { length_m: number; pose: "upright" | "side" | "pieces" };
@@ -57,6 +57,7 @@ const REEFSMART_AGUILA: Source = { label: "Reef Smart Guides: El Aguila", url: "
 const ANDRADI_2016: Source = { label: "Andradi-Brown et al. (2016), PLOS ONE 11(6): survey sites (S1 Table)", url: "https://doi.org/10.1371/journal.pone.0156641" };
 const ANDRADI_2017: Source = { label: "Andradi-Brown et al. (2017), Royal Society Open Science 4: survey sites", url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC5451808" };
 const LAVERICK_2017: Source = { label: "Laverick et al. (2017), PLOS ONE 12(8)", url: "https://doi.org/10.1371/journal.pone.0183075" };
+const REEFBUILDERS_2017: Source = { label: "Reef Builders (2017): Seven of our favorite dive sites in Roatán", url: "https://reefbuilders.com/2017/05/29/seven-dive-sites-roatan" };
 const WEDIVE_UTILA: Source = { label: "We-Dive Utila: dive sites", url: "https://www.wediveutila.com/utila-dive-sites" };
 const UDC_HALLIBURTON: Source = { label: "Utila Dive Center: the Halliburton wreck", url: "https://utiladivecenter.wordpress.com/2011/07/20/the-halliburton-wreck/" };
 const HALLIBURTON_POSITION: Source = { label: "Position: a diver's log of the Halliburton", url: "https://divemasteraustin.com/dive-sites/the-haliburton" };
@@ -201,7 +202,29 @@ export const SITES: Site[] = [
   },
   { id: "deep-seaquest", island: "roatan", name: "Deep Seaquest", lat: 16.28713, lon: -86.60368, kind: "dive", depth_m: 12, sources: [RMP_MOORINGS] },
   { id: "chiefs-quarters", island: "roatan", name: "Chief's Quarters", lat: 16.2943301, lon: -86.6021079, kind: "dive", sources: [RMP_MOORINGS] },
-  { id: "hole-in-the-wall", island: "roatan", name: "Hole in the Wall", lat: 16.3138371, lon: -86.5917933, kind: "dive", sources: [RMP_MOORINGS] },
+  {
+    id: "hole-in-the-wall",
+    island: "roatan",
+    name: "Hole in the Wall",
+    lat: 16.3138371,
+    lon: -86.5917933,
+    kind: "story",
+    scene: "stingrays",
+    title: { es: "Rayas en la arena, al pie de la pared", en: "Stingrays on the sand below the wall" },
+    body: {
+      es: [
+        "El buceo empieza en la parte menos profunda del arrecife: se nada por una grieta honda entre paredes altas y se sale arriba de una caída al azul. No es una cueva: siempre hay salida directa a la superficie.",
+        "Ahí se ven tortugas marinas, rayas descansando en la arena y, con suerte, un águila marina nadando más abajo.",
+        "Las fuentes no dicen qué especie de raya es; las del juego son ilustrativas.",
+      ],
+      en: [
+        "The dive starts on the shallowest part of the reef: you swim through a deep crevasse between towering walls and come out at the top of a drop-off into the blue. It isn't a cave: there is always direct access to the surface.",
+        "Sea turtles, stingrays resting on the sand and, with luck, an eagle ray flying below are seen there.",
+        "The sources don't name the stingray species; the ones in the game are illustrative.",
+      ],
+    },
+    sources: [REEFBUILDERS_2017, RMP_MOORINGS],
+  },
   { id: "spooky-channel", island: "roatan", name: "Spooky Channel", lat: 16.3393987, lon: -86.5644513, kind: "dive", sources: [RMP_MOORINGS] },
   { id: "marys-place", island: "roatan", name: "Mary's Place", lat: 16.3376598, lon: -86.4685934, kind: "dive", depth_m: 9, sources: [RMP_MOORINGS] },
 
@@ -306,7 +329,7 @@ export const SITES: Site[] = [
         "Vienen a comer. El atún aleta negra persigue peces pequeños hasta la superficie y el agua parece hervir; el tiburón ballena come en medio de ese «hervidero». Los capitanes lo encuentran buscando atunes que saltan y aves que vuelan en círculo.",
         "Los 95 tiburones identificados aquí medían entre 2 y 11 metros, y la mayoría eran machos jóvenes de paso. La especie está En Peligro (UICN) desde 2016.",
         "Las reglas de la isla: solo con esnórquel, sin tocarlos, máximo ocho nadadores por bote, y el bote no debe meterse en el hervidero. A veces también llegan delfines de dientes rugosos, tornillo o nariz de botella.",
-        "En el bote de ReefQuest puedes practicarlo: entra despacio a la zona de contacto y quédate fuera del hervidero (el límite de 3 nudos es una regla del juego). El punto en el mapa es una referencia: los encuentros ocurren en toda esta zona.",
+        "En el bote de ReefQuest puedes practicarlo: entra despacio a la zona de contacto y quédate fuera del hervidero (el límite de 10 nudos es una regla del juego). El punto en el mapa es una referencia: los encuentros ocurren en toda esta zona.",
       ],
       en: [
         "Between 1999 and 2011, 479 whale shark encounters were reported at Utila. Most were on the north side, near the edge of the shelf, and more than half at this north-east corner.",
@@ -314,7 +337,7 @@ export const SITES: Site[] = [
         "They come to eat. Blackfin tuna chase small fish to the surface and the water seems to boil; the whale shark feeds in the middle of that “boil”. Captains find it by looking for jumping tuna and circling birds.",
         "The 95 sharks identified here were 2 to 11 meters long, and most were young males passing through. The species has been Endangered (IUCN) since 2016.",
         "The island's rules: snorkel only, no touching, at most eight swimmers per boat, and the boat must not drive into the boil. Sometimes rough-toothed, spinner or bottlenose dolphins turn up too.",
-        "On the ReefQuest boat you can practice it: enter the contact zone slowly and stay out of the boil (the 3-knot limit is a rule of the game). The point on the map is a reference: encounters happen all over this area.",
+        "On the ReefQuest boat you can practice it: enter the contact zone slowly and stay out of the boil (the 10-knot limit is a rule of the game). The point on the map is a reference: encounters happen all over this area.",
       ],
     },
     sources: [FOX_2013, MCKINNEY_2017, MARALLIANCE_SHARKS, WSORC_2025, IUCN_2016, XRAY_WHALE_SHARKS, UTILA_GUIDE_WS, LAPRENSA_2012, YEATER_2008],
@@ -397,7 +420,29 @@ export const SITES: Site[] = [
   { id: "black-coral-wall", island: "utila", name: "Black Coral Wall", lat: 16.08306, lon: -86.917, kind: "dive", sources: [ANDRADI_2016, PADI("black-coral-wall", "Black Coral Wall")] },
   { id: "coral-view", island: "utila", name: "Coral View", lat: 16.08823, lon: -86.91095, kind: "dive", sources: [ANDRADI_2016] },
   { id: "little-bight", island: "utila", name: "Little Bight", lat: 16.07926, lon: -86.92942, kind: "dive", sources: [ANDRADI_2016] },
-  { id: "stingray-point", island: "utila", name: "Stingray Point", lat: 16.06891, lon: -86.95478, kind: "dive", sources: [ANDRADI_2016, PADI("sting-ray-point", "Sting Ray Point")] },
+  {
+    id: "stingray-point",
+    island: "utila",
+    name: "Stingray Point",
+    lat: 16.06891,
+    lon: -86.95478,
+    kind: "story",
+    scene: "stingrays",
+    title: { es: "Rayas en el canal de arena", en: "Stingrays in the sand channel" },
+    body: {
+      es: [
+        "En Stingray Point la cima del arrecife está a unos 1.5 a 7.5 metros, y un gran canal de arena empieza a unos 6 metros y baja hasta 40.",
+        "Rayas y águilas marinas manchadas suelen pasar o alimentarse en la arena. En el canal también viven caballitos de mar, anguilas jardineras, peces pipa y lenguados.",
+        "Las fuentes no dicen qué especie de raya es; las del juego son ilustrativas.",
+      ],
+      en: [
+        "At Stingray Point the top of the reef is at about 1.5 to 7.5 meters, and a large sand channel starts at about 6 meters and slopes down to 40.",
+        "Stingrays and spotted eagle rays often pass by or feed in the sand. Seahorses, garden eels, pipefish and flounder live in the channel too.",
+        "The sources don't name the stingray species; the ones in the game are illustrative.",
+      ],
+    },
+    sources: [WEDIVE_UTILA, PADI("sting-ray-point", "Sting Ray Point"), ANDRADI_2016],
+  },
   { id: "rocky-point", island: "utila", name: "Rocky Point", lat: 16.08784, lon: -86.88423, kind: "dive", sources: [ANDRADI_2017] },
   { id: "teds-point", island: "utila", name: "Ted's Point", lat: 16.08594, lon: -86.88851, kind: "dive", sources: [PADI("teds-point", "Ted's Point")] },
   { id: "moon-hole", island: "utila", name: "Moon Hole", lat: 16.08499, lon: -86.89334, kind: "dive", depth_m: 11, sources: [PADI("moon-hole", "Moon Hole")] },

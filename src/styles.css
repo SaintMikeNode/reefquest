@@ -287,6 +287,8 @@ ol.caveats li { margin: 0 0 12px; padding-left: 4px; }
 /* Title plate: kicker, name, coordinates, and the way back right under the name. */
 .plate { top: 18px; left: 22px; display: grid; justify-items: start; gap: 0; max-width: min(460px, 60vw); }
 .plate h1 { font-family: var(--sans); color: var(--white); font-size: 38px; font-weight: 700; line-height: 1.04; letter-spacing: -0.035em; margin: 4px 0 4px; text-shadow: 0 1px 14px rgba(0, 0, 0, 0.35); }
+/* Computers, a long zone name beside the centered top stack on a narrower window (BoatHud useStackRoom). */
+.plate.tight h1 { font-size: 32px; }
 .plate .coords { font-family: var(--mono); font-size: 11.5px; color: var(--hud-muted); letter-spacing: 0.01em; }
 .heat-status { margin-top: 10px; display: grid; grid-template-columns: 10px minmax(0, 1fr); gap: 9px; align-items: start; font-size: 13px; line-height: 1.35; color: var(--hud-text); max-width: 340px; text-shadow: 0 1px 8px rgba(0, 0, 0, 0.5); }
 .heat-status i { width: 10px; height: 10px; margin-top: 3px; background: var(--c); }
@@ -1627,6 +1629,11 @@ html.lite .org-more, html.lite .org-toggle svg { transition: none; }
    One column at the top center: the mission in range (or the plain arrival tag), then messages.
    Being one column, they can never cover each other. Centered with the grid, not a transform. */
 .top-stack { top: 96px; left: 12px; right: 12px; display: grid; justify-items: center; gap: 8px; }
+.top-stack > * { max-width: 100%; }
+/* A narrow window with a panel at the top right (BoatHud useStackRoom): the mission tag's story
+   button is its icon alone, as on phones, so the tag fits centered between the panels. */
+.top-stack.narrow .mission .hbtn { padding: 10px; }
+.top-stack.narrow .mission .hbtn .lbl { display: none; }
 /* The mission in range: its icon, the place on a line of its own with the steps done, what to do
    now, the way to its story. --m is the mission's own color; nothing else is colored. */
 .mission { --m: #8fc1ff; display: flex; align-items: center; gap: 12px; width: fit-content; max-width: min(640px, 100%); padding: 9px 10px 9px 10px; border-radius: 26px; pointer-events: auto; animation: rq-rise 0.35s var(--ease-out) both; }
@@ -1634,6 +1641,7 @@ html.lite .org-more, html.lite .org-toggle svg { transition: none; }
 .m-reef-sharks { --m: #ffa78f; }
 .m-wreck { --m: #f2c078; }
 .m-divers { --m: #c3b4ff; }
+.m-stingrays { --m: #ff9ec4; }
 .mission.warn { --m: #ffbf5e; }
 .mission-icon { flex: none; width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; color: var(--m); background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 255, 255, 0.16); transition: color 0.3s var(--ease-out); }
 .mission-icon .icon { width: 21px; height: 21px; }
@@ -1671,6 +1679,7 @@ html.lite .org-more, html.lite .org-toggle svg { transition: none; }
 .tag.k-reef-sharks { --m: #ffa78f; }
 .tag.k-wreck { --m: #f2c078; }
 .tag.k-divers { --m: #c3b4ff; }
+.tag.k-stingrays { --m: #ff9ec4; }
 .tag.k-dive { font-weight: 500; }
 .tag.on .tag-mark { background: rgba(4, 16, 29, 0.1); color: #0a3f8f; }
 .tag-dist { font: 500 11px/1 var(--mono); color: #9db6d0; padding-left: 1px; }

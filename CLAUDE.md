@@ -147,7 +147,7 @@ place name gives NOAA's alert wording. All of it follows the selected date and i
 - `src/content/`: long-form bilingual content with sources: `sites.ts` (dive-site pins and their
   stories: Roatán 12, Utila 14, Guanaja 20. A place can carry `nameEs` (label in Spanish when it has
   no proper name), `approx` (shown as "approximate location"), `scene` (animals documented there,
-  drawn in the boat mode: `whale-shark`, `turtles`, `reef-sharks`) and `wreck` (length and how it
+  drawn in the boat mode: `whale-shark`, `turtles`, `reef-sharks`, `stingrays`) and `wreck` (length and how it
   lies, for the ship on the seafloor). Where positions come from: Roatán, the marine park's mooring
   list; Utila, survey sites printed in open-access papers and PADI's site pages; Guanaja has no
   published GPS list, so every position there was read off two dive maps (Franko's Maps 2017, which
@@ -264,13 +264,21 @@ place name gives NOAA's alert wording. All of it follows the selected date and i
   - whale shark (Utila NE): at the surface a tuna boil (white water, leaping tuna, seabirds
     wheeling, what captains look for) with the shark's dark shape under the surface; under it a
     bait ball (a school moving entirely in its vertex shader), the shark and a pod of dolphins. The
-    island's guidelines are the rules: inside the 90 m contact zone under 3 knots (the speed limit
+    island's guidelines are the rules: inside the 90 m contact zone under 10 knots (3 was too hard to play, Tulio) (the speed limit
     is the game's rule, the story says so) and out of the white water, or it dives for 30 s. Hold
     still and it comes over and circles the boat at ~10 m; the snorkel view stays near the surface
     (the guidelines allow snorkeling only) with the dolphins swinging in.
   - turtles (Pumpkin Hill, the West End reserve) and reef sharks (Cara a Cara, with the bait
     bucket the dive is named for): under the water they close in and circle at arm's length.
-  - divers (every plain dive site, `kind: "dive"` with no `scene` or `wreck`: 27 places, all inside
+  - stingrays (`rays.ts`; Stingray Point on Utila, from We-Dive Utila and PADI, and Hole in the
+    Wall on Roatán, from Reef Builders 2017: the dive guides that say stingrays are seen there;
+    Tulio asked for them where the sources allow, in place of the divers): stingrays (a blunt
+    diamond with a tail, margins rippling in the vertex shader) gliding low over the sand and now
+    and then settling on it, and a spotted eagle ray (pointed wings it flaps, white spots) cruising
+    higher; the sources don't name the stingray species, and the story says the shapes are
+    illustrative. Under the water they cross the sand in front of the mask (the divers' oval,
+    `frontAnchor`). ~280 triangles a ray, two draw calls. Pale aqua water over sand (`MOODS`).
+  - divers (every plain dive site, `kind: "dive"` with no `scene` or `wreck`: 25 places, all inside
     a zone; Tulio: those places felt empty): a group of 2–4 scuba divers (`divers.ts`, ~630
     triangles each, flutter kick in the vertex shader, one instanced draw call) following their
     guide in a slow loop near the buoy at the site's depth, breathing out bubbles. From the boat
@@ -327,8 +335,10 @@ place name gives NOAA's alert wording. All of it follows the selected date and i
   tags don't trade places back and forth; the step is eased so a change of slot glides. The stem
   joins tag and place only when the tag is right above it. Hidden only when it faces away or no
   spot is free. The top center is one stack (`.top-stack`: mission or arrival tag, then
-  messages), so they never cover each other; on computers `useStackRoom` puts it between the title's
-  text and the right panel, or under the title when that room is too narrow (zone names are long);
+  messages), so they never cover each other; on computers `useStackRoom` keeps it centered on the
+  screen (Tulio: it drifted beside long zone names): beside the title, which is held to its side
+  and wraps long names onto two lines (32 px instead of 38 when the room is tight), or, on a
+  narrower window, under the title, still centered, the mission tag's story button as its icon alone;
   on phones it stands on whatever is open at the bottom (Equipo, the sonda, or just the bar;
   messages used to cover the title there).
   **CTD**: the A-frame (its own group, pivoting at the foot of its legs) swings out over the stern
