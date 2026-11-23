@@ -16,6 +16,7 @@ import { MOODS, underwater, WATER, waterColorAt } from "./props";
 import { subject, zonePlaces } from "./places";
 import { LightShafts, MarineSnow, WaterDome } from "./underwaterFx";
 import { Wildlife } from "./wildlife";
+import { CruiseShip } from "./cruiseShip";
 import { SCENE_FOG } from "../scenes/materials";
 import { COV_CELL, makeCoverage, resetCoverage, saveCoverage, SonarFan, stamp, type Coverage } from "./sonar";
 import { floorY, habitatAtXZ, hash, heightAtXZ, loadZone, lonLatToXZ, xzToLonLat, ZoneLod, type Zone } from "./zone";
@@ -204,6 +205,7 @@ function Scene({ zone, start }: { zone: Zone; start: { lon: number; lat: number 
       <Vegetation zone={zone} time={time.current} />
       <Buoys zone={zone} />
       <Wildlife zone={zone} />
+      <CruiseShip zone={zone} />
       <Boat zone={zone} start={startXZ} coverage={coverage} />
     </>
   );

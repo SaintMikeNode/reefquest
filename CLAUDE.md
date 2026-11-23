@@ -19,7 +19,7 @@ dive shops, visitors. **The full spec is `docs/HANDOFF.md`; read it before plann
   lat 15.8–16.6, lon -87.1 to -85.7 (`pipeline/common.py`). No other part of the Mesoamerican Reef.
 - Static site; data is precomputed by scripts into `public/data/`, never fetched live from third-party
   servers in the browser.
-  One exception, Tulio's call: the sentence "Para apoyar este proyecto, haz clic aquí" after the contact line in the footer, on "Cómo ayudar" and on "Datos y
+  One exception, Tulio's call: the sentence "Para patrocinar este proyecto, haz clic aquí" ("To sponsor this project"; it said "apoyar" / "support" before) after the contact line in the footer, on "Cómo ayudar" and on "Datos y
   créditos" (`src/ui/Support.tsx`; he asked for a sentence, not a button) opens Ko-fi's donation
   panel (`ko-fi.com/saintmikenode`) in a window over the page, as on his Pipodojo site. Nothing
   from Ko-fi loads until a visitor presses it, and the window says the money goes to Saint Mike
@@ -296,6 +296,16 @@ place name gives NOAA's alert wording. All of it follows the selected date and i
     bathymetry is far smoother than the real reef, so a wreck is laid down the model's slope at its
     documented depth (up to 520 m from its pin; its buoy and tag go with it). Underwater the view
     stands off the hull's side and above the deck: it used to start inside the 73 m Jado Trader.
+  **A passenger ship cruises every zone** (`cruiseShip.tsx`; Tulio: something like a cruise ship
+  roaming around, bigger than our boat, a bit in the distance; his reference only set the mood):
+  our own toon design, ~70 m against the R/V's ~25 m, blue hull with a navy boot top and a yellow
+  line, four decks of window bands stepping back to a rounded front, one raked funnel standing on
+  the sun deck (it first overhung the top deck's back edge, Tulio), orange lifeboats. One merged
+  mesh with vertex colors (~2.9k triangles) plus a V wake in vertex alpha: two draw calls. It
+  steers at ~9 knots toward points 350–700 m from the boat whose straight line stays over 16 m of
+  water and keeps 140 m clear of the boat, retargets on arrival, when the boat moves on or when
+  shallows lie ahead, turns slowly, and respawns near the boat when left 2.6 km behind; a zone
+  with no deep water near the boat has none. Hidden under the water. Scenery only: no tag.
   **Every mission has a ring on the water** (`missionRings.ts`; Tulio: where to go under was
   ambiguous; "cool and subtle"): its area (the range where the mission is on: 80 m, a wreck's
   half length + 30 m, the whale sharks' 90 m contact zone) in the mission's tag color, a dashed
