@@ -276,6 +276,7 @@
   "support.note": "It is not affiliated with these organizations, receives nothing from them and handles no donations for them: the links go to their own sites. The information comes from those sites, read on {date}. Before donating, confirm the details with the organization.",
   "support.missing": "Only organizations that work for the reef and have a website we could read are listed. There may be others.",
   "contact.text": "For feedback and bug reports, reach",
+  "contact.or": "or",
   "kofi.button": "Support Saint Mike Node",
   "kofi.title": "Support Saint Mike Node",
   "kofi.sub": "ReefQuest is free for everyone. A coffee helps keep it that way.",

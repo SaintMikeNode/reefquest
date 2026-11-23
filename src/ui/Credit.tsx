@@ -47,6 +47,7 @@ export function Credit({ className, badge }: { className?: string; badge?: boole
 
 /** Where to write to the project (Tulio's address for ReefQuest). */
 export const CONTACT_EMAIL = "hola@saintmikenode.org";
+export const CONTACT_EMAIL_2 = "whatsup@nerdypunk.dev";
 
 /** "For feedback and bug reports, reach …": in the footer, at the end of
  *  the note on "Cómo ayudar" and under the intro of "Datos y créditos". */
@@ -57,6 +58,10 @@ export function Contact({ className }: { className?: string }) {
       {t("contact.text")}{" "}
       <a className="credit-link" href={`mailto:${CONTACT_EMAIL}`}>
         {CONTACT_EMAIL}
+      </a>{" "}
+      {t("contact.or")}{" "}
+      <a className="credit-link" href={`mailto:${CONTACT_EMAIL_2}`}>
+        {CONTACT_EMAIL_2}
       </a>
       .
     </p>

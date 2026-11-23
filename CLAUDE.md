@@ -23,8 +23,8 @@ dive shops, visitors. **The full spec is `docs/HANDOFF.md`; read it before plann
   créditos" (`src/ui/Support.tsx`; he asked for a sentence, not a button) opens Ko-fi's donation
   panel (`ko-fi.com/saintmikenode`) in a window over the page, as on his Pipodojo site. Nothing
   from Ko-fi loads until a visitor presses it, and the window says the money goes to Saint Mike
-  Node, not to the reef organizations. Contact: `hola@saintmikenode.org` (`Contact` in
-  `src/ui/Credit.tsx`).
+  Node, not to the reef organizations. Contact: `hola@saintmikenode.org` or `whatsup@nerdypunk.dev`
+  (`Contact` in `src/ui/Credit.tsx`; "escribe a", singular: it's just Tulio).
 - Low-end Android and old PCs: first view under ~5 MB, island scenes lazy-loaded, coral models
   50k–150k triangles, Draco/meshopt compressed. WebGL fallback = 2D map + charts.
 - Every dataset and model shown needs visible attribution; the heat overlay is labeled as a 5 km
