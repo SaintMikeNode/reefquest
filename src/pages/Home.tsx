@@ -8,13 +8,15 @@ import { AlertChip } from "../ui/AlertChip";
 import { ArchipelagoMap } from "../ui/ArchipelagoMap";
 import { HeatKey } from "../ui/HeatKey";
 import { HeatStripes } from "../ui/HeatStripes";
-import { IconArrow } from "../ui/Icons";
+import { IconArrow, IconPlay } from "../ui/Icons";
 import { Sparkline } from "../ui/Sparkline";
 import { SpecularButton } from "../ui/SpecularButton";
 import { HAS_WEBGL } from "../webgl";
 
 // The dotted sea (hero background) loads after the first paint.
 const DottedSea = lazy(() => import("../ui/DottedSea"));
+// The demo video's window: its own chunk, loaded (with the video) only when "Watch the demo" is pressed.
+const DemoVideo = lazy(() => import("../ui/DemoVideo"));
 // The headline's wave (floodtext) too: a plain headline with the same text shows until it loads.
 // The headline wave: weight swells (Inter only; the serif line has no weight axis), letters rise
 // and settle a few pixels like a passing swell, and they dim only slightly (never below ~88%:
@@ -29,6 +31,7 @@ export function Home() {
   const t = useT();
   const lang = useLang((s) => s.lang);
   const [latest, setLatest] = useState<Latest | null>(null);
+  const [demo, setDemo] = useState(false);
   useEffect(() => {
     loadLatest().then(setLatest).catch(() => {});
   }, []);
@@ -87,16 +90,26 @@ export function Home() {
               </FloodText>
             </Suspense>
             <p className="hero-sub">{t("home.sub")}</p>
+            {/* Computers, one row: the demo, the islands (white, the most prominent), Learn. Phones
+                stack them Learn, islands, demo (the islands in the middle; Tulio's order). */}
             <div className="hero-actions">
+              <button type="button" className="btn primary hero-demo" onClick={() => setDemo(true)}>
+                <IconPlay /> {t("home.ctaDemo")}
+              </button>
               {HAS_WEBGL && (
                 <SpecularButton href={href.islands} className="btn light hero-cta" lineColor="#2f86ff" baseColor="#9cc6ff" intensity={1.8} glow={1.8} thickness={1.8}>
                   {t("home.ctaIslands")} <IconArrow />
                 </SpecularButton>
               )}
-              <a className="btn primary" href={href.lessons}>
+              <a className="btn primary hero-learn" href={href.lessons}>
                 {t("home.ctaLearn")} <IconArrow />
               </a>
             </div>
+            {demo && (
+              <Suspense fallback={null}>
+                <DemoVideo onClose={() => setDemo(false)} />
+              </Suspense>
+            )}
           </div>
 
           {latest && (
