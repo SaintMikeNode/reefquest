@@ -108,6 +108,7 @@ export function BoatHud({ index, zoneName, islandName, island }: { index: HeatIn
   // keeps pushing into the shallows), however briefly it touched.
   const groundedAt = useBoat((s) => s.groundedAt);
   const groundEdge = useBoat((s) => s.groundEdge);
+  const groundShip = useBoat((s) => s.groundShip);
   const [aground, setAground] = useState(false);
   useEffect(() => {
     if (!groundedAt) return;
@@ -517,7 +518,7 @@ export function BoatHud({ index, zoneName, islandName, island }: { index: HeatIn
             </div>
           )
         )}
-        {aground ? <div className="toast warn">{t(groundEdge ? "boat.edge" : "boat.aground")}</div> : toast && <div className="toast">{toast}</div>}
+        {aground ? <div className="toast warn">{t(groundShip ? "boat.crash" : groundEdge ? "boat.edge" : "boat.aground")}</div> : toast && <div className="toast">{toast}</div>}
       </div>
 
       {under && camOn && <Viewfinder onShoot={shoot} onClose={() => useRoll.getState().setCamera(false)} />}

@@ -296,16 +296,30 @@ place name gives NOAA's alert wording. All of it follows the selected date and i
     bathymetry is far smoother than the real reef, so a wreck is laid down the model's slope at its
     documented depth (up to 520 m from its pin; its buoy and tag go with it). Underwater the view
     stands off the hull's side and above the deck: it used to start inside the 73 m Jado Trader.
-  **A passenger ship cruises every zone** (`cruiseShip.tsx`; Tulio: something like a cruise ship
-  roaming around, bigger than our boat, a bit in the distance; his reference only set the mood):
-  our own toon design, ~70 m against the R/V's ~25 m, blue hull with a navy boot top and a yellow
-  line, four decks of window bands stepping back to a rounded front, one raked funnel standing on
-  the sun deck (it first overhung the top deck's back edge, Tulio), orange lifeboats. One merged
-  mesh with vertex colors (~2.9k triangles) plus a V wake in vertex alpha: two draw calls. It
-  steers at ~9 knots toward points 350–700 m from the boat whose straight line stays over 16 m of
-  water and keeps 140 m clear of the boat, retargets on arrival, when the boat moves on or when
-  shallows lie ahead, turns slowly, and respawns near the boat when left 2.6 km behind; a zone
-  with no deep water near the boat has none. Hidden under the water. Scenery only: no tag.
+  **Other boats on the water** (`shipParts.ts` holds what they share: toon hull pieces in vertex
+  colors, `Roamer` (routes over deep water near the research vessel: points at a set distance from
+  her whose straight line stays over a minimum depth and keeps clear of her, retargeting on
+  arrival, when she moves on or when shallows lie ahead, turning at a limited rate, reappearing
+  near her when left behind) and `obstacles`, the boats she can't pass through). **All of them are
+  solid** (Tulio: "we should be able to crash into those"): her middle or bow running into one
+  bumps her back like the shallows, with "¡Choque! Rodea el barco." (`groundShip`), and one that
+  sails into her pushes her aside. Hidden under the water.
+  - A passenger ship in every zone (`cruiseShip.tsx`; Tulio: something like a cruise ship roaming
+    around, bigger than our boat, a bit in the distance; his reference only set the mood): our own
+    toon design, ~70 m against the R/V's ~25 m, blue hull with a navy boot top and a yellow line,
+    four decks of window bands stepping back to a rounded front, one raked funnel standing on the
+    sun deck (it first overhung the top deck's back edge, Tulio), orange lifeboats. One merged
+    mesh (~2.9k triangles) plus a V wake in vertex alpha: two draw calls. ~9 knots, 350–700 m
+    from her over 16 m of water, 140 m clear of her. Scenery only: no tag.
+  - Small dive and fishing boats (`smallBoats.tsx`, after Tulio's photo of flybridge boats moored
+    on the reef with snorkelers): ~13 m, a colored hull (blue, near black, teal, red or white, per
+    boat: `aHull` marks the hull's vertices and the shader takes the instance color there only)
+    under a thin white sheer line, white cabin with a window band, flybridge under a T-top, two
+    outriggers. One moored at every plain dive site (where the divers missions are), bow to the
+    buoy on a 20 m line (30 or 45 m when she starts close by: never within 40 m of her start, a
+    boat moored on top of her bumped her at once), swinging gently; two more cruising at ~15 knots,
+    200–500 m from her over 6 m of water, with small wakes. All instances of one ~820-triangle
+    mesh: one draw call, plus one for the wakes; farther than 2 km, scaled to nothing.
   **Every mission has a ring on the water** (`missionRings.ts`; Tulio: where to go under was
   ambiguous; "cool and subtle"): its area (the range where the mission is on: 80 m, a wreck's
   half length + 30 m, the whale sharks' 90 m contact zone) in the mission's tag color, a dashed

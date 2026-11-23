@@ -119,6 +119,7 @@
   "boat.mission": "Mission: make a CTD cast over every habitat in this zone.",
   "boat.missionDone": "Mission complete: you logged every habitat in the zone.",
   "boat.aground": "Shallow water! Back up or tap deeper water.",
+  "boat.crash": "Bump! Steer around the boat.",
   "boat.near": "You reached",
   "boat.readStory": "Read the story",
   "boat.empty": "No samples yet. Sail over the reef and take one.",

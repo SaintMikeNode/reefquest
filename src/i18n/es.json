@@ -119,6 +119,7 @@
   "boat.mission": "Misión: haz un lance de CTD sobre cada hábitat de esta zona.",
   "boat.missionDone": "Misión cumplida: registraste todos los hábitats de la zona.",
   "boat.aground": "¡Agua poco profunda! Retrocede o toca agua más honda.",
+  "boat.crash": "¡Choque! Rodea el barco.",
   "boat.near": "Llegaste a",
   "boat.readStory": "Leer la historia",
   "boat.empty": "Aún no hay muestras. Navega sobre el arrecife y toma una.",

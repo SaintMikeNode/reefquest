@@ -17,6 +17,8 @@ import { subject, zonePlaces } from "./places";
 import { LightShafts, MarineSnow, WaterDome } from "./underwaterFx";
 import { Wildlife } from "./wildlife";
 import { CruiseShip } from "./cruiseShip";
+import { SmallBoats } from "./smallBoats";
+import { insideObstacle } from "./shipParts";
 import { SCENE_FOG } from "../scenes/materials";
 import { COV_CELL, makeCoverage, resetCoverage, saveCoverage, SonarFan, stamp, type Coverage } from "./sonar";
 import { floorY, habitatAtXZ, hash, heightAtXZ, loadZone, lonLatToXZ, xzToLonLat, ZoneLod, type Zone } from "./zone";
@@ -35,6 +37,7 @@ const YAW = 1.1; // rad/s at speed
 const DRAFT = 2.2; // keel depth: shallower water ahead stops the boat
 const BOW = 12.5;
 const STERN = -12;
+const HULL_R = 4.5; // half her beam, for bumping into other boats
 const PROP_RADIUS = 380;
 const UP = new THREE.Vector3(0, 1, 0);
 const CAST_SPEED = 2.2; // m/s winch speed
@@ -206,6 +209,7 @@ function Scene({ zone, start }: { zone: Zone; start: { lon: number; lat: number 
       <Buoys zone={zone} />
       <Wildlife zone={zone} />
       <CruiseShip zone={zone} />
+      <SmallBoats zone={zone} />
       <Boat zone={zone} start={startXZ} coverage={coverage} />
     </>
   );
@@ -370,18 +374,24 @@ function Boat({ zone, start, coverage }: { zone: Zone; start: { x: number; z: nu
     const turnRate = YAW * Math.min(1, 0.3 + Math.abs(s.v) / 4);
     s.a += turn * turnRate * dt * (s.v < -0.1 ? -1 : 1);
     const dirx = Math.sin(s.a), dirz = Math.cos(s.a);
+    // Another boat sailed into her (the cruise ship doesn't stop): she is pushed aside.
+    const shoved = insideObstacle(s.x, s.z, HULL_R);
+    if (shoved) (s.x += shoved.nx * (shoved.depth + 0.2)), (s.z += shoved.nz * (shoved.depth + 0.2));
     const nx = s.x + dirx * s.v * dt, nz = s.z + dirz * s.v * dt;
     const probe = s.v >= 0 ? BOW : STERN;
     const ahead = heightAtXZ(zone, nx + dirx * probe, nz + dirz * probe);
     const margin = 100;
     const inside = Math.abs(nx) < zone.sizeX / 2 - margin && Math.abs(nz) < zone.sizeZ / 2 - margin;
-    if (ahead > -DRAFT || !inside) {
+    // Other boats are solid (shipParts `obstacles`): her middle or her bow (stern going astern)
+    // running into one bumps her back like the shallows do.
+    const hitBoat = !shoved && (!!insideObstacle(nx, nz, HULL_R) || !!insideObstacle(nx + dirx * probe * 0.85, nz + dirz * probe * 0.85, 2));
+    if (ahead > -DRAFT || !inside || hitBoat) {
       s.aground = Math.abs(s.v) > 0.05 || s.aground;
       // Tell the HUD as an event, not only through telemetry: a fast boat bounces off in a frame or
       // two, between the 6 telemetry updates a second phones get, so the warning used to be missed.
       if ((Math.abs(s.v) > 0.05 || throttle !== 0) && t - s.groundNote > 0.4) {
         s.groundNote = t;
-        useBoat.setState({ groundedAt: Date.now(), groundEdge: !inside });
+        useBoat.setState({ groundedAt: Date.now(), groundEdge: !inside && !hitBoat, groundShip: hitBoat });
       }
       s.v = Math.abs(s.v) > 2 ? -s.v * 0.3 : 0; // bounce back a little
       if (target) setTarget(null);

@@ -63,6 +63,8 @@ interface BoatState {
   groundedAt: number;
   /** Whether that was the edge of the zone rather than shallow water. */
   groundEdge: boolean;
+  /** Whether it was another boat (the cruise ship, a dive boat) rather than shallow water. */
+  groundShip: boolean;
   notify: (key: string) => void;
   logSighting: (id: string) => void;
   setPresent: (p: number[]) => void;
@@ -110,6 +112,7 @@ export const useBoat = create<BoatState>((set, get) => ({
   notice: null,
   groundedAt: 0,
   groundEdge: false,
+  groundShip: false,
   notify: (key) => set((s) => ({ notice: { key, n: (s.notice?.n ?? 0) + 1 } })),
   logSighting: (id) => {
     if (get().sightings.includes(id)) return;
