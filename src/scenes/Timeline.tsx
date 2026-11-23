@@ -57,8 +57,8 @@ export function Timeline({ index, island }: { index: HeatIndex; island: string }
   }, [playing, year]);
 
   // Playback: 6 days per step at 30 fps (about 2 s a year, Tulio: faster); continues into the next
-  // year. The intro on entering an island plays the island's hottest year to its peak at 4 days a
-  // step (under 3 s; lite devices 8 days every other frame) and stops there.
+  // year. The intro on entering an island plays the island's hottest year, start to end, at 4 days
+  // a step (~3 s; lite devices 8 days every other frame) and stops at its end.
   useEffect(() => {
     if (!playing) return;
     let raf = 0;
@@ -73,7 +73,7 @@ export function Timeline({ index, island }: { index: HeatIndex; island: string }
       if (!cur) return;
       const next = s.day + (s.intro ? (slow ? 8 : 4) : 6);
       if (s.intro && s.introEnd !== null && next >= s.introEnd) {
-        s.setDay(s.introEnd); // the intro stops on the record year's peak
+        s.setDay(s.introEnd); // the intro stops at the end of the record year
         s.setPlaying(false);
       } else if (next < cur.days) s.setDay(next);
       else {

@@ -14,9 +14,9 @@ interface SceneState {
   year: number;
   day: number; // index within the year file
   playing: boolean;
-  /** The quick sweep played on entering an island: the island's hottest year up to its peak. */
+  /** The quick sweep played on entering an island: the island's hottest year, start to end. */
   intro: boolean;
-  /** The day the intro stops on (the record year's peak), or null to run to the year's end. */
+  /** The day the intro stops on (the record year's last day), or null to run to the latest day. */
   introEnd: number | null;
   /** Set when an island is entered; the HUD plays the intro once and clears it (not after the boat). */
   introPending: boolean;

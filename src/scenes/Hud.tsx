@@ -86,11 +86,12 @@ export function Hud({ td, index }: { td: TerrainData; index: HeatIndex }) {
       /* storage blocked */
     }
   };
-  // Intro: on entering an island, play the island's hottest year on record from 1 January to its
-  // peak (under 3 s, a little slower than normal playback so the heat builds visibly), and stop on
-  // that peak, so each island opens at its worst and the islands can be compared (Tulio: "see the
-  // differences drastically"; it used to play the current year). The record year and its peak
-  // come from the island's daily series; without it, the current year plays to its latest day. It
+  // Intro: on entering an island, play the island's hottest year on record, the whole year from
+  // 1 January to 31 December (~3 s, a little slower than normal playback so the heat builds
+  // visibly), and stop at its end, so each island shows its worst year and the islands can be
+  // compared (Tulio: "see the differences drastically"; it used to play the current year). The
+  // record year comes from the island's daily series; without it, the current year plays to its
+  // latest day. It
   // waits for the transition curtain and the first-visit guide, preloads the year's grid, and
   // doesn't start if the visitor has already moved the timeline. Skipped with reduced motion.
   useEffect(() => {
@@ -114,13 +115,13 @@ export function Hud({ td, index }: { td: TerrainData; index: HeatIndex }) {
       .then((series) => {
         const d = series.islands[td.meta.island]?.dhw_mean;
         if (!d) return;
-        // The year whose highest daily value is the highest, and the day it peaked.
+        // The year whose highest daily value is the highest; the intro runs to its last day.
         let best = -1;
         for (const y of index.years) {
           const off = dayDiff(series.first, y.first);
           for (let i = 0; i < y.days; i++) {
             const v = d[off + i];
-            if (v !== undefined && v > best) (best = v), (play = { year: y.year, end: i });
+            if (v !== undefined && v > best) (best = v), (play = { year: y.year, end: y.days - 1 });
           }
         }
       })
