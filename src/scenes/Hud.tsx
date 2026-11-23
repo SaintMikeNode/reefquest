@@ -4,7 +4,7 @@ import { loadZoneIndex, zoneName, type ZoneIndexEntry } from "../boat/zone";
 import { SITES } from "../content/sites";
 import { fmtNum, rich, useL, useLang, useT } from "../i18n";
 import { LEVELS, levelFor, rampCSS } from "../lib/alert";
-import { loadYearGrid, type HeatIndex } from "../lib/data";
+import { dayDiff, loadSeries, loadYearGrid, type HeatIndex } from "../lib/data";
 import { REDUCED_MOTION, TOUCH } from "../lib/device";
 import { href } from "../lib/router";
 import { AlertChip } from "../ui/AlertChip";
@@ -86,16 +86,18 @@ export function Hud({ td, index }: { td: TerrainData; index: HeatIndex }) {
       /* storage blocked */
     }
   };
-  // Intro: on entering an island, play the current year from 1 January to today (~5 s, a little
-  // slower than normal playback so the heat changes ease in), ending on the latest day, so the
-  // timeline and the heat on the map are seen moving at once. It waits for
-  // the transition curtain and the first-visit guide, preloads the year's grid, and doesn't start
-  // if the visitor has already moved the timeline. Skipped with reduced motion.
+  // Intro: on entering an island, play the island's hottest year on record from 1 January to its
+  // peak (under 3 s, a little slower than normal playback so the heat builds visibly), and stop on
+  // that peak, so each island opens at its worst and the islands can be compared (Tulio: "see the
+  // differences drastically"; it used to play the current year). The record year and its peak
+  // come from the island's daily series; without it, the current year plays to its latest day. It
+  // waits for the transition curtain and the first-visit guide, preloads the year's grid, and
+  // doesn't start if the visitor has already moved the timeline. Skipped with reduced motion.
   useEffect(() => {
     if (hint || REDUCED_MOTION || !useScene.getState().introPending) return;
     const last = index.years[index.years.length - 1];
-    const years = [last];
     let live = true, raf = 0;
+    let play = { year: last.year, end: null as number | null };
     const untouched = () => {
       const s = useScene.getState();
       return s.year === last.year && s.day === last.days - 1 && !s.playing && !s.boat;
@@ -106,11 +108,27 @@ export function Hud({ td, index }: { td: TerrainData; index: HeatIndex }) {
         raf = requestAnimationFrame(start);
         return;
       }
-      useScene.setState(untouched() ? { year: years[0].year, day: 0, playing: true, intro: true, introPending: false } : { introPending: false });
+      useScene.setState(untouched() ? { year: play.year, day: 0, playing: true, intro: true, introEnd: play.end, introPending: false } : { introPending: false });
     };
-    Promise.all(years.map((y) => loadYearGrid(y.year).catch(() => {}))).then(() => {
-      if (live) raf = requestAnimationFrame(start);
-    });
+    loadSeries()
+      .then((series) => {
+        const d = series.islands[td.meta.island]?.dhw_mean;
+        if (!d) return;
+        // The year whose highest daily value is the highest, and the day it peaked.
+        let best = -1;
+        for (const y of index.years) {
+          const off = dayDiff(series.first, y.first);
+          for (let i = 0; i < y.days; i++) {
+            const v = d[off + i];
+            if (v !== undefined && v > best) (best = v), (play = { year: y.year, end: i });
+          }
+        }
+      })
+      .catch(() => {})
+      .then(() => loadYearGrid(play.year).catch(() => {}))
+      .then(() => {
+        if (live) raf = requestAnimationFrame(start);
+      });
     return () => {
       live = false;
       cancelAnimationFrame(raf);

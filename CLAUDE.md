@@ -203,8 +203,11 @@ place name gives NOAA's alert wording. All of it follows the selected date and i
   arrives is finished with a synthetic pointerup on the next button-less move or window blur, so
   the camera can't get stuck; a lost WebGL context rebuilds the Canvas via `glKey`), `SiteCard.tsx` (its action, "Explore by boat", is a compact tinted chip (`.card-chip`, not a solid button: the title stays the loudest) right after the place name (16 px semibold), the two wrapping together on narrow cards, the close button pinned to the corner, 18 px before the title; on computers the card stops above the data credits line), `Timeline.tsx` (year chips, DHW chart, scrubber,
   playback (6 days a step, ~2 s a year; Tulio found 3 days too slow); on entering an island an intro
-  plays the current year from 1 January to today at 4 days a step (under 3 s; Tulio found four
-  years too drastic and 2 days a step too slow), ending on the latest day (Tulio: so people see the visualizer at once). It starts after the curtain
+  plays the island's hottest year on record from 1 January to its peak at 4 days a step (under
+  3 s) and stops on that peak (Tulio: so the islands' differences show drastically; it used to play
+  the current year to the latest day): Roatán 14 Oct 2024 (14.3 °C-weeks), Utila 15 Oct 2024
+  (14.4), Guanaja 24 Oct 2023 (15.9), worked out from the island's daily series (`introEnd` in the
+  store). Earlier: four years was too drastic and 2 days a step too slow. It starts after the curtain
   and the first-visit guide, with the year's grid preloaded; `introPending` in the store makes it
   play once per visit, not again after the boat; any play/pause or scrub ends it; reduced motion
   skips it; the play button is a large glowing blue disc with a sonar ring pulsing out of it until
