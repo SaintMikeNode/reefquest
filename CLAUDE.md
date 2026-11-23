@@ -570,7 +570,14 @@ animation effects off) the scene just switches.
 ## Hosting
 
 Live at https://reefquest.todosenlaweb.com: Worker `reefquest` with that custom domain, static
-assets via `cloudflare.config.ts` (SPA fallback). Code is on GitHub at `saintmikenode/reefquest`
+assets via `cloudflare.config.ts` (SPA fallback), plus a small script for `/video/*` only
+(`worker/index.ts`, `assets.runWorkerFirst`): the assets server ignores byte-range requests (it
+answers `Range: bytes=0-1` with the whole file and no `Accept-Ranges`), and Safari, on iPhones above
+all, won't play a `<video>` without 206 Partial Content. The script serves the demo videos and
+posters with ranges: the edge cache (Cache API, custom domain only) answers them from the stored
+whole file; otherwise it reads the asset, caches it in the background and slices the reply. Every
+other path never reaches it. It isn't in `tsconfig`'s `include` (as in CopánQuest); typecheck it
+with its own options when it changes. Code is on GitHub at `saintmikenode/reefquest`
 (private, `main`). **Workers Builds is connected (since 2026-11-20): pushing to `main` deploys**
 (trigger "Deploy main": `npx tsc && npx cf build`, then `npx cf deploy --prebuilt`). A push to any
 other branch only uploads a preview version with the branch name as its alias (trigger "Deploy
